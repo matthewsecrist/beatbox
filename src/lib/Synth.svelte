@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Pencil } from '@lucide/svelte'
   import { onMount, type Snippet, untrack } from 'svelte'
   import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
@@ -15,6 +16,7 @@
     Wave
   } from './types.js'
 
+  import PianoRoll from './PianoRoll.svelte'
   import { createSynth, DEFAULT_PARAMS } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
@@ -163,6 +165,55 @@
     if (recording >= 0) recorder.note(midi, true)
   }
 
+  // Piano roll: edits one pad's loop. `rollKey` changes when a different loop is
+  // opened, which remounts the editor on it.
+  let rollSlot: null | number = $state(null)
+  let rollLoop: Loop | null = $state.raw(null)
+  let rollKey = $state(0)
+
+  function closeRoll() {
+    rollSlot = null
+    rollLoop = null
+  }
+
+  // Opens a pad in the piano roll; an empty pad gets an empty one-bar loop to draw in.
+  function editPad(slot: number) {
+    if (!synth || recording === slot) return
+    let loop = loopData[slot]
+    if (!loop) {
+      const sound: Partial<SynthParams> = $state.snapshot(params)
+      delete sound.volume
+      const bpm = transport.bpm
+      loop = {
+        bpm,
+        events: [],
+        length: Math.round((BEATS_PER_BAR * 60 * 1000) / bpm) / 1000,
+        params: sound,
+        slot
+      }
+      setLoop(slot, loop)
+      players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+    }
+    rollSlot = slot
+    rollLoop = loop
+    rollKey++
+  }
+
+  // An edit from the piano roll: playing pads pick it up straight away.
+  function onRollChange(loop: Loop) {
+    if (rollSlot === null) return
+    setLoop(rollSlot, loop)
+    players[rollSlot]?.setLoop(loop)
+    rollLoop = loop
+  }
+
+  // Sounds a pitch with the edited loop's own synth settings.
+  function previewNote(midi: number) {
+    if (!synth || !rollLoop) return
+    synth.noteOn(midi, undefined, 'roll', rollLoop.params)
+    synth.noteOff('roll', synth.now() + 0.25)
+  }
+
   function pushLoops() {
     onloops?.(loopData.filter((l) => l !== null))
   }
@@ -172,6 +223,18 @@
     active.delete(midi)
     synth?.noteOff(midi)
     if (recording >= 0) recorder.note(midi, false)
+  }
+
+  function setLoop(slot: number, loop: Loop) {
+    const pad = pads[slot]
+    loopData[slot] = loop
+    pads[slot] = {
+      filled: true,
+      label: barsLabel(loop),
+      playing: pad?.playing ?? false,
+      pos: pad?.pos ?? 0
+    }
+    pushLoops()
   }
 
   function startPad(slot: number) {
@@ -204,6 +267,12 @@
     else startPad(slot)
   }
 
+  function toggleRollPad() {
+    if (rollSlot === null) return
+    if (players[rollSlot]?.playing) stopPad(rollSlot)
+    else startPad(rollSlot)
+  }
+
   const anyPadPlaying = $derived(pads.some((p) => p.playing))
   const report = (on: boolean): void => {
     window.dispatchEvent(
@@ -214,6 +283,7 @@
   $effect(() => report(anyPadPlaying))
 
   function clearPad(slot: number) {
+    if (rollSlot === slot) closeRoll()
     if (recording === slot) {
       recording = -1
       transport.metronome(null)
@@ -566,7 +636,9 @@
   <section id="loop-pads" class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
     <div class="flex items-baseline justify-between">
       <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Loops</h2>
-      <p class="text-xs text-zinc-500">Tap an empty pad to record, tap again to loop it</p>
+      <p class="text-xs text-zinc-500">
+        Tap an empty pad to record, tap again to loop it · the pencil edits its notes
+      </p>
     </div>
     <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
       {#each pads as pad, slot (slot)}
@@ -616,10 +688,46 @@
               ×
             </button>
           {/if}
+          {#if recording !== slot}
+            <button
+              id={'loop-edit-' + slot}
+              type="button"
+              aria-label={pad.filled
+                ? `Edit loop pad ${slot + 1} in the piano roll`
+                : `Draw a loop on pad ${slot + 1} in the piano roll`}
+              aria-pressed={rollSlot === slot}
+              title={pad.filled ? 'Edit notes' : 'Draw notes'}
+              onclick={() => editPad(slot)}
+              class={[
+                'absolute -bottom-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full border bg-zinc-900 transition group-hover:opacity-100 hover:border-amber-400 hover:text-amber-300 focus:opacity-100 pointer-coarse:opacity-100',
+                rollSlot === slot
+                  ? 'border-amber-400 text-amber-300 opacity-100'
+                  : 'border-zinc-600 text-zinc-400 opacity-0'
+              ]}
+            >
+              <Pencil class="size-2.5" />
+            </button>
+          {/if}
         </div>
       {/each}
     </div>
   </section>
+
+  {#if rollSlot !== null && rollLoop}
+    {#key rollKey}
+      <PianoRoll
+        slot={rollSlot}
+        loop={rollLoop}
+        bpm={transport.bpm}
+        playing={pads[rollSlot]?.playing ?? false}
+        position={pads[rollSlot]?.pos ?? 0}
+        onchange={onRollChange}
+        onclose={closeRoll}
+        onpreview={previewNote}
+        ontoggle={toggleRollPad}
+      />
+    {/key}
+  {/if}
 
   <div id="keyboard" class="relative flex h-40 select-none sm:h-48" style="touch-action: none">
     {#each keys as key (key.midi)}

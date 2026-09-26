@@ -135,6 +135,20 @@ test('a pad started mid-bar waits for the next bar line', () => {
   expect(synth.calls).toStrictEqual([['on', 60, 2.05]]) // bar 2 = beat 4
 })
 
+test('a loop length rounded to the millisecond stays locked to the bar', () => {
+  const { clock, transport } = fakeAudio()
+  transport.setBpm(110) // one bar is 2.1818 s, stored as 2.182
+  const synth = spySynth()
+  const bar = { ...oneBar, bpm: 110, events: [{ midi: 60, on: true, t: 0 }], length: 2.182 }
+  const player = createPlayer(synth, 'pad0:', bar, transport)
+  player.start()
+
+  clock.now = transport.timeAt(400) - 0.05 // bar 101
+  player.tick()
+
+  expect(synth.calls.at(-1)).toStrictEqual(['on', 60, +transport.timeAt(400).toFixed(3)])
+})
+
 test('loops follow tempo changes', () => {
   const { clock, transport } = fakeAudio()
   const synth = spySynth()
@@ -190,6 +204,79 @@ test("start while a stop is pending cancels it and keeps the loop's phase", () =
     ['on', 60, 2.05]
   ])
   expect(player.playing).toBe(true)
+})
+
+test('an edited loop takes over at once, keeping its place in the bar', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start() // C4 held from beat 0 to beat 2
+
+  clock.now = 0.8 // beat 1.5: C4 is sounding
+  player.setLoop({
+    ...oneBar,
+    events: [
+      { midi: 64, on: true, t: 1.5 },
+      { midi: 64, on: false, t: 2 }
+    ]
+  })
+  clock.now = 1.5
+  player.tick()
+  clock.now = 2
+  player.tick()
+
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', NaN], // C4 released at the edit
+    ['on', 64, 1.55], // E4 on beat 3 of the same bar
+    ['off', 2.05]
+  ])
+})
+
+test('shortening a playing loop continues from the same point of the shorter cycle', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const twoBars = {
+    ...oneBar,
+    events: [
+      { midi: 60, on: true, t: 0 },
+      { midi: 60, on: false, t: 0.5 },
+      { midi: 62, on: true, t: 2 },
+      { midi: 62, on: false, t: 2.5 }
+    ],
+    length: 4
+  }
+  const player = createPlayer(synth, 'pad0:', twoBars, transport)
+  player.start()
+  clock.now = 2.3 // beat 4.5: half a beat into bar 2, D4 sounding
+  player.tick()
+
+  player.setLoop(oneBar) // 1 bar: beat 4.5 is half a beat into a new cycle
+  clock.now = 3
+  player.tick()
+  clock.now = 4
+  player.tick()
+
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 0.55],
+    ['on', 62, 2.05],
+    ['off', NaN], // D4 released at the edit
+    ['off', 3.05], // this cycle's C4 note-off (beat 6)
+    ['on', 60, 4.05] // next cycle on beat 8
+  ])
+})
+
+test('an empty loop still stops on its stop beat', () => {
+  const { clock, transport } = fakeAudio()
+  const player = createPlayer(spySynth(), 'pad0:', { ...oneBar, events: [] }, transport)
+  player.start(0)
+  player.stopAt(4)
+
+  clock.now = 2
+  player.tick()
+
+  expect(player.playing).toBe(false)
 })
 
 test('stop silences loop notes already scheduled inside the lookahead, but not live notes', () => {
