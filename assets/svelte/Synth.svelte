@@ -111,6 +111,20 @@
     pads[slot].playing = true
   }
 
+  // Global Play all / Stop all (song bar): start every filled pad, or stop them all.
+  function onTransport(e) {
+    players.forEach((p, slot) => {
+      if (!p) return
+      if (e.detail.play && !p.playing) startPad(slot)
+      if (!e.detail.play && p.playing) stopPad(slot)
+    })
+  }
+
+  const anyPadPlaying = $derived(pads.some((p) => p.playing))
+  const report = (on) => window.dispatchEvent(new CustomEvent("beatbox:state", { detail: { source: "loops", playing: on } }))
+  const onReport = () => report(anyPadPlaying)
+  $effect(() => report(anyPadPlaying))
+
   function stopPad(slot) {
     players[slot].stop()
     pads[slot].playing = false
@@ -176,10 +190,15 @@
     window.addEventListener("keydown", onKeyDown)
     window.addEventListener("keyup", onKeyUp)
     window.addEventListener("blur", onBlur)
+    window.addEventListener("beatbox:transport", onTransport)
+    window.addEventListener("beatbox:report", onReport)
     return () => {
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("keyup", onKeyUp)
       window.removeEventListener("blur", onBlur)
+      window.removeEventListener("beatbox:transport", onTransport)
+      window.removeEventListener("beatbox:report", onReport)
+      report(false)
       clearTimeout(statusTimer)
       clearInterval(loopTimer)
       players.forEach((p) => p?.stop())

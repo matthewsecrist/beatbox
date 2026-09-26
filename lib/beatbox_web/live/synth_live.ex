@@ -49,6 +49,50 @@ defmodule BeatboxWeb.SynthLive do
         id="song-bar"
         class="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-lg shadow-black/40"
       >
+        <%!-- Global transport: starts/stops the drums and every filled loop pad. The
+             instruments report their state as `beatbox:state`, so the label follows
+             them even when started/stopped individually. --%>
+        <button
+          id="transport"
+          type="button"
+          phx-hook=".Transport"
+          phx-update="ignore"
+          aria-pressed="false"
+          class="group flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-zinc-950 shadow shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 aria-pressed:bg-zinc-100 aria-pressed:shadow-none aria-pressed:hover:bg-white"
+        >
+          <.icon name="hero-play-solid" class="size-4 group-aria-pressed:hidden" />
+          <.icon name="hero-stop-solid" class="hidden size-4 group-aria-pressed:block" />
+          <span data-label>Play all</span>
+        </button>
+        <script :type={Phoenix.LiveView.ColocatedHook} name=".Transport">
+          export default {
+            mounted() {
+              this.playing = new Map()
+              this.onState = (e) => {
+                this.playing.set(e.detail.source, e.detail.playing)
+                this.render()
+              }
+              window.addEventListener("beatbox:state", this.onState)
+              this.el.addEventListener("click", () => {
+                const play = !this.anyPlaying()
+                window.dispatchEvent(new CustomEvent("beatbox:transport", { detail: { play } }))
+              })
+              // Ask already-mounted instruments to report in.
+              window.dispatchEvent(new CustomEvent("beatbox:report"))
+            },
+            anyPlaying() {
+              return [...this.playing.values()].some(Boolean)
+            },
+            render() {
+              const on = this.anyPlaying()
+              this.el.setAttribute("aria-pressed", String(on))
+              this.el.querySelector("[data-label]").textContent = on ? "Stop all" : "Play all"
+            },
+            destroyed() {
+              window.removeEventListener("beatbox:state", this.onState)
+            },
+          }
+        </script>
         <.form
           for={@song_form}
           id="song-form"

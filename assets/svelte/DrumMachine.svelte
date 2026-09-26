@@ -34,8 +34,21 @@
 
   onMount(() => {
     drums = createDrums({ onStep: (s) => (current = s) })
-    return () => drums.close()
+    // Global Play all / Stop all (song bar) and its state reports.
+    const onTransport = (e) => e.detail.play !== playing && toggle()
+    const onReport = () => report(playing)
+    window.addEventListener("beatbox:transport", onTransport)
+    window.addEventListener("beatbox:report", onReport)
+    return () => {
+      window.removeEventListener("beatbox:transport", onTransport)
+      window.removeEventListener("beatbox:report", onReport)
+      drums.close()
+      report(false)
+    }
   })
+
+  const report = (on) => window.dispatchEvent(new CustomEvent("beatbox:state", { detail: { source: "drums", playing: on } }))
+  $effect(() => report(playing))
 
   // Push to the song's working copy. Not debounced, so the push is on the socket
   // before any later Save click (see Synth.svelte). The mount run is skipped so an
