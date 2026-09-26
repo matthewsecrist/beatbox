@@ -63,6 +63,8 @@ config :spark,
     "Ash.Domain": [section_order: [:resources, :policies, :authorization, :domain, :execution]]
   ]
 
+config :beatbox, ash_domains: [Beatbox.Music]
+
 config :beatbox,
   ecto_repos: [Beatbox.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]

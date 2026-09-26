@@ -14,18 +14,20 @@ defmodule Beatbox.Application do
         []
       end
 
-    children = node_js_children ++ [
-      BeatboxWeb.Telemetry,
-      Beatbox.Repo,
-      {Ecto.Migrator,
-       repos: Application.fetch_env!(:beatbox, :ecto_repos), skip: skip_migrations?()},
-      {DNSCluster, query: Application.get_env(:beatbox, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Beatbox.PubSub},
-      # Start a worker by calling: Beatbox.Worker.start_link(arg)
-      # {Beatbox.Worker, arg},
-      # Start to serve requests, typically the last entry
-      BeatboxWeb.Endpoint
-    ]
+    children =
+      node_js_children ++
+        [
+          BeatboxWeb.Telemetry,
+          Beatbox.Repo,
+          {Ecto.Migrator,
+           repos: Application.fetch_env!(:beatbox, :ecto_repos), skip: skip_migrations?()},
+          {DNSCluster, query: Application.get_env(:beatbox, :dns_cluster_query) || :ignore},
+          {Phoenix.PubSub, name: Beatbox.PubSub},
+          # Start a worker by calling: Beatbox.Worker.start_link(arg)
+          # {Beatbox.Worker, arg},
+          # Start to serve requests, typically the last entry
+          BeatboxWeb.Endpoint
+        ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html
     # for other strategies and supported options

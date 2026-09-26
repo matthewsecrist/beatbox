@@ -16,9 +16,8 @@ defmodule BeatboxWeb.Router do
 
   scope "/", BeatboxWeb do
     pipe_through :browser
-    live "/svelte_demo", SvelteDemoLive
 
-    get "/", PageController, :home
+    live "/", SynthLive
   end
 
   # Other scopes may use custom stacks.
