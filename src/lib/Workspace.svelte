@@ -1,6 +1,7 @@
 <script>
   import { onMount, untrack } from "svelte"
   import { goto, replaceState } from "$app/navigation"
+  import { ChevronDown, CircleAlert, Info, Play, Square, X } from "@lucide/svelte"
   import Synth from "./Synth.svelte"
   import DrumMachine from "./DrumMachine.svelte"
   import Arranger from "./Arranger.svelte"
@@ -133,8 +134,8 @@
     onclick={toggleTransport}
     class="group flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-zinc-950 shadow shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 aria-pressed:bg-zinc-100 aria-pressed:shadow-none aria-pressed:hover:bg-white"
   >
-    <span class="hero-play-solid size-4 group-aria-pressed:hidden"></span>
-    <span class="hero-stop-solid hidden size-4 group-aria-pressed:block"></span>
+    <Play class="size-4 fill-current group-aria-pressed:hidden" />
+    <Square class="hidden size-4 fill-current group-aria-pressed:block" />
     <span>{anyPlaying ? "Stop all" : "Play all"}</span>
   </button>
 
@@ -181,7 +182,7 @@
     <summary
       class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700"
     >
-      Open <span class="hero-chevron-down size-4 transition group-open:rotate-180"></span>
+      Open <ChevronDown class="size-4 transition group-open:rotate-180" />
     </summary>
     <ul
       class="absolute right-0 z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl shadow-black/60"
@@ -220,18 +221,21 @@
 <Arranger sections={initial.arrangement} onchange={(sections) => change("arrangement", sections)} />
 
 {#if flash}
-  <div id={"flash-" + flash.kind} role="alert" class="toast toast-top toast-end z-50">
+  <div id={"flash-" + flash.kind} role="alert" class="fixed top-4 right-4 z-50">
     <div
       class={[
-        "alert w-80 max-w-80 text-wrap sm:w-96 sm:max-w-96",
-        flash.kind === "info" ? "alert-info" : "alert-error",
+        "flex w-80 items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-lg sm:w-96",
+        flash.kind === "info" ? "border-sky-200 bg-sky-50 text-sky-900" : "border-red-200 bg-red-50 text-red-900",
       ]}
     >
-      <span class={[flash.kind === "info" ? "hero-information-circle" : "hero-exclamation-circle", "size-5 shrink-0"]}></span>
-      <p>{flash.message}</p>
-      <div class="flex-1"></div>
-      <button type="button" class="group cursor-pointer self-start" aria-label="close" onclick={() => (flash = null)}>
-        <span class="hero-x-mark size-5 opacity-40 group-hover:opacity-70"></span>
+      {#if flash.kind === "info"}
+        <Info class="size-5 shrink-0" />
+      {:else}
+        <CircleAlert class="size-5 shrink-0" />
+      {/if}
+      <p class="flex-1">{flash.message}</p>
+      <button type="button" class="cursor-pointer opacity-40 transition hover:opacity-70" aria-label="close" onclick={() => (flash = null)}>
+        <X class="size-5" />
       </button>
     </div>
   </div>

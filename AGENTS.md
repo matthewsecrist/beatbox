@@ -11,7 +11,7 @@ See README.md for layout and commands.
 - Schema changes: edit `src/lib/server/db/schema.js`, then `npm run db:generate`
   to create a migration. Never edit generated migrations by hand.
 - Styling is Tailwind v4 (configured in `src/app.css`, no `tailwind.config.js`).
-  Icons are `hero-*` classes (e.g. `<span class="hero-play-solid size-4"></span>`).
+  Icons come from Lucide (`import { Play } from "@lucide/svelte"`, then `<Play class="size-4" />`).
 - Audio runs entirely in the browser; keep Web Audio code out of server modules and
   only touch `window`/`AudioContext` from `onMount` or event handlers (pages are server-rendered).
 - Give key elements stable ids (`#song-form`, `#save-song`, …) so they can be targeted in tests.
