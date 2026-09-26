@@ -3,6 +3,7 @@
   import { onMount, type Snippet, untrack } from 'svelte'
   import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
+  import type { SongStore } from './song.svelte.js'
   import type { Synth } from './synth/engine.js'
   import type { Player } from './synth/looper.js'
   import type {
@@ -17,37 +18,32 @@
   } from './types.js'
 
   import PianoRoll from './PianoRoll.svelte'
+  import { PAD_COUNT } from './song.svelte.js'
   import { createSynth, DEFAULT_PARAMS } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
   import { BEATS_PER_BAR, transport } from './transport.js'
 
-  // `params`/`loops` come from the open song and are read once at mount; the page
-  // remounts this component when a different song is opened. Edits are reported
-  // through `onparams`/`onloops`; `savePreset`/`loadPreset` talk to the server.
+  // Synth settings and loops live in the song store (and its undo history); this
+  // component reads them and changes them through the store. `savePreset`/
+  // `loadPreset` talk to the server.
   let {
     loadPreset: fetchPreset,
-    loops = [],
-    onloops,
-    onparams,
-    params: songParams = null,
     presets = [],
-    savePreset: storePreset
+    savePreset: storePreset,
+    store
   }: {
     loadPreset: (id: string) => Promise<LoadPresetReply>
-    loops?: Loop[]
-    onloops?: (loops: Loop[]) => void
-    onparams?: (params: SynthParams) => void
-    params?: null | Partial<SynthParams>
     presets?: PresetSummary[]
     savePreset: (name: string, params: SynthParams) => Promise<SavePresetReply>
+    store: SongStore
   } = $props()
 
   type NumericParam = {
     [K in keyof SynthParams]: SynthParams[K] extends number ? K : never
   }[keyof SynthParams]
 
-  let params: SynthParams = $state({ ...DEFAULT_PARAMS, ...untrack(() => songParams) })
+  const params: SynthParams = $derived({ ...DEFAULT_PARAMS, ...store.synth })
   let presetName = $state('')
   let selectedId = $state('')
   let status = $state('')
@@ -58,30 +54,17 @@
   let statusTimer: ReturnType<typeof setTimeout> | undefined
 
   // Loop pads: each slot holds a recorded loop (with the synth params it was
-  // recorded with) and plays independently. `players`/`recorder` need the synth,
-  // so they're created in onMount; `pads` is just the UI state.
-  const PAD_COUNT = 8
-  const saved = untrack(() => new Map(loops.map((l) => [l.slot, l])))
-  const loopData: (Loop | null)[] = Array.from(
-    { length: PAD_COUNT },
-    (_, slot) => saved.get(slot) ?? null
-  )
-  interface Pad {
-    filled: boolean
-    label: string
-    playing: boolean
-    pos: number
-  }
-  let pads: Pad[] = $state(
-    Array.from({ length: PAD_COUNT }, (_, slot) => {
-      const loop = saved.get(slot)
-      return {
-        filled: !!loop,
-        label: loop ? barsLabel(loop) : '',
-        playing: false,
-        pos: 0
-      }
-    })
+  // recorded with) and plays independently. The loops are in the store; `players`
+  // follow them (see syncPlayers) and need the synth, so they start in onMount.
+  // `playback` is the UI state of each pad.
+  const playback = $state(Array.from({ length: PAD_COUNT }, () => ({ playing: false, pos: 0 })))
+  const pads = $derived(
+    store.loops.map((loop, slot) => ({
+      filled: !!loop,
+      label: loop ? barsLabel(loop) : '',
+      playing: playback[slot]?.playing ?? false,
+      pos: playback[slot]?.pos ?? 0
+    }))
   )
   let recording = $state(-1) // slot being recorded, or -1
   let countingIn = $state(false) // recording armed, waiting for its first bar
@@ -89,12 +72,42 @@
   const recorder = createRecorder(transport)
   let loopTimer: ReturnType<typeof setInterval> | undefined
   const players: (null | Player)[] = []
+  // The loop each player was built from, to spot loops the store has replaced.
+  const playerLoops: (Loop | null)[] = []
 
   // "2 bars"; loops saved before tempo sync (no bpm) are measured at the current tempo.
   function barsLabel(loop: Pick<Loop, 'bpm' | 'length'>): string {
     const bars = (loop.length * (loop.bpm ?? transport.bpm)) / 60 / BEATS_PER_BAR
     const n = Math.round(bars * 10) / 10
     return `${n} bar${n === 1 ? '' : 's'}`
+  }
+
+  function setPlayback(slot: number, playing: boolean, pos = 0) {
+    const state = playback[slot]
+    if (!state) return
+    state.playing = playing
+    state.pos = pos
+  }
+
+  // Brings the players in line with the store's loops: new loops get a player,
+  // edited ones are swapped in (playing pads keep their place in the bar), and
+  // removed ones stop. Runs after every loop change, including undo and redo.
+  function syncPlayers() {
+    if (!synth) return
+    store.loops.forEach((loop, slot) => {
+      const player = players[slot]
+      if (loop === (playerLoops[slot] ?? null)) return
+      playerLoops[slot] = loop
+      if (!loop) {
+        player?.stop()
+        players[slot] = null
+        setPlayback(slot, false)
+      } else if (player) {
+        player.setLoop(loop)
+      } else if (synth) {
+        players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+      }
+    })
   }
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
@@ -124,11 +137,8 @@
     if (take && (take.length > 300 || take.events.length > 4000)) {
       showStatus('Loop too long (max 5 min / 4000 notes)')
     } else if (take && synth) {
-      const loop: Loop = { slot, ...take, params: recordParams }
-      players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
-      pads[slot] = { filled: true, label: barsLabel(loop), playing: false, pos: 0 }
-      loopData[slot] = loop
-      pushLoops()
+      store.setLoop({ slot, ...take, params: recordParams })
+      syncPlayers()
       startPad(slot) // acquires the transport before "rec" lets go, so the grid keeps running
     }
     transport.release('rec')
@@ -141,8 +151,7 @@
       if (!p) return
       if (detail.pads.includes(slot)) {
         p.start(detail.beat)
-        const pad = pads[slot]
-        if (pad) pad.playing = true
+        setPlayback(slot, true)
       } else {
         p.stopAt(detail.beat)
       }
@@ -165,46 +174,40 @@
     if (recording >= 0) recorder.note(midi, true)
   }
 
-  // Piano roll: edits one pad's loop. `rollKey` changes when a different loop is
+  // Piano roll: edits one pad's loop. `rollKey` changes when a different pad is
   // opened, which remounts the editor on it.
   let rollSlot: null | number = $state(null)
-  let rollLoop: Loop | null = $state.raw(null)
+  const rollLoop = $derived(rollSlot === null ? null : (store.loops[rollSlot] ?? null))
   let rollKey = $state(0)
 
   function closeRoll() {
     rollSlot = null
-    rollLoop = null
   }
 
   // Opens a pad in the piano roll; an empty pad gets an empty one-bar loop to draw in.
   function editPad(slot: number) {
     if (!synth || recording === slot) return
-    let loop = loopData[slot]
-    if (!loop) {
+    if (!store.loops[slot]) {
       const sound: Partial<SynthParams> = $state.snapshot(params)
       delete sound.volume
       const bpm = transport.bpm
-      loop = {
+      store.setLoop({
         bpm,
         events: [],
         length: Math.round((BEATS_PER_BAR * 60 * 1000) / bpm) / 1000,
         params: sound,
         slot
-      }
-      setLoop(slot, loop)
-      players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+      })
+      syncPlayers()
     }
     rollSlot = slot
-    rollLoop = loop
     rollKey++
   }
 
   // An edit from the piano roll: playing pads pick it up straight away.
   function onRollChange(loop: Loop) {
-    if (rollSlot === null) return
-    setLoop(rollSlot, loop)
-    players[rollSlot]?.setLoop(loop)
-    rollLoop = loop
+    store.setLoop(loop)
+    syncPlayers()
   }
 
   // Sounds a pitch with the edited loop's own synth settings.
@@ -214,10 +217,6 @@
     synth.noteOff('roll', synth.now() + 0.25)
   }
 
-  function pushLoops() {
-    onloops?.(loopData.filter((l) => l !== null))
-  }
-
   function release(midi: number) {
     if (!active.has(midi)) return
     active.delete(midi)
@@ -225,22 +224,11 @@
     if (recording >= 0) recorder.note(midi, false)
   }
 
-  function setLoop(slot: number, loop: Loop) {
-    const pad = pads[slot]
-    loopData[slot] = loop
-    pads[slot] = {
-      filled: true,
-      label: barsLabel(loop),
-      playing: pad?.playing ?? false,
-      pos: pad?.pos ?? 0
-    }
-    pushLoops()
-  }
-
   function startPad(slot: number) {
-    const pad = pads[slot]
-    players[slot]?.start()
-    if (pad) pad.playing = true
+    const player = players[slot]
+    if (!player) return
+    player.start()
+    setPlayback(slot, true)
   }
 
   // Recording starts on a bar line: after a one-bar count-in when nothing is
@@ -289,11 +277,8 @@
       transport.metronome(null)
       transport.release('rec')
     }
-    players[slot]?.stop()
-    players[slot] = null
-    pads[slot] = { filled: false, label: '', playing: false, pos: 0 }
-    loopData[slot] = null
-    pushLoops()
+    store.deleteLoop(slot)
+    syncPlayers()
   }
 
   function shiftOctave(delta: number) {
@@ -308,10 +293,7 @@
 
   function stopPad(slot: number) {
     players[slot]?.stop()
-    const pad = pads[slot]
-    if (!pad) return
-    pad.playing = false
-    pad.pos = 0
+    setPlayback(slot, false)
   }
 
   const ignored = (e: KeyboardEvent) =>
@@ -350,15 +332,13 @@
   onMount(() => {
     const created = createSynth($state.snapshot(params))
     synth = created
-    for (const [slot, loop] of saved)
-      players[slot] = createPlayer(created, `pad${slot}:`, loop, transport)
+    syncPlayers()
     loopTimer = setInterval(() => {
       // The UI follows the players: a pad stopped by a section boundary plays on until it.
       players.forEach((p, slot) => {
-        const pad = pads[slot]
-        if (!p?.playing || !pad) return
-        pad.pos = p.tick()
-        if (!p.playing) pads[slot] = { ...pad, playing: false, pos: 0 }
+        if (!p?.playing) return
+        const pos = p.tick()
+        setPlayback(slot, p.playing, p.playing ? pos : 0)
       })
       if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
     }, 25)
@@ -387,16 +367,15 @@
     }
   })
 
-  // Report settings to the song's working copy. Deliberately not debounced: effects
-  // flush in a microtask right after the edit, so the working copy is up to date
-  // before any later Save click, and Save never sees stale state.
-  // The mount run is skipped so an untouched song isn't marked dirty.
-  let firstRun = true
+  // The sound follows the store: edits, presets, undo and redo.
+  $effect(() => synth?.setParams($state.snapshot(params)))
+
+  // Loops changed in the store (undo, redo): rebuild the affected players, and
+  // close the piano roll if its loop is gone.
   $effect(() => {
-    const snapshot = $state.snapshot(params)
-    synth?.setParams(snapshot)
-    if (firstRun) return void (firstRun = false)
-    onparams?.(snapshot)
+    void store.loops
+    untrack(syncPlayers)
+    if (rollSlot !== null && !store.loops[rollSlot]) untrack(closeRoll)
   })
 
   function loadPreset(e: Event & { currentTarget: HTMLSelectElement }) {
@@ -405,13 +384,13 @@
     if (id.startsWith('factory:')) {
       const preset = FACTORY_PRESETS[Number(id.slice(8))]
       if (!preset) return
-      params = { ...DEFAULT_PARAMS, volume: params.volume, ...preset.params }
+      store.setParams({ ...DEFAULT_PARAMS, volume: params.volume, ...preset.params })
       presetName = preset.name
       return
     }
     void fetchPreset(id).then((reply) => {
       if ('error' in reply) return showStatus(reply.error)
-      params = { ...DEFAULT_PARAMS, ...reply.params }
+      store.setParams({ ...DEFAULT_PARAMS, ...reply.params })
       presetName = reply.name
     })
   }
@@ -461,7 +440,7 @@
       {max}
       {step}
       value={params[key]}
-      oninput={(e) => (params[key] = Number(e.currentTarget.value))}
+      oninput={(e) => store.setParam(key, Number(e.currentTarget.value))}
       class="w-full cursor-pointer accent-amber-400"
     />
   </label>
@@ -477,7 +456,7 @@
       <button
         type="button"
         aria-pressed={params[key] === wave}
-        onclick={() => (params[key] = wave)}
+        onclick={() => store.setParam(key, wave)}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
           params[key] === wave
@@ -528,7 +507,7 @@
       step="0.001"
       value={cutoffPos}
       oninput={(e) =>
-        (params.filter_cutoff = Math.round(20 * 900 ** Number(e.currentTarget.value)))}
+        store.setParam('filter_cutoff', Math.round(20 * 900 ** Number(e.currentTarget.value)))}
       class="w-full cursor-pointer accent-amber-400"
     />
   </label>
@@ -589,7 +568,7 @@
       id="reset-params"
       type="button"
       class={btn}
-      onclick={() => (params = { ...DEFAULT_PARAMS })}
+      onclick={() => store.setParams({ ...DEFAULT_PARAMS })}
     >
       Reset
     </button>

@@ -1,18 +1,14 @@
 <script lang="ts">
   import { goto, replaceState } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { ChevronDown, CircleAlert, Info, Play, Square, X } from '@lucide/svelte'
+  import { ChevronDown, CircleAlert, Info, Play, Redo2, Square, Undo2, X } from '@lucide/svelte'
   import { onMount, untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
 
   import type {
-    Drums,
     LoadPresetReply,
-    Loop,
     SavePresetReply,
     SaveSongReply,
-    Section,
-    SongDoc,
     StateDetail,
     SynthParams,
     WorkspaceData
@@ -20,24 +16,18 @@
 
   import Arranger from './Arranger.svelte'
   import DrumMachine from './DrumMachine.svelte'
+  import { SongStore } from './song.svelte.js'
   import Synth from './Synth.svelte'
 
   // The music workspace: synth, loop pads and drum machine, saved together as a song.
   //
-  // The instruments own the live state and report each change here, into `doc`, the
-  // unsaved working copy. Save sends `doc` to the server. `initial` is what the
-  // instruments mount with; the page remounts this whole component when a different
-  // song is opened (see the `{#key}` in the routes).
+  // The open song's working copy is a Yjs document (`store`): the instruments read
+  // it and edit it, and every edit goes through one undo history. Save sends its
+  // contents to the server. The page remounts this whole component, with a fresh
+  // store and history, when a different song is opened (see the `{#key}` in the
+  // routes).
   let { data }: { data: WorkspaceData } = $props()
   const start = untrack(() => data)
-
-  const initial: SongDoc = {
-    arrangement: start.song?.arrangement ?? [],
-    drums: start.song?.drums ?? null,
-    loops: start.song?.loops ?? [],
-    synth: start.song?.synth ?? null
-  }
-  const doc = { ...initial }
 
   let song: null | { id: string; name: string } = $state(
     start.song ? { id: start.song.id, name: start.song.name } : null
@@ -52,9 +42,27 @@
   )
   let menuOpen = $state(false)
 
-  function change<K extends keyof SongDoc>(key: K, value: SongDoc[K]) {
-    doc[key] = value
-    dirty = true
+  const store = new SongStore(start.song, () => (dirty = true))
+
+  // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
+  // field (which keeps the browser's own text undo).
+  function onUndoKey(e: KeyboardEvent) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+    const el = e.target
+    if (
+      el instanceof HTMLElement &&
+      (el.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName))
+    ) {
+      return
+    }
+    const key = e.key.toLowerCase()
+    if (key === 'z' && !e.shiftKey) {
+      e.preventDefault()
+      store.undo()
+    } else if ((key === 'z' && e.shiftKey) || key === 'y') {
+      e.preventDefault()
+      store.redo()
+    }
   }
 
   function rename(e: Event & { currentTarget: HTMLInputElement }) {
@@ -93,7 +101,7 @@
     e.preventDefault()
     if (saving) return
     saving = true
-    const body = { ...doc, name }
+    const body = { ...store.toSongDoc(), name }
     const reply = await (song
       ? request<SaveSongReply>('PUT', `/api/songs/${song.id}`, body)
       : request<SaveSongReply>('POST', '/api/songs', body))
@@ -144,9 +152,14 @@
       anyPlaying = [...playingBy.values()].some(Boolean)
     }
     window.addEventListener('beatbox:state', onState)
+    window.addEventListener('keydown', onUndoKey)
     // Ask already-mounted instruments to report in.
     window.dispatchEvent(new CustomEvent('beatbox:report', { detail: undefined }))
-    return () => window.removeEventListener('beatbox:state', onState)
+    return () => {
+      window.removeEventListener('beatbox:state', onState)
+      window.removeEventListener('keydown', onUndoKey)
+      store.doc.destroy()
+    }
   })
 </script>
 
@@ -200,6 +213,31 @@
     </button>
   </form>
 
+  <div class="flex items-center" role="group" aria-label="History">
+    <button
+      id="undo"
+      type="button"
+      aria-label="Undo"
+      title="Undo (Ctrl/Cmd+Z)"
+      disabled={!store.canUndo}
+      onclick={() => store.undo()}
+      class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+    >
+      <Undo2 class="size-4" />
+    </button>
+    <button
+      id="redo"
+      type="button"
+      aria-label="Redo"
+      title="Redo (Shift+Ctrl/Cmd+Z)"
+      disabled={!store.canRedo}
+      onclick={() => store.redo()}
+      class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+    >
+      <Redo2 class="size-4" />
+    </button>
+  </div>
+
   <a
     id="new-song"
     href={resolve('/')}
@@ -239,20 +277,9 @@
   </details>
 </div>
 
-<Synth
-  {presets}
-  params={initial.synth}
-  loops={initial.loops}
-  onparams={(params: SynthParams) => change('synth', params)}
-  onloops={(loops: Loop[]) => change('loops', loops)}
-  {savePreset}
-  {loadPreset}
-/>
-<DrumMachine drums={initial.drums} onchange={(drums: Drums) => change('drums', drums)} />
-<Arranger
-  sections={initial.arrangement}
-  onchange={(sections: Section[]) => change('arrangement', sections)}
-/>
+<Synth {store} {presets} {savePreset} {loadPreset} />
+<DrumMachine {store} />
+<Arranger {store} />
 
 {#if flash}
   <div id={'flash-' + flash.kind} role="alert" class="fixed top-4 right-4 z-50">

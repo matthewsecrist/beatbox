@@ -64,6 +64,12 @@ loops and arrangement. **Save** stores the song (a blank name becomes
 both ask first if you have unsaved changes. **Play all / Stop all** starts or
 stops the drums and every recorded pad.
 
+**Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
+cover every edit to the song: synth settings and presets, drum steps, tempo and
+level, recording or clearing a pad, piano-roll edits and the arrangement. A
+slider drag or a burst of typing is one step. The history lasts until you open
+another song; the song name keeps the browser's own text undo.
+
 ### Keyboard
 
 | Keys                                | Action                                                           |
@@ -108,6 +114,7 @@ to use another file or any libSQL URL (for example Turso, with
 | `src/routes/api/`                                      | JSON endpoints the page saves and loads through                                 |
 | `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                     |
 | `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events              |
+| `src/lib/song.svelte.ts`                               | `SongStore`: the open song as a Yjs document, with undo/redo                    |
 | `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song            |
 | `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                    |
 | `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                      |
@@ -122,10 +129,12 @@ to use another file or any libSQL URL (for example Turso, with
 
 How the pieces talk:
 
-- The instruments own the live state. They report each change to
-  `Workspace.svelte`, which keeps the unsaved working copy of the song; **Save**
-  sends it to the server, which validates and stores it.
-- Opening a song remounts the instruments with that song's state.
+- The unsaved working copy of the song is a Yjs document wrapped by `SongStore`
+  (`src/lib/song.svelte.ts`). The instruments read its reactive mirrors and change
+  the song only through its methods, so every edit lands in one `Y.UndoManager`
+  history. **Save** sends its contents to the server as JSON, which validates and
+  stores it (the database doesn't store Yjs data).
+- Opening a song remounts the page with a fresh store (and history) for it.
 - Instruments coordinate in the browser through window events:
   `beatbox:transport` for Play all / Stop all, `beatbox:scene` for arrangement
   sections, and `beatbox:state` for what's currently playing.

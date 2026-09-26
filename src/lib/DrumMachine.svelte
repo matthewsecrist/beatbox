@@ -1,26 +1,13 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte'
+  import { onMount } from 'svelte'
 
-  import type {
-    DrumPattern,
-    Drums as DrumsDoc,
-    Scene,
-    StateDetail,
-    TransportDetail
-  } from './types.js'
+  import type { SongStore } from './song.svelte.js'
+  import type { DrumPattern, Scene, StateDetail, TransportDetail } from './types.js'
 
   import { createDrums, type Drums, STEPS, TRACKS } from './drums/engine.js'
+  import { DEFAULT_PATTERN } from './song.svelte.js'
   import { transport } from './transport.js'
 
-  const row = (on: number[]): boolean[] => Array.from({ length: STEPS }, (_, i) => on.includes(i))
-  const DEFAULT_PATTERN: DrumPattern = {
-    chat: row([0, 2, 4, 6, 8, 10, 12, 14]),
-    clap: row([]),
-    kick: row([0, 4, 8, 12]),
-    ohat: row([]),
-    snare: row([4, 12]),
-    tom: row([])
-  }
   const build = (step: (id: keyof DrumPattern, i: number) => boolean): DrumPattern => {
     const pattern = { ...DEFAULT_PATTERN }
     for (const { id } of TRACKS) pattern[id] = Array.from({ length: STEPS }, (_, i) => step(id, i))
@@ -41,36 +28,24 @@
   const randomPattern = (): DrumPattern =>
     build((id, i) => (id === 'kick' && i === 0) || Math.random() < DENSITY[id])
 
-  // `drums` comes from the open song and is read once at mount; the page remounts
-  // this component when a different song is opened. Edits are reported via `onchange`.
-  let {
-    drums: songDrums = null,
-    onchange
-  }: { drums?: DrumsDoc | null; onchange?: (drums: DrumsDoc) => void } = $props()
-  const initial = untrack(() => songDrums)
-  const fromSong = (p: Partial<DrumPattern>): DrumPattern => build((id, i) => !!p[id]?.[i])
+  // Patterns, tempo and level live in the song store (and its undo history).
+  let { store }: { store: SongStore } = $props()
 
   // Patterns A-D; arrangement sections pick one by index.
-  let patterns: DrumPattern[] = $state(
-    initial
-      ? LETTERS.map((_, i) => {
-          const saved = initial.patterns[i]
-          return saved ? fromSong(saved) : empty()
-        })
-      : [clone(DEFAULT_PATTERN), empty(), empty(), empty()]
-  )
+  const patterns = $derived(store.drums.patterns)
+  const bpm = $derived(store.drums.bpm)
+  const volume = $derived(store.drums.volume)
   let editing = $state(0) // tab shown in the grid
   const shown = $derived(patterns[editing] ?? empty())
   let playingPattern = $state(-1) // pattern currently sounding, -1 when stopped
   let clipboard: DrumPattern | null = $state(null)
   let songPlaying = false // while the arrangement plays, it picks the pattern
-  let bpm = $state(initial?.bpm ?? 110)
-  let volume = $state(initial?.volume ?? 0.8)
   let playing = $state(false)
   let current = $state(-1)
   let drums: Drums | null = null
 
-  const patternFn = (i: number) => () => patterns[i] ?? {}
+  // Read on every step, so edits (and undo) are heard at once.
+  const patternFn = (i: number) => () => store.drums.patterns[i] ?? {}
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some(Boolean))
 
@@ -122,16 +97,6 @@
   }
   $effect(() => report(playing))
 
-  // Report to the song's working copy. Not debounced, so it's up to date before
-  // any later Save click (see Synth.svelte). The mount run is skipped so an
-  // untouched song isn't marked dirty.
-  let firstRun = true
-  $effect(() => {
-    const snapshot = { bpm, patterns: $state.snapshot(patterns), volume }
-    if (firstRun) return void (firstRun = false)
-    onchange?.(snapshot)
-  })
-
   // The tempo slider is the song's tempo: it drives the shared transport, so loop
   // pads follow it too. (Saved with the song as drums.bpm.)
   $effect(() => transport.setBpm(bpm))
@@ -150,7 +115,7 @@
     playing = true
   }
 
-  const setEditing = (p: DrumPattern) => (patterns[editing] = p)
+  const setEditing = (p: DrumPattern) => store.setPattern(editing, p)
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95'
@@ -187,7 +152,8 @@
         min="60"
         max="200"
         step="1"
-        bind:value={bpm}
+        value={bpm}
+        oninput={(e) => store.setDrums({ bpm: Number(e.currentTarget.value) })}
         class="w-28 cursor-pointer accent-amber-400"
       />
       <span class="w-8 font-mono text-amber-300 tabular-nums">{bpm}</span>
@@ -203,7 +169,8 @@
         min="0"
         max="1"
         step="0.01"
-        bind:value={volume}
+        value={volume}
+        oninput={(e) => store.setDrums({ volume: Number(e.currentTarget.value) })}
         class="w-24 cursor-pointer accent-amber-400"
       />
     </label>
@@ -295,7 +262,7 @@
               type="button"
               aria-label={`${track.label} step ${i + 1}`}
               aria-pressed={on}
-              onclick={() => (shown[track.id][i] = !on)}
+              onclick={() => store.toggleStep(editing, track.id, i)}
               class={[
                 'h-8 rounded transition-colors duration-75',
                 on
