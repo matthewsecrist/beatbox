@@ -196,3 +196,23 @@ test("recorder counts in, rounds the take to whole bars and closes held notes", 
   clock.now = 7 // still in the count-in
   assert.equal(rec.finish(), null)
 })
+
+test("a take stopped early in a bar keeps the notes already played in it", () => {
+  const { clock, transport } = fakeAudio()
+  const rec = createRecorder(transport)
+  transport.acquire("rec") // grid starts at 0.05 s
+  rec.start([], 0)
+
+  clock.now = 0.05
+  rec.note(60, true)
+  clock.now = 2.55 // take beat 5: a quarter into bar 2
+  rec.note(64, true)
+  clock.now = 2.65 // 5.2 beats in: rounds to 1 bar, but the note on beat 5 was meant
+
+  const take = rec.finish()
+  assert.equal(take.length, 4) // extended to 2 bars (8 beats = 4 s)
+  assert.deepEqual(
+    take.events.filter((e) => e.on).map((e) => e.midi),
+    [60, 64],
+  )
+})

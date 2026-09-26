@@ -6,6 +6,7 @@ import { BEATS_PER_BAR } from "../transport.js"
 // were recorded at (`bpm`); playback converts to beats, so loops follow tempo
 // changes and stay locked to the drums.
 export const LOOKAHEAD = 0.1
+const LATE_PRESS = 0.25 // beats (a 16th note)
 
 // Records note on/off events from `startBeat` (a bar line; notes played during a
 // count-in land on beat 0). finish() rounds the take to whole bars, drops notes
@@ -31,7 +32,14 @@ export function createRecorder(transport) {
     finish() {
       const elapsed = transport.beatAt(transport.now()) - startBeat
       if (elapsed <= 0) return null
-      const beats = Math.max(1, Math.round(elapsed / BEATS_PER_BAR)) * BEATS_PER_BAR
+      // Round to the nearest bar (a slightly late or early press lands on the bar
+      // meant), but extend to keep notes deliberately played past that point. A note
+      // within a 16th after the boundary is a late press on the next downbeat and
+      // belongs to the next cycle.
+      const rounded = Math.max(1, Math.round(elapsed / BEATS_PER_BAR)) * BEATS_PER_BAR
+      const lastOn = Math.max(-1, ...events.filter((e) => e.on).map((e) => e.beat))
+      const beats =
+        lastOn >= rounded + LATE_PRESS ? Math.floor(lastOn / BEATS_PER_BAR + 1) * BEATS_PER_BAR : rounded
       const kept = []
       const held = new Set()
       for (const e of events) {
