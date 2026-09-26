@@ -1,38 +1,64 @@
-// Loop recording/playback against the synth's audio clock. Notes are scheduled
-// LOOKAHEAD seconds ahead from a ~25 ms timer, so playback stays tight while the
-// main thread is busy.
+import { BEATS_PER_BAR } from "../transport.js"
+
+// Loop recording/playback on the shared transport's beat grid. Notes are
+// scheduled LOOKAHEAD seconds ahead from a ~25 ms timer, so playback stays tight
+// while the main thread is busy. Loops are stored in seconds plus the tempo they
+// were recorded at (`bpm`); playback converts to beats, so loops follow tempo
+// changes and stay locked to the drums.
 export const LOOKAHEAD = 0.1
 
-// Records note on/off events relative to start(); held notes at start/finish are
-// pinned to the loop edges so every "on" has a matching "off".
-export function createRecorder(synth) {
-  let start = 0
+// Records note on/off events from `startBeat` (a bar line; notes played during a
+// count-in land on beat 0). finish() rounds the take to whole bars, drops notes
+// that start past the end and closes any still held at the loop edge.
+export function createRecorder(transport) {
+  let startBeat = 0
   let events = []
 
   return {
-    start(held = []) {
-      start = synth.now()
-      events = held.map((midi) => ({ t: 0, midi, on: true }))
+    start(held = [], fromBeat = transport.nextBar()) {
+      startBeat = fromBeat
+      events = held.map((midi) => ({ beat: 0, midi, on: true }))
+    },
+    // Beat the take starts on (the count-in ends here).
+    get startBeat() {
+      return startBeat
     },
     note(midi, on) {
-      events.push({ t: round(synth.now() - start), midi, on })
+      events.push({ beat: Math.max(0, transport.beatAt(transport.now()) - startBeat), midi, on })
     },
-    // Returns { events, length } or null when nothing usable was recorded.
+    // Returns { events, length, bpm } (times in seconds at `bpm`), or null when
+    // nothing usable was recorded (still counting in, or no notes).
     finish() {
-      const length = round(synth.now() - start)
+      const elapsed = transport.beatAt(transport.now()) - startBeat
+      if (elapsed <= 0) return null
+      const beats = Math.max(1, Math.round(elapsed / BEATS_PER_BAR)) * BEATS_PER_BAR
+      const kept = []
       const held = new Set()
-      for (const e of events) e.on ? held.add(e.midi) : held.delete(e.midi)
-      for (const midi of held) events.push({ t: length, midi, on: false })
-      if (length < 0.1 || !events.some((e) => e.on)) return null
-      return { events, length }
+      for (const e of events) {
+        if (e.beat >= beats) continue
+        kept.push(e)
+        e.on ? held.add(e.midi) : held.delete(e.midi)
+      }
+      for (const midi of held) kept.push({ beat: beats, midi, on: false })
+      if (!kept.some((e) => e.on)) return null
+      const sec = (b) => round((b * 60) / transport.bpm)
+      return {
+        events: kept.map((e) => ({ t: sec(e.beat), midi: e.midi, on: e.on })),
+        length: sec(beats),
+        bpm: transport.bpm,
+      }
     },
   }
 }
 
-// Plays one loop ({ events, length, params }) on voices keyed `${prefix}${midi}`.
-export function createPlayer(synth, prefix, loop) {
+// Plays one loop ({ events, length, params, bpm }) on voices keyed `${prefix}${midi}`,
+// starting on the next bar line. Loops saved before tempo sync have no `bpm`;
+// they're taken to be at the tempo in effect when they start.
+export function createPlayer(synth, prefix, loop, transport) {
+  let lengthBeats = 0
+  let events = []
   let playing = false
-  let startTime = 0
+  let startBeat = 0
   let cycleStart = 0
   let cursor = 0
   const sounding = new Set()
@@ -42,18 +68,22 @@ export function createPlayer(synth, prefix, loop) {
       return playing
     },
     start() {
+      const toBeats = (loop.bpm ?? transport.bpm) / 60
+      lengthBeats = loop.length * toBeats
+      events = loop.events.map((e) => ({ ...e, beat: e.t * toBeats }))
+      transport.acquire(prefix)
       playing = true
-      startTime = cycleStart = synth.now() + 0.05
+      startBeat = cycleStart = transport.nextBar()
       cursor = 0
       this.tick()
     },
     // Schedules everything due before now + LOOKAHEAD; returns loop position 0..1.
     tick() {
-      if (!playing || loop.events.length === 0) return 0
-      const now = synth.now()
+      if (!playing || events.length === 0) return 0
+      const now = transport.now()
       for (;;) {
-        const e = loop.events[cursor]
-        const at = cycleStart + e.t
+        const e = events[cursor]
+        const at = transport.timeAt(cycleStart + e.beat)
         if (at >= now + LOOKAHEAD) break
         const key = prefix + e.midi
         if (e.on) {
@@ -63,12 +93,13 @@ export function createPlayer(synth, prefix, loop) {
           synth.noteOff(key, at)
           sounding.delete(key)
         }
-        if (++cursor === loop.events.length) {
+        if (++cursor === events.length) {
           cursor = 0
-          cycleStart += loop.length
+          cycleStart += lengthBeats
         }
       }
-      return Math.max(0, (now - startTime) % loop.length) / loop.length
+      const into = transport.beatAt(now) - startBeat
+      return into <= 0 ? 0 : (into % lengthBeats) / lengthBeats
     },
     // Releases held loop notes and silences any note scheduled but not yet started,
     // including ones whose note-off was already scheduled inside the lookahead.
@@ -78,6 +109,7 @@ export function createPlayer(synth, prefix, loop) {
       synth.cancelPending((key) => typeof key === "string" && key.startsWith(prefix))
       for (const key of sounding) synth.noteOff(key)
       sounding.clear()
+      transport.release(prefix)
     },
   }
 }

@@ -1,3 +1,6 @@
+import { getContext } from "../audio.js"
+import { transport as sharedTransport } from "../transport.js"
+
 export const TRACKS = [
   { id: "kick", label: "Kick" },
   { id: "snare", label: "Snare" },
@@ -13,19 +16,19 @@ const SCHEDULE_AHEAD = 0.1
 
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
 // so timing stays tight even when the main thread stutters.
-export function createDrums({ onStep }) {
+export function createDrums({ onStep, transport = sharedTransport, getCtx = getContext }) {
   let ctx, master, noise, timer, raf
   let volume = 0.8
-  let bpm = 110
+  let running = false
   let nextStep = 0
-  let nextTime = 0
+  let nextBeat = 0 // step times come from the shared transport grid (4 steps per beat)
   let getPattern = () => ({})
   const pending = new Map() // source -> start time; lets stop() silence lookahead hits
   const queue = []
 
   function ensureContext() {
-    if (!ctx) {
-      ctx = new AudioContext()
+    ctx = getCtx()
+    if (!master) {
       master = ctx.createGain()
       master.gain.value = volume
       master.connect(ctx.destination)
@@ -33,7 +36,6 @@ export function createDrums({ onStep }) {
       const data = noise.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
     }
-    if (ctx.state === "suspended") ctx.resume()
   }
 
   function env(t, peak, decay) {
@@ -91,11 +93,13 @@ export function createDrums({ onStep }) {
   }
 
   function schedule() {
-    while (nextTime < ctx.currentTime + SCHEDULE_AHEAD) {
+    for (;;) {
+      const t = transport.timeAt(nextBeat)
+      if (t >= ctx.currentTime + SCHEDULE_AHEAD) break
       const pattern = getPattern()
-      for (const { id } of TRACKS) if (pattern[id]?.[nextStep]) VOICES[id](nextTime)
-      queue.push({ step: nextStep, time: nextTime })
-      nextTime += 60 / bpm / 4
+      for (const { id } of TRACKS) if (pattern[id]?.[nextStep]) VOICES[id](t)
+      queue.push({ step: nextStep, time: t })
+      nextBeat += 4 / STEPS
       nextStep = (nextStep + 1) % STEPS
     }
   }
@@ -105,21 +109,27 @@ export function createDrums({ onStep }) {
     raf = requestAnimationFrame(draw)
   }
 
+  // Starts on the next bar line (or at once if nothing else is playing).
   function start(patternFn) {
     ensureContext()
+    transport.acquire("drums")
+    running = true
     getPattern = patternFn
     nextStep = 0
-    nextTime = ctx.currentTime + 0.05
+    nextBeat = transport.nextBar()
     schedule()
     timer = setInterval(schedule, LOOKAHEAD_MS)
     raf = requestAnimationFrame(draw)
   }
 
   function stop() {
+    if (!running) return
+    running = false
     clearInterval(timer)
     cancelAnimationFrame(raf)
     queue.length = 0
     for (const [src, t] of pending) if (t > ctx.currentTime) src.disconnect()
+    transport.release("drums")
     onStep(-1)
   }
 
@@ -128,20 +138,17 @@ export function createDrums({ onStep }) {
     VOICES[id](ctx.currentTime)
   }
 
-  function setBpm(v) {
-    bpm = v
-  }
-
   function setVolume(v) {
     volume = v
-    if (ctx) master.gain.setTargetAtTime(v, ctx.currentTime, 0.01)
+    if (master) master.gain.setTargetAtTime(v, ctx.currentTime, 0.01)
   }
 
+  // Detach from the shared AudioContext (it outlives this component).
   function close() {
     stop()
-    ctx?.close()
-    ctx = null
+    master?.disconnect()
+    master = null
   }
 
-  return { start, stop, trigger, setBpm, setVolume, close }
+  return { start, stop, trigger, setVolume, close }
 }

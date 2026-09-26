@@ -3,6 +3,7 @@
   import { SvelteSet } from "svelte/reactivity"
   import { DEFAULT_PARAMS, createSynth } from "./synth/engine.js"
   import { createPlayer, createRecorder } from "./synth/looper.js"
+  import { BEATS_PER_BAR, transport } from "./transport.js"
   import { FACTORY_PRESETS } from "./synth/factory_presets.js"
 
   // `params`/`loops` come from the open song and are read once at mount; the page
@@ -28,16 +29,24 @@
   let pads = $state(
     Array.from({ length: PAD_COUNT }, (_, slot) => ({
       filled: saved.has(slot),
-      length: saved.get(slot)?.length ?? 0,
+      label: saved.has(slot) ? barsLabel(saved.get(slot)) : "",
       playing: false,
       pos: 0,
     })),
   )
   let recording = $state(-1) // slot being recorded, or -1
+  let countingIn = $state(false) // recording armed, waiting for its first bar
   let recordParams = null
-  let recorder = null
+  const recorder = createRecorder(transport)
   let loopTimer
   const players = []
+
+  // "2 bars"; loops saved before tempo sync (no bpm) are measured at the current tempo.
+  function barsLabel(loop) {
+    const bars = (loop.length * (loop.bpm ?? transport.bpm)) / 60 / BEATS_PER_BAR
+    const n = Math.round(bars * 10) / 10
+    return `${n} bar${n === 1 ? "" : "s"}`
+  }
 
   const WAVES = ["sine", "triangle", "sawtooth", "square"]
   const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -78,28 +87,38 @@
     players[slot].playing ? stopPad(slot) : startPad(slot)
   }
 
+  // Recording starts on a bar line: after a one-bar count-in when nothing is
+  // playing, else at the next bar. The metronome clicks until it's finished.
   function startRecording(slot) {
     if (recording >= 0) finishRecording()
-    recorder.start([...active])
+    const counting = !transport.running
+    transport.acquire("rec")
+    recorder.start([...active], counting ? BEATS_PER_BAR : transport.nextBar())
+    transport.metronome(0)
     // Master volume stays a global control, so a loop doesn't pin its own level.
     const { volume, ...sound } = $state.snapshot(params)
     recordParams = sound
     recording = slot
+    countingIn = true
   }
 
   function finishRecording() {
     const slot = recording
     recording = -1
+    transport.metronome(null)
     const take = recorder.finish()
-    if (!take) return
     // Mirror the Loop resource limits so one bad take can't block saving the song.
-    if (take.length > 300 || take.events.length > 4000) return showStatus("Loop too long (max 5 min / 4000 notes)")
-    const loop = { slot, ...take, params: recordParams }
-    players[slot] = createPlayer(synth, `pad${slot}:`, loop)
-    pads[slot] = { filled: true, length: loop.length, playing: false, pos: 0 }
-    loopData[slot] = loop
-    pushLoops()
-    startPad(slot)
+    if (take && (take.length > 300 || take.events.length > 4000)) {
+      showStatus("Loop too long (max 5 min / 4000 notes)")
+    } else if (take) {
+      const loop = { slot, ...take, params: recordParams }
+      players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+      pads[slot] = { filled: true, label: barsLabel(loop), playing: false, pos: 0 }
+      loopData[slot] = loop
+      pushLoops()
+      startPad(slot) // acquires the transport before "rec" lets go, so the grid keeps running
+    }
+    transport.release("rec")
   }
 
   function pushLoops() {
@@ -132,10 +151,14 @@
   }
 
   function clearPad(slot) {
-    if (recording === slot) recording = -1
+    if (recording === slot) {
+      recording = -1
+      transport.metronome(null)
+      transport.release("rec")
+    }
     players[slot]?.stop()
     players[slot] = null
-    pads[slot] = { filled: false, length: 0, playing: false, pos: 0 }
+    pads[slot] = { filled: false, label: "", playing: false, pos: 0 }
     loopData[slot] = null
     pushLoops()
   }
@@ -182,10 +205,10 @@
 
   onMount(() => {
     synth = createSynth($state.snapshot(params))
-    recorder = createRecorder(synth)
-    for (const [slot, loop] of saved) players[slot] = createPlayer(synth, `pad${slot}:`, loop)
+    for (const [slot, loop] of saved) players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
     loopTimer = setInterval(() => {
       players.forEach((p, slot) => p?.playing && (pads[slot].pos = p.tick()))
+      if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
     }, 25)
     window.addEventListener("keydown", onKeyDown)
     window.addEventListener("keyup", onKeyUp)
@@ -202,6 +225,10 @@
       clearTimeout(statusTimer)
       clearInterval(loopTimer)
       players.forEach((p) => p?.stop())
+      if (recording >= 0) {
+        transport.metronome(null)
+        transport.release("rec")
+      }
       synth.close()
     }
   })
@@ -434,7 +461,7 @@
           >
             <span class="font-mono text-lg">{slot + 1}</span>
             <span class="text-[10px] uppercase tracking-wider opacity-80">
-              {recording === slot ? "Done" : pad.filled ? pad.length.toFixed(1) + "s" : "Rec"}
+              {recording === slot ? (countingIn ? "Count-in" : "Done") : pad.filled ? pad.label : "Rec"}
             </span>
             {#if pad.playing}
               <span class="absolute inset-x-0 bottom-0 h-1 bg-amber-400" style="width: {pad.pos * 100}%"></span>

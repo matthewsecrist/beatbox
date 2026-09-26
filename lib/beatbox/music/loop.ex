@@ -14,6 +14,10 @@ defmodule Beatbox.Music.Loop do
       public?: true,
       constraints: [min: 0.1, max: 300.0]
 
+    # Tempo the loop was recorded at; playback converts to beats so the loop follows
+    # the song tempo. nil for loops recorded before tempo sync.
+    attribute :bpm, :integer, public?: true, constraints: [min: 60, max: 200]
+
     attribute :events, {:array, :map},
       allow_nil?: false,
       public?: true,

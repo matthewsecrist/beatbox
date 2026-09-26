@@ -1,3 +1,5 @@
+import { getContext } from "../audio.js"
+
 export const DEFAULT_PARAMS = {
   osc1_wave: "sawtooth", osc1_octave: 0, osc1_detune: 0, osc1_level: 0.6,
   osc2_wave: "square", osc2_octave: -1, osc2_detune: 7, osc2_level: 0.4,
@@ -12,7 +14,7 @@ const HEADROOM = 0.3
 
 const freq = (midi, octave) => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
 
-export function createSynth(initialParams) {
+export function createSynth(initialParams, getCtx = getContext) {
   let params = { ...DEFAULT_PARAMS, ...initialParams }
   let ctx = null
   let master = null
@@ -20,13 +22,12 @@ export function createSynth(initialParams) {
   const alive = new Set() // every voice until its oscillators end, released or not
 
   function ensureContext() {
-    if (!ctx) {
-      ctx = new AudioContext()
+    ctx = getCtx()
+    if (!master) {
       master = ctx.createGain()
       master.gain.value = params.volume
       master.connect(ctx.destination)
     }
-    if (ctx.state === "suspended") ctx.resume()
   }
 
   function applyOsc(osc, gain, n, midi, smooth, p = params) {
@@ -162,9 +163,10 @@ export function createSynth(initialParams) {
     }
   }
 
-  // Release the AudioContext (browsers cap how many can exist at once).
+  // Detach from the shared AudioContext (it outlives this component).
   function close() {
-    ctx?.close()
+    master?.disconnect()
+    master = null
     ctx = null
     voices.clear()
     alive.clear()

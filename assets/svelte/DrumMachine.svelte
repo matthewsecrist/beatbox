@@ -1,6 +1,7 @@
 <script>
   import { onMount, untrack } from "svelte"
   import { STEPS, TRACKS, createDrums } from "./drums/engine.js"
+  import { transport } from "./transport.js"
 
   const row = (on) => Array.from({ length: STEPS }, (_, i) => on.includes(i))
   const DEFAULT_PATTERN = {
@@ -60,7 +61,9 @@
     live.pushEvent("update_drums", { drums: snapshot })
   })
 
-  $effect(() => drums?.setBpm(bpm))
+  // The tempo slider is the song's tempo: it drives the shared transport, so loop
+  // pads follow it too. (Saved with the song as drums.bpm.)
+  $effect(() => transport.setBpm(bpm))
   $effect(() => drums?.setVolume(volume))
 
   function toggle() {
@@ -90,8 +93,8 @@
     >
       {playing ? "Stop" : "Play"}
     </button>
-    <label class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400" for="drums-bpm">
-      BPM
+    <label class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400" for="drums-bpm" title="Song tempo — loops follow it too">
+      Tempo
       <input
         id="drums-bpm"
         type="range"
