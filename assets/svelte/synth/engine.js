@@ -2,6 +2,7 @@ export const DEFAULT_PARAMS = {
   osc1_wave: "sawtooth", osc1_octave: 0, osc1_detune: 0, osc1_level: 0.6,
   osc2_wave: "square", osc2_octave: -1, osc2_detune: 7, osc2_level: 0.4,
   filter_cutoff: 2400, filter_resonance: 4,
+  lfo_rate: 4, lfo_depth: 0, // LFO sweeps the filter cutoff; depth in octaves
   attack: 0.01, decay: 0.3, sustain: 0.6, release: 0.5,
   volume: 0.7,
 }
@@ -66,8 +67,7 @@ export function createSynth(initialParams) {
     g.cancelScheduledValues(t)
     g.setValueAtTime(envAt(v, t), t)
     g.linearRampToValueAtTime(0, t + time)
-    v.osc1.stop(t + time + 0.05)
-    v.osc2.stop(t + time + 0.05)
+    for (const s of v.srcs) s.stop(t + time + 0.05)
   }
 
   // `at` is an AudioContext time (defaults to now); `key` lets loop voices coexist
@@ -87,6 +87,9 @@ export function createSynth(initialParams) {
     const g2 = ctx.createGain()
     const filter = ctx.createBiquadFilter()
     const amp = ctx.createGain()
+    // Per-voice LFO so each note's wobble starts from the same phase.
+    const lfo = ctx.createOscillator()
+    const lfoDepth = ctx.createGain()
 
     applyOsc(osc1, g1, 1, midi, false, p)
     applyOsc(osc2, g2, 2, midi, false, p)
@@ -97,19 +100,22 @@ export function createSynth(initialParams) {
     osc1.connect(g1).connect(filter)
     osc2.connect(g2).connect(filter)
     filter.connect(amp).connect(master)
+    lfo.frequency.value = p.lfo_rate
+    lfoDepth.gain.value = p.lfo_depth * 1200
+    lfo.connect(lfoDepth).connect(filter.detune) // cents: 1200 per octave
 
     const { attack, decay, sustain } = p
     amp.gain.setValueAtTime(0, t)
     amp.gain.linearRampToValueAtTime(HEADROOM, t + attack)
     amp.gain.linearRampToValueAtTime(HEADROOM * sustain, t + attack + decay)
 
-    const v = { key, midi, own: !!own, release: p.release, t0: t, attack, decay, sustain, osc1, osc2, g1, g2, filter, amp }
+    const srcs = [osc1, osc2, lfo]
+    const v = { key, midi, own: !!own, release: p.release, t0: t, attack, decay, sustain, srcs, osc1, osc2, g1, g2, filter, amp, lfo, lfoDepth }
     osc1.onended = () => {
       alive.delete(v)
-      ;[osc1, osc2, g1, g2, filter, amp].forEach((n) => n.disconnect())
+      ;[...srcs, g1, g2, filter, amp, lfoDepth].forEach((n) => n.disconnect())
     }
-    osc1.start(t)
-    osc2.start(t)
+    for (const s of srcs) s.start(t)
 
     alive.add(v)
     voices.set(key, v)
@@ -131,8 +137,7 @@ export function createSynth(initialParams) {
       if (v.t0 <= ctx.currentTime || !match(v.key)) continue
       if (voices.get(v.key) === v) voices.delete(v.key)
       v.amp.disconnect()
-      v.osc1.stop(v.t0)
-      v.osc2.stop(v.t0)
+      for (const s of v.srcs) s.stop(v.t0)
     }
   }
 
@@ -150,6 +155,8 @@ export function createSynth(initialParams) {
       if (v.own) continue
       v.filter.frequency.setTargetAtTime(params.filter_cutoff, t, 0.01)
       v.filter.Q.setTargetAtTime(params.filter_resonance, t, 0.01)
+      v.lfo.frequency.setTargetAtTime(params.lfo_rate, t, 0.01)
+      v.lfoDepth.gain.setTargetAtTime(params.lfo_depth * 1200, t, 0.01)
       applyOsc(v.osc1, v.g1, 1, v.midi, true)
       applyOsc(v.osc2, v.g2, 2, v.midi, true)
     }

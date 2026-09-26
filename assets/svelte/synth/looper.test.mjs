@@ -4,6 +4,8 @@ import assert from "node:assert/strict"
 import { createSynth } from "./engine.js"
 import { createPlayer, createRecorder } from "./looper.js"
 
+const OSCS_PER_VOICE = 3 // osc1, osc2, filter LFO; osc1 of voice n is oscs[n * 3]
+
 // Minimal AudioContext stand-in with a hand-driven clock; records oscillator
 // start/stop and amp disconnects so we can see what would actually sound.
 function fakeAudio() {
@@ -100,7 +102,7 @@ test("stop silences loop notes already scheduled inside the lookahead, but not l
   const player = createPlayer(synth, "pad1:", loop)
   player.start() // note-on at 0.06 and note-off at 0.08 both scheduled now
 
-  const [liveOsc, loopOsc] = [oscs[0], oscs[2]]
+  const [liveOsc, loopOsc] = [oscs[0], oscs[OSCS_PER_VOICE]]
   assert.equal(+loopOsc.startAt.toFixed(3), 0.06)
 
   clock.now = 0.02
@@ -118,7 +120,7 @@ test("stopping one pad leaves another pad on the same pitch playing", () => {
   const pad1 = createPlayer(synth, "pad1:", loop)
   pad0.start()
   pad1.start() // both note-ons scheduled at 0.06, not yet started
-  const [osc0, osc1] = [oscs[0], oscs[2]]
+  const [osc0, osc1] = [oscs[0], oscs[OSCS_PER_VOICE]]
 
   clock.now = 0.02
   pad0.stop()
@@ -129,7 +131,7 @@ test("stopping one pad leaves another pad on the same pitch playing", () => {
   clock.now = 0.3
   pad1.tick()
   pad0.tick()
-  assert.equal(oscs.length, 4, "stopped pad schedules nothing further")
+  assert.equal(oscs.length, 2 * OSCS_PER_VOICE, "stopped pad schedules nothing further")
 })
 
 test("recorder pins held notes to the loop edges and rejects empty takes", () => {

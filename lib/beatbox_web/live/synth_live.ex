@@ -1,7 +1,7 @@
 defmodule BeatboxWeb.SynthLive do
   use BeatboxWeb, :live_view
 
-  @param_keys ~w(osc1_wave osc1_octave osc1_detune osc1_level osc2_wave osc2_octave osc2_detune osc2_level filter_cutoff filter_resonance attack decay sustain release volume)
+  @param_keys ~w(osc1_wave osc1_octave osc1_detune osc1_level osc2_wave osc2_octave osc2_detune osc2_level filter_cutoff filter_resonance lfo_rate lfo_depth attack decay sustain release volume)
 
   @impl true
   def mount(_params, _session, socket) do

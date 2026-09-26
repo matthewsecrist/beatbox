@@ -3,6 +3,7 @@
   import { SvelteSet } from "svelte/reactivity"
   import { DEFAULT_PARAMS, createSynth } from "./synth/engine.js"
   import { createPlayer, createRecorder } from "./synth/looper.js"
+  import { FACTORY_PRESETS } from "./synth/factory_presets.js"
 
   let { presets = [], loops = [], live } = $props()
 
@@ -193,6 +194,12 @@
   function loadPreset(e) {
     const id = e.currentTarget.value
     if (!id) return
+    if (id.startsWith("factory:")) {
+      const preset = FACTORY_PRESETS[Number(id.slice(8))]
+      params = { ...DEFAULT_PARAMS, volume: params.volume, ...preset.params }
+      presetName = preset.name
+      return
+    }
     live.pushEvent("load_preset", { id }, (reply) => {
       if (reply.params) {
         params = { ...DEFAULT_PARAMS, ...reply.params }
@@ -217,6 +224,8 @@
   const fmtInt = (v) => (v > 0 ? "+" : "") + v
   const fmtCents = (v) => fmtInt(v) + "¢"
   const fmtNum = (v) => Number(v).toFixed(1)
+  const fmtRate = (v) => Number(v).toFixed(1) + " Hz"
+  const fmtOct = (v) => (v === 0 ? "off" : Number(v).toFixed(2) + " oct")
 
   const btn =
     "rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
@@ -296,6 +305,8 @@
     />
   </label>
   {@render slider("filter_resonance", "Resonance", 0, 20, 0.1, fmtNum)}
+  {@render slider("lfo_rate", "LFO rate", 0.1, 20, 0.1, fmtRate)}
+  {@render slider("lfo_depth", "LFO depth", 0, 4, 0.05, fmtOct)}
 {/snippet}
 
 {#snippet envelope()}
@@ -314,9 +325,18 @@
       class="min-w-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none"
     >
       <option value="">Load preset…</option>
-      {#each presets as preset (preset.id)}
-        <option value={preset.id}>{preset.name}</option>
-      {/each}
+      <optgroup label="Factory">
+        {#each FACTORY_PRESETS as preset, i}
+          <option value={"factory:" + i}>{preset.name}</option>
+        {/each}
+      </optgroup>
+      {#if presets.length}
+        <optgroup label="Saved">
+          {#each presets as preset (preset.id)}
+            <option value={preset.id}>{preset.name}</option>
+          {/each}
+        </optgroup>
+      {/if}
     </select>
     <input
       id="preset-name"
