@@ -93,7 +93,8 @@
   // edited ones are swapped in (playing pads keep their place in the bar), and
   // removed ones stop. Runs after every loop change, including undo and redo.
   function syncPlayers() {
-    if (!synth) return
+    const s = synth
+    if (!s) return
     store.loops.forEach((loop, slot) => {
       const player = players[slot]
       if (loop === (playerLoops[slot] ?? null)) return
@@ -104,8 +105,8 @@
         setPlayback(slot, false)
       } else if (player) {
         player.setLoop(loop)
-      } else if (synth) {
-        players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+      } else {
+        players[slot] = createPlayer(s, `pad${slot}:`, loop, transport)
       }
     })
   }
@@ -198,7 +199,6 @@
         params: sound,
         slot
       })
-      syncPlayers()
     }
     rollSlot = slot
     rollKey++
@@ -207,7 +207,6 @@
   // An edit from the piano roll: playing pads pick it up straight away.
   function onRollChange(loop: Loop) {
     store.setLoop(loop)
-    syncPlayers()
   }
 
   // Sounds a pitch with the edited loop's own synth settings.
@@ -278,7 +277,6 @@
       transport.release('rec')
     }
     store.deleteLoop(slot)
-    syncPlayers()
   }
 
   function shiftOctave(delta: number) {

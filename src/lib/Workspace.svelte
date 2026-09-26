@@ -158,7 +158,6 @@
     return () => {
       window.removeEventListener('beatbox:state', onState)
       window.removeEventListener('keydown', onUndoKey)
-      store.doc.destroy()
     }
   })
 </script>

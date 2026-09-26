@@ -2,7 +2,8 @@ import { expect, test, vi } from 'vitest'
 
 import type { Loop, SongDoc } from './types.js'
 
-import { DEFAULT_BPM, DEFAULT_PATTERN, emptyPattern, SongStore } from './song.svelte.js'
+import { STEPS, TRACKS } from './drums/engine.js'
+import { DEFAULT_PATTERN, SongStore } from './song.svelte.js'
 
 const loop = (slot: number, midi = 60): Loop => ({
   bpm: 120,
@@ -43,9 +44,11 @@ test('a new song starts with default drums and nothing to undo', () => {
   const onchange = vi.fn()
   const store = new SongStore(null, onchange)
 
-  expect(store.drums.bpm).toBe(DEFAULT_BPM)
+  expect(store.drums.bpm).toBe(110)
   expect(store.drums.patterns[0]).toStrictEqual(DEFAULT_PATTERN)
-  expect(store.drums.patterns[3]).toStrictEqual(emptyPattern())
+  expect(store.drums.patterns[3]).toStrictEqual(
+    Object.fromEntries(TRACKS.map(({ id }) => [id, Array<boolean>(STEPS).fill(false)]))
+  )
   expect(store.toSongDoc().synth).toBe(null)
   expect(store.canUndo).toBe(false)
   expect(onchange).not.toHaveBeenCalled()

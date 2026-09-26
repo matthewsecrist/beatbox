@@ -39,7 +39,7 @@
 
   function play() {
     say('beatbox:transport', { play: false }) // start from a clean slate
-    position = arranger.start(sections.map((s) => ({ ...s, pads: [...s.pads] })))
+    position = arranger.start(sections)
     timer = setInterval(() => (position = arranger.tick() ?? position), 25)
   }
 

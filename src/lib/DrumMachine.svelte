@@ -13,7 +13,6 @@
     for (const { id } of TRACKS) pattern[id] = Array.from({ length: STEPS }, (_, i) => step(id, i))
     return pattern
   }
-  const clone = (p: DrumPattern): DrumPattern => build((id, i) => p[id][i] ?? false)
   const empty = (): DrumPattern => build(() => false)
   const LETTERS = ['A', 'B', 'C', 'D']
   // Per-track hit probability; kick always lands on the downbeat so it still grooves.
@@ -208,12 +207,7 @@
       {/each}
     </div>
     <span class="mr-auto text-xs text-zinc-500">Editing {LETTERS[editing]}</span>
-    <button
-      id="drums-copy"
-      type="button"
-      class={btn}
-      onclick={() => (clipboard = clone($state.snapshot(shown)))}
-    >
+    <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = shown)}>
       Copy
     </button>
     <button
@@ -221,7 +215,7 @@
       type="button"
       class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
       disabled={!clipboard}
-      onclick={() => clipboard && setEditing(clone(clipboard))}
+      onclick={() => clipboard && setEditing(clipboard)}
     >
       Paste
     </button>
@@ -236,12 +230,7 @@
     >
       Randomize
     </button>
-    <button
-      id="drums-reset"
-      type="button"
-      class={btn}
-      onclick={() => setEditing(clone(DEFAULT_PATTERN))}
-    >
+    <button id="drums-reset" type="button" class={btn} onclick={() => setEditing(DEFAULT_PATTERN)}>
       Reset
     </button>
   </div>
