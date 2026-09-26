@@ -28,11 +28,15 @@ defmodule Beatbox.MusicTest do
       "events" => [%{"t" => 0, "midi" => 64, "on" => true}]
     }
 
-    drums = %{"bpm" => 140, "volume" => 0.5, "pattern" => %{"kick" => [true, false]}}
+    drums = %{"bpm" => 140, "volume" => 0.5, "patterns" => [%{"kick" => [true, false]}]}
 
     song = Music.create_song!(%{name: "Jam", loops: [loop], drums: drums})
 
-    assert {:ok, %{loops: [%{slot: 3, events: [%{midi: 64}]}], drums: %{bpm: 140}}} =
+    assert {:ok,
+            %{
+              loops: [%{slot: 3, events: [%{midi: 64}]}],
+              drums: %{bpm: 140, patterns: [%{kick: [true, false]}]}
+            }} =
              Music.get_song(song.id)
 
     bad_note = put_in(loop, ["events"], [%{"t" => 0, "midi" => 128, "on" => true}])
@@ -40,6 +44,14 @@ defmodule Beatbox.MusicTest do
 
     assert {:error, %Ash.Error.Invalid{}} =
              Music.update_song(song, %{arrangement: [%{"bars" => 4, "pads" => [8]}]})
+
+    assert {:error, %Ash.Error.Invalid{}} =
+             Music.update_song(song, %{
+               arrangement: [%{"bars" => 4, "drums" => true, "pattern" => 4}]
+             })
+
+    assert {:error, %Ash.Error.Invalid{}} =
+             Music.update_song(song, %{drums: %{drums | "patterns" => List.duplicate(%{}, 5)}})
 
     assert {:error, %Ash.Error.Invalid{}} =
              Music.update_song(song, %{loops: [%{loop | "slot" => 8}]})

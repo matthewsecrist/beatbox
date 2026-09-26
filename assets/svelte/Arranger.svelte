@@ -9,7 +9,10 @@
 
   const PADS = 8
   const MAX_BARS = 64
-  let sections = $state(untrack(() => songSections.map((s) => ({ name: s.name ?? "", bars: s.bars, drums: s.drums, pads: [...s.pads] }))))
+  const DRUM_PATTERNS = ["A", "B", "C", "D"]
+  let sections = $state(
+    untrack(() => songSections.map((s) => ({ name: s.name ?? "", bars: s.bars, drums: s.drums, pattern: s.pattern ?? 0, pads: [...s.pads] }))),
+  )
   let position = $state(null) // { index, bar } while the song plays
   let timer
 
@@ -39,7 +42,8 @@
     finished()
   }
 
-  // Global Stop all (song bar) stops the song too.
+  // Stop song and the global Stop all both send this: it stops the instruments and,
+  // via this handler, the song.
   const onTransport = (e) => !e.detail.play && position && stop()
   const report = (on) => say("beatbox:state", { source: "song", playing: on })
   const onReport = () => report(!!position)
@@ -67,7 +71,11 @@
 
   function addSection() {
     const last = sections.at(-1)
-    sections.push(last ? { name: "", bars: last.bars, drums: last.drums, pads: [...last.pads] } : { name: "", bars: 4, drums: true, pads: [] })
+    sections.push(
+      last
+        ? { name: "", bars: last.bars, drums: last.drums, pattern: last.pattern, pads: [...last.pads] }
+        : { name: "", bars: 4, drums: true, pattern: 0, pads: [] },
+    )
   }
 
   function move(i, delta) {
@@ -101,7 +109,7 @@
       type="button"
       disabled={sections.length === 0}
       aria-pressed={!!position}
-      onclick={() => (position ? stop() : play())}
+      onclick={() => (position ? say("beatbox:transport", { play: false }) : play())}
       class={[
         "rounded-md px-4 py-1.5 text-sm font-semibold transition active:scale-95 disabled:pointer-events-none disabled:opacity-40",
         position ? "bg-zinc-100 text-zinc-900 hover:bg-white" : "bg-emerald-500 text-zinc-950 shadow shadow-emerald-500/20 hover:bg-emerald-400",
@@ -149,7 +157,23 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-1" role="group" aria-label="Playing in this section">
-          <button type="button" class={chip(section.drums)} aria-pressed={section.drums} onclick={() => (section.drums = !section.drums)}>Drums</button>
+          <div class="mr-1 flex items-center gap-0.5 rounded-md bg-zinc-950/60 p-0.5" role="group" aria-label="Drum pattern">
+            <span class="px-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Drums</span>
+            <button type="button" class={chip(!section.drums)} aria-pressed={!section.drums} aria-label="No drums" onclick={() => (section.drums = false)}>–</button>
+            {#each DRUM_PATTERNS as letter, p}
+              {@const on = section.drums && section.pattern === p}
+              <button
+                type="button"
+                class={chip(on)}
+                aria-pressed={on}
+                aria-label={"Drum pattern " + letter}
+                onclick={() => {
+                  section.drums = true
+                  section.pattern = p
+                }}>{letter}</button
+              >
+            {/each}
+          </div>
           {#each { length: PADS } as _, slot}
             <button
               type="button"

@@ -13,6 +13,8 @@
     tom: row([]),
   }
   const clone = (p) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, [...v]]))
+  const empty = () => Object.fromEntries(TRACKS.map(({ id }) => [id, row([])]))
+  const LETTERS = ["A", "B", "C", "D"]
   // Per-track hit probability; kick always lands on the downbeat so it still grooves.
   const DENSITY = { kick: 0.3, snare: 0.2, clap: 0.1, chat: 0.55, ohat: 0.1, tom: 0.1 }
   const randomPattern = () =>
@@ -26,22 +28,40 @@
   const initial = untrack(() => songDrums)
   const fromSong = (p) => Object.fromEntries(TRACKS.map(({ id }) => [id, Array.from({ length: STEPS }, (_, i) => !!p?.[id]?.[i])]))
 
-  let pattern = $state(initial ? fromSong(initial.pattern) : clone(DEFAULT_PATTERN))
+  // Patterns A-D; arrangement sections pick one by index.
+  let patterns = $state(
+    initial ? LETTERS.map((_, i) => (initial.patterns?.[i] ? fromSong(initial.patterns[i]) : empty())) : [clone(DEFAULT_PATTERN), empty(), empty(), empty()],
+  )
+  let editing = $state(0) // tab shown in the grid
+  let playingPattern = $state(-1) // pattern currently sounding, -1 when stopped
+  let clipboard = $state(null)
+  let songPlaying = false // while the arrangement plays, it picks the pattern
   let bpm = $state(initial?.bpm ?? 110)
   let volume = $state(initial?.volume ?? 0.8)
   let playing = $state(false)
   let current = $state(-1)
   let drums = null
 
+  const patternFn = (i) => () => patterns[i]
+  const isEmpty = (p) => Object.values(p).every((steps) => !steps.some(Boolean))
+
   onMount(() => {
-    drums = createDrums({ onStep: (s) => (current = s), onStop: () => (playing = false) })
+    drums = createDrums({
+      onStep: (s) => (current = s),
+      onStop: () => {
+        playing = false
+        playingPattern = -1
+      },
+      onPattern: (i) => (playingPattern = i),
+    })
     // Global Play all / Stop all (song bar) and its state reports.
     const onTransport = (e) => e.detail.play !== playing && toggle()
     const onReport = () => report(playing)
+    const onState = ({ detail }) => detail.source === "song" && (songPlaying = detail.playing)
     // Arrangement scene: play or stop from the section boundary beat.
     const onScene = ({ detail }) => {
       if (detail.drums) {
-        drums.start(() => pattern, detail.beat)
+        drums.start(patternFn(detail.pattern), detail.beat, detail.pattern)
         playing = true
       } else {
         drums.stopAt(detail.beat) // `playing` goes false via onStop on that beat
@@ -50,10 +70,12 @@
     window.addEventListener("beatbox:transport", onTransport)
     window.addEventListener("beatbox:report", onReport)
     window.addEventListener("beatbox:scene", onScene)
+    window.addEventListener("beatbox:state", onState)
     return () => {
       window.removeEventListener("beatbox:transport", onTransport)
       window.removeEventListener("beatbox:report", onReport)
       window.removeEventListener("beatbox:scene", onScene)
+      window.removeEventListener("beatbox:state", onState)
       drums.close()
       report(false)
     }
@@ -67,7 +89,7 @@
   // untouched song isn't marked dirty.
   let firstRun = true
   $effect(() => {
-    const snapshot = { bpm, volume, pattern: $state.snapshot(pattern) }
+    const snapshot = { bpm, volume, patterns: $state.snapshot(patterns) }
     if (firstRun) return void (firstRun = false)
     live.pushEvent("update_drums", { drums: snapshot })
   })
@@ -79,8 +101,14 @@
 
   function toggle() {
     if (playing) return drums.stop() // onStop clears `playing`
-    drums.start(() => pattern)
+    drums.start(patternFn(editing), undefined, editing)
     playing = true
+  }
+
+  // Pick the tab to edit; when playing on its own, also switch to it on the next bar.
+  function selectPattern(i) {
+    editing = i
+    if (playing && !songPlaying) drums.start(patternFn(i), undefined, i)
   }
 
   const btn =
@@ -129,13 +157,53 @@
         class="w-24 cursor-pointer accent-amber-400"
       />
     </label>
-    <button id="drums-clear" type="button" class={btn} onclick={() => (pattern = Object.fromEntries(TRACKS.map((t) => [t.id, row([])])))}>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <div id="drum-patterns" class="flex gap-1 rounded-lg bg-zinc-900 p-1" role="group" aria-label="Pattern">
+      {#each LETTERS as letter, i}
+        <button
+          id={"drums-pattern-" + letter.toLowerCase()}
+          type="button"
+          aria-pressed={editing === i}
+          aria-label={`Pattern ${letter}${playingPattern === i ? " (playing)" : ""}`}
+          onclick={() => selectPattern(i)}
+          class={[
+            "relative h-8 w-10 rounded-md text-sm font-bold transition active:scale-95",
+            editing === i
+              ? "bg-amber-400 text-zinc-900 shadow shadow-amber-400/20"
+              : isEmpty(patterns[i])
+                ? "text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300"
+                : "text-zinc-300 hover:bg-zinc-800",
+          ]}
+        >
+          {letter}
+          {#if playingPattern === i}
+            <span class="absolute right-1 top-1 size-1.5 animate-pulse rounded-full bg-emerald-400"></span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+    <span class="mr-auto text-xs text-zinc-500">Editing {LETTERS[editing]}</span>
+    <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = clone($state.snapshot(patterns[editing])))}>
+      Copy
+    </button>
+    <button
+      id="drums-paste"
+      type="button"
+      class={[btn, "disabled:pointer-events-none disabled:opacity-40"]}
+      disabled={!clipboard}
+      onclick={() => (patterns[editing] = clone(clipboard))}
+    >
+      Paste
+    </button>
+    <button id="drums-clear" type="button" class={btn} onclick={() => (patterns[editing] = empty())}>
       Clear
     </button>
-    <button id="drums-randomize" type="button" class={btn} onclick={() => (pattern = randomPattern())}>
+    <button id="drums-randomize" type="button" class={btn} onclick={() => (patterns[editing] = randomPattern())}>
       Randomize
     </button>
-    <button id="drums-reset" type="button" class={btn} onclick={() => (pattern = clone(DEFAULT_PATTERN))}>
+    <button id="drums-reset" type="button" class={btn} onclick={() => (patterns[editing] = clone(DEFAULT_PATTERN))}>
       Reset
     </button>
   </div>
@@ -151,12 +219,12 @@
           {track.label}
         </button>
         <div class="grid flex-1 grid-cols-16 gap-1">
-          {#each pattern[track.id] as on, i}
+          {#each patterns[editing][track.id] as on, i}
             <button
               type="button"
               aria-label={`${track.label} step ${i + 1}`}
               aria-pressed={on}
-              onclick={() => (pattern[track.id][i] = !on)}
+              onclick={() => (patterns[editing][track.id][i] = !on)}
               class={[
                 "h-8 rounded transition-colors duration-75",
                 on
@@ -164,7 +232,7 @@
                   : i % 4 === 0
                     ? "bg-zinc-700 hover:bg-zinc-600"
                     : "bg-zinc-800 hover:bg-zinc-700",
-                current === i && "ring-2 ring-zinc-100/80",
+                current === i && editing === playingPattern && "ring-2 ring-zinc-100/80",
               ]}
             ></button>
           {/each}

@@ -303,11 +303,11 @@ defmodule BeatboxWeb.SynthLive do
   end
 
   defp drums_to_map(nil), do: nil
-  defp drums_to_map(drums), do: Map.take(drums, [:bpm, :volume, :pattern])
+  defp drums_to_map(drums), do: Map.take(drums, [:bpm, :volume, :patterns])
 
   defp loop_to_map(loop), do: Map.take(loop, [:slot, :length, :bpm, :events, :params])
 
-  defp section_to_map(section), do: Map.take(section, [:name, :bars, :drums, :pads])
+  defp section_to_map(section), do: Map.take(section, [:name, :bars, :drums, :pattern, :pads])
 
   defp assign_presets(socket) do
     assign(socket, :presets, Enum.map(Music.list_presets!(), &%{id: &1.id, name: &1.name}))

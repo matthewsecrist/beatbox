@@ -28,8 +28,10 @@ with factory presets (Dubstep Wobble, Reese Bass, Supersaw Lead, …), and you c
 save your own.
 
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
-grid, with Randomize, Clear and Reset. Its **Tempo** slider sets the tempo for
-the whole song.
+grid, with four patterns (**A–D**). Copy/Paste lets you build variations, and
+Randomize, Clear and Reset act on the pattern you're editing. Switching patterns
+while the drums play changes over on the next bar. Its **Tempo** slider sets
+the tempo for the whole song.
 
 **Loop pads**: eight pads. Tap an empty pad to record, then tap it again to
 finish.
@@ -40,9 +42,9 @@ finish.
   changes.
 - A pad started while something else plays joins on the next bar line.
 
-**Arrangement**: a list of sections, each with a length in bars and toggles for
-the drums and each pad. **Play song** plays the sections in order, and every
-change lands on the section boundary.
+**Arrangement**: a list of sections, each with a length in bars, a drum pattern
+(or none) and toggles for each pad. **Play song** plays the sections in order,
+and every change lands on the section boundary.
 
 **Songs**: the song bar at the top saves everything together: synth, drums,
 loops and arrangement. **Save** stores the song (a blank name becomes

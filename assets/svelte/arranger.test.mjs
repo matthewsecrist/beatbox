@@ -13,20 +13,20 @@ test("sections play back to back, announced ahead of each boundary, then stop", 
   const arranger = createArranger({ transport, onScene: (s) => scenes.push(s), onEnd: () => (ended = true) })
 
   const position = arranger.start([
-    { bars: 1, pads: [0], drums: true },
+    { bars: 1, pads: [0], drums: true, pattern: 2 },
     { bars: 2, pads: [1], drums: false },
   ]) // grid starts at 0.05 s: boundaries at beats 0, 4, 12
 
   assert.deepEqual(position, { index: 0, bar: 1 })
-  assert.deepEqual(scenes, [{ index: 0, beat: 0, pads: [0], drums: true }])
+  assert.deepEqual(scenes, [{ index: 0, beat: 0, pads: [0], drums: true, pattern: 2 }])
 
   clock.currentTime = 1.96 // section 2 starts at 2.05 s: inside the lookahead
   assert.deepEqual(arranger.tick(), { index: 0, bar: 1 })
-  assert.deepEqual(scenes.at(-1), { index: 1, beat: 4, pads: [1], drums: false })
+  assert.deepEqual(scenes.at(-1), { index: 1, beat: 4, pads: [1], drums: false, pattern: 0 })
 
   clock.currentTime = 6.0 // end (12 beats = 6.05 s) announced as an empty scene
   assert.deepEqual(arranger.tick(), { index: 1, bar: 2 })
-  assert.deepEqual(scenes.at(-1), { index: -1, beat: 12, pads: [], drums: false })
+  assert.deepEqual(scenes.at(-1), { index: -1, beat: 12, pads: [], drums: false, pattern: 0 })
   assert.equal(ended, false)
 
   clock.currentTime = 6.06

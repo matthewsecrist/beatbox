@@ -45,7 +45,13 @@ export function createArranger({ transport, onScene, onEnd = () => {} }) {
       const now = transport.now()
       while (next < boundaries.length && transport.timeAt(boundaries[next]) < now + LOOKAHEAD) {
         const s = sections[next]
-        onScene({ index: s ? next : -1, beat: boundaries[next], pads: s?.pads ?? [], drums: s?.drums ?? false })
+        onScene({
+          index: s ? next : -1,
+          beat: boundaries[next],
+          pads: s?.pads ?? [],
+          drums: s?.drums ?? false,
+          pattern: s?.pattern ?? 0,
+        })
         next++
       }
       if (now >= transport.timeAt(boundaries.at(-1))) {

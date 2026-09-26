@@ -7,6 +7,13 @@ defmodule Beatbox.Music.Section do
     attribute :bars, :integer, allow_nil?: false, public?: true, constraints: [min: 1, max: 64]
     attribute :drums, :boolean, allow_nil?: false, default: false, public?: true
 
+    # Which drum pattern (0-3 = A-D) plays when `drums` is on.
+    attribute :pattern, :integer,
+      allow_nil?: false,
+      default: 0,
+      public?: true,
+      constraints: [min: 0, max: 3]
+
     # Loop pad slots (0-7) playing in this section.
     attribute :pads, {:array, :integer},
       allow_nil?: false,

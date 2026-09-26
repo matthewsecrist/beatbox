@@ -40,8 +40,8 @@ defmodule BeatboxWeb.SynthLiveTest do
 
     {:ok, song} = Music.get_song(id)
     assert song.synth == %{"filter_cutoff" => 300}
-    assert %{bpm: 140} = song.drums
-    assert [%{name: "Drop", bars: 8, drums: true, pads: [2]}] = song.arrangement
+    assert %{bpm: 140, patterns: [%{kick: [true]}, %{snare: [true]}]} = song.drums
+    assert [%{name: "Drop", bars: 8, drums: true, pattern: 1, pads: [2]}] = song.arrangement
     assert [%{slot: 2, params: %{"osc1_wave" => "sine"} = loop_params}] = song.loops
     refute Map.has_key?(loop_params, "evil")
 
@@ -50,8 +50,10 @@ defmodule BeatboxWeb.SynthLiveTest do
     assert %{"params" => %{"filter_cutoff" => 300}, "loops" => [%{"slot" => 2}]} =
              props(reopened, "Synth")
 
-    assert %{"drums" => %{"bpm" => 140}} = props(reopened, "DrumMachine")
-    assert %{"sections" => [%{"name" => "Drop", "bars" => 8}]} = props(reopened, "Arranger")
+    assert %{"drums" => %{"bpm" => 140, "patterns" => [_, _]}} = props(reopened, "DrumMachine")
+
+    assert %{"sections" => [%{"name" => "Drop", "bars" => 8, "pattern" => 1}]} =
+             props(reopened, "Arranger")
   end
 
   test "saving again updates the open song instead of creating another", %{conn: conn} do
@@ -133,7 +135,9 @@ defmodule BeatboxWeb.SynthLiveTest do
     render_hook(view, "update_drums", %{"drums" => drums(140)})
 
     render_hook(view, "update_arrangement", %{
-      "sections" => [%{"name" => "Drop", "bars" => 8, "drums" => true, "pads" => [2]}]
+      "sections" => [
+        %{"name" => "Drop", "bars" => 8, "drums" => true, "pattern" => 1, "pads" => [2]}
+      ]
     })
 
     render_hook(view, "update_loops", %{
@@ -148,7 +152,12 @@ defmodule BeatboxWeb.SynthLiveTest do
     })
   end
 
-  defp drums(bpm), do: %{"bpm" => bpm, "volume" => 0.8, "pattern" => %{"kick" => [true]}}
+  defp drums(bpm),
+    do: %{
+      "bpm" => bpm,
+      "volume" => 0.8,
+      "patterns" => [%{"kick" => [true]}, %{"snare" => [true]}]
+    }
 
   defp component(view, name) do
     view |> element("[data-name=#{name}]") |> render() |> LazyHTML.from_fragment()

@@ -16,7 +16,13 @@ const SCHEDULE_AHEAD = 0.1
 
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
 // so timing stays tight even when the main thread stutters.
-export function createDrums({ onStep, onStop = () => {}, transport = sharedTransport, getCtx = getContext }) {
+export function createDrums({
+  onStep,
+  onStop = () => {},
+  onPattern = () => {},
+  transport = sharedTransport,
+  getCtx = getContext,
+}) {
   let ctx, master, noise, timer, raf
   let volume = 0.8
   let running = false
@@ -24,6 +30,7 @@ export function createDrums({ onStep, onStop = () => {}, transport = sharedTrans
   let nextBeat = 0 // step times come from the shared transport grid (4 steps per beat)
   let endBeat = Infinity // set by stopAt(): no steps from this beat on
   let getPattern = () => ({})
+  let queued = null // { fn, beat, tag }: pattern switch waiting for its beat
   const pending = new Map() // source -> start time; lets stop() silence lookahead hits
   const queue = []
 
@@ -101,6 +108,11 @@ export function createDrums({ onStep, onStop = () => {}, transport = sharedTrans
       }
       const t = transport.timeAt(nextBeat)
       if (t >= ctx.currentTime + SCHEDULE_AHEAD) break
+      if (queued && nextBeat >= queued.beat - 1e-9) {
+        getPattern = queued.fn
+        onPattern(queued.tag)
+        queued = null
+      }
       const pattern = getPattern()
       for (const { id } of TRACKS) if (pattern[id]?.[nextStep]) VOICES[id](t)
       queue.push({ step: nextStep, time: t })
@@ -115,14 +127,21 @@ export function createDrums({ onStep, onStop = () => {}, transport = sharedTrans
   }
 
   // Starts at `atBeat` (default: next bar line, or at once if nothing else is
-  // playing). Already running: just cancels a pending stopAt().
-  function start(patternFn, atBeat) {
+  // playing). Already running: cancels a pending stopAt() and switches to this
+  // pattern on `atBeat` (default: next bar). `tag` is reported via onPattern when
+  // the pattern takes over.
+  function start(patternFn, atBeat, tag) {
     endBeat = Infinity
-    getPattern = patternFn
-    if (running) return
+    if (running) {
+      queued = { fn: patternFn, beat: atBeat ?? transport.nextBar(), tag }
+      return
+    }
     ensureContext()
     transport.acquire("drums")
     running = true
+    getPattern = patternFn
+    queued = null
+    onPattern(tag)
     nextStep = 0
     nextBeat = atBeat ?? transport.nextBar()
     schedule()
