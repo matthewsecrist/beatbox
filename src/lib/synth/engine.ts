@@ -1,37 +1,94 @@
-import { getContext } from "../audio.js"
+import type { SynthParams } from '../types.js'
 
-export const DEFAULT_PARAMS = {
-  osc1_wave: "sawtooth", osc1_octave: 0, osc1_detune: 0, osc1_level: 0.6,
-  osc2_wave: "square", osc2_octave: -1, osc2_detune: 7, osc2_level: 0.4,
-  filter_cutoff: 2400, filter_resonance: 4,
-  lfo_rate: 4, lfo_depth: 0, // LFO sweeps the filter cutoff; depth in octaves
-  attack: 0.01, decay: 0.3, sustain: 0.6, release: 0.5,
-  volume: 0.7,
+import { getContext } from '../audio.js'
+
+export const DEFAULT_PARAMS: SynthParams = {
+  attack: 0.01,
+  decay: 0.3,
+  filter_cutoff: 2400,
+  filter_resonance: 4,
+  lfo_depth: 0, // LFO sweeps the filter cutoff; depth in octaves
+  lfo_rate: 4,
+  osc1_detune: 0,
+  osc1_level: 0.6,
+  osc1_octave: 0,
+  osc1_wave: 'sawtooth',
+  osc2_detune: 7,
+  osc2_level: 0.4,
+  osc2_octave: -1,
+  osc2_wave: 'square',
+  release: 0.5,
+  sustain: 0.6,
+  volume: 0.7
 }
 
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
 
-const freq = (midi, octave) => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
+export interface Synth {
+  allNotesOff(): void
+  // Silences scheduled-but-unstarted voices whose key matches.
+  cancelPending(match: (key: VoiceKey) => boolean): void
+  close(): void
+  noteOff(key: VoiceKey, at?: number): void
+  noteOn(midi: number, at?: number, key?: VoiceKey, own?: null | Partial<SynthParams>): void
+  now(): number
+  setParams(p: Partial<SynthParams>): void
+}
 
-export function createSynth(initialParams, getCtx = getContext) {
-  let params = { ...DEFAULT_PARAMS, ...initialParams }
-  let ctx = null
-  let master = null
-  const voices = new Map() // key -> voice still held (not yet released)
-  const alive = new Set() // every voice until its oscillators end, released or not
+export type VoiceKey = number | string
 
-  function ensureContext() {
+interface Voice {
+  amp: GainNode
+  attack: number
+  decay: number
+  filter: BiquadFilterNode
+  g1: GainNode
+  g2: GainNode
+  key: VoiceKey
+  lfo: OscillatorNode
+  lfoDepth: GainNode
+  midi: number
+  osc1: OscillatorNode
+  osc2: OscillatorNode
+  own: boolean
+  release: number
+  srcs: OscillatorNode[]
+  sustain: number
+  t0: number
+}
+
+const freq = (midi: number, octave: number): number => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
+
+export function createSynth(
+  initialParams: null | Partial<SynthParams>,
+  getCtx: () => BaseAudioContext = getContext
+): Synth {
+  let params: SynthParams = { ...DEFAULT_PARAMS, ...initialParams }
+  let ctx: BaseAudioContext | null = null
+  let master: GainNode | null = null
+  const voices = new Map<VoiceKey, Voice>() // key -> voice still held (not yet released)
+  const alive = new Set<Voice>() // every voice until its oscillators end, released or not
+
+  function ensureContext(): { ctx: BaseAudioContext; master: GainNode } {
     ctx = getCtx()
     if (!master) {
       master = ctx.createGain()
       master.gain.value = params.volume
       master.connect(ctx.destination)
     }
+    return { ctx, master }
   }
 
-  function applyOsc(osc, gain, n, midi, smooth, p = params) {
-    const t = ctx.currentTime
+  function applyOsc(
+    t: number,
+    osc: OscillatorNode,
+    gain: GainNode,
+    n: 1 | 2,
+    midi: number,
+    smooth: boolean,
+    p = params
+  ) {
     osc.type = p[`osc${n}_wave`]
     const f = freq(midi, p[`osc${n}_octave`])
     const d = p[`osc${n}_detune`]
@@ -49,18 +106,19 @@ export function createSynth(initialParams, getCtx = getContext) {
 
   // Envelope level at time t, computed from the voice's start so releases can be
   // scheduled in the future (the looper) without reading gain.value.
-  function envAt(v, t) {
+  function envAt(v: Voice, t: number): number {
     const x = t - v.t0
     if (x <= 0) return 0
     if (x < v.attack) return (HEADROOM * x) / v.attack
-    if (x < v.attack + v.decay) return HEADROOM + (HEADROOM * v.sustain - HEADROOM) * ((x - v.attack) / v.decay)
+    if (x < v.attack + v.decay)
+      return HEADROOM + (HEADROOM * v.sustain - HEADROOM) * ((x - v.attack) / v.decay)
     return HEADROOM * v.sustain
   }
 
   // `time` defaults to the voice's own release (its params may differ from the live ones).
-  function release(key, time, at) {
+  function release(key: VoiceKey, time: number | undefined, at: number) {
     const v = voices.get(key)
-    if (!v) return
+    if (!v || !ctx) return
     voices.delete(key)
     time ??= v.own ? v.release : params.release
     const t = Math.max(at, ctx.currentTime)
@@ -75,12 +133,18 @@ export function createSynth(initialParams, getCtx = getContext) {
   // with live ones on the same pitch; `own` pins the voice to its own params (a
   // recorded loop's sound) instead of following the live controls. Master volume
   // stays global.
-  function noteOn(midi, at, key = midi, own = null) {
-    ensureContext()
+  function noteOn(
+    midi: number,
+    at?: number,
+    key: VoiceKey = midi,
+    own: null | Partial<SynthParams> = null
+  ): void {
+    const { ctx, master } = ensureContext()
     const p = own ? { ...DEFAULT_PARAMS, ...own } : params
     const t = Math.max(at ?? 0, ctx.currentTime)
     if (voices.has(key)) release(key, undefined, t)
-    if (voices.size >= MAX_VOICES) release(voices.keys().next().value, 0.01, ctx.currentTime)
+    const oldest = voices.keys().next()
+    if (voices.size >= MAX_VOICES && !oldest.done) release(oldest.value, 0.01, ctx.currentTime)
 
     const osc1 = ctx.createOscillator()
     const osc2 = ctx.createOscillator()
@@ -92,9 +156,9 @@ export function createSynth(initialParams, getCtx = getContext) {
     const lfo = ctx.createOscillator()
     const lfoDepth = ctx.createGain()
 
-    applyOsc(osc1, g1, 1, midi, false, p)
-    applyOsc(osc2, g2, 2, midi, false, p)
-    filter.type = "lowpass"
+    applyOsc(t, osc1, g1, 1, midi, false, p)
+    applyOsc(t, osc2, g2, 2, midi, false, p)
+    filter.type = 'lowpass'
     filter.frequency.value = p.filter_cutoff
     filter.Q.value = p.filter_resonance
 
@@ -111,7 +175,25 @@ export function createSynth(initialParams, getCtx = getContext) {
     amp.gain.linearRampToValueAtTime(HEADROOM * sustain, t + attack + decay)
 
     const srcs = [osc1, osc2, lfo]
-    const v = { key, midi, own: !!own, release: p.release, t0: t, attack, decay, sustain, srcs, osc1, osc2, g1, g2, filter, amp, lfo, lfoDepth }
+    const v: Voice = {
+      amp,
+      attack,
+      decay,
+      filter,
+      g1,
+      g2,
+      key,
+      lfo,
+      lfoDepth,
+      midi,
+      osc1,
+      osc2,
+      own: !!own,
+      release: p.release,
+      srcs,
+      sustain,
+      t0: t
+    }
     osc1.onended = () => {
       alive.delete(v)
       ;[...srcs, g1, g2, filter, amp, lfoDepth].forEach((n) => n.disconnect())
@@ -122,17 +204,17 @@ export function createSynth(initialParams, getCtx = getContext) {
     voices.set(key, v)
   }
 
-  function noteOff(key, at) {
+  function noteOff(key: VoiceKey, at?: number): void {
     if (ctx) release(key, undefined, at ?? ctx.currentTime)
   }
 
-  function allNotesOff() {
+  function allNotesOff(): void {
     for (const key of [...voices.keys()]) noteOff(key)
   }
 
   // Silence voices matching `match(key)` that are scheduled but haven't started yet,
   // even if their release is already scheduled. Started voices are left alone.
-  function cancelPending(match) {
+  function cancelPending(match: (key: VoiceKey) => boolean): void {
     if (!ctx) return
     for (const v of alive) {
       if (v.t0 <= ctx.currentTime || !match(v.key)) continue
@@ -142,14 +224,13 @@ export function createSynth(initialParams, getCtx = getContext) {
     }
   }
 
-  function now() {
-    ensureContext()
-    return ctx.currentTime
+  function now(): number {
+    return ensureContext().ctx.currentTime
   }
 
-  function setParams(p) {
+  function setParams(p: Partial<SynthParams>): void {
     params = { ...params, ...p }
-    if (!ctx) return
+    if (!ctx || !master) return
     const t = ctx.currentTime
     master.gain.setTargetAtTime(params.volume, t, 0.01)
     for (const v of voices.values()) {
@@ -158,13 +239,13 @@ export function createSynth(initialParams, getCtx = getContext) {
       v.filter.Q.setTargetAtTime(params.filter_resonance, t, 0.01)
       v.lfo.frequency.setTargetAtTime(params.lfo_rate, t, 0.01)
       v.lfoDepth.gain.setTargetAtTime(params.lfo_depth * 1200, t, 0.01)
-      applyOsc(v.osc1, v.g1, 1, v.midi, true)
-      applyOsc(v.osc2, v.g2, 2, v.midi, true)
+      applyOsc(t, v.osc1, v.g1, 1, v.midi, true)
+      applyOsc(t, v.osc2, v.g2, 2, v.midi, true)
     }
   }
 
   // Detach from the shared AudioContext (it outlives this component).
-  function close() {
+  function close(): void {
     master?.disconnect()
     master = null
     ctx = null
@@ -172,5 +253,5 @@ export function createSynth(initialParams, getCtx = getContext) {
     alive.clear()
   }
 
-  return { noteOn, noteOff, allNotesOff, cancelPending, now, setParams, close }
+  return { allNotesOff, cancelPending, close, noteOff, noteOn, now, setParams }
 }

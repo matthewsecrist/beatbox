@@ -1,108 +1,117 @@
-<script>
-  import { onMount, untrack } from "svelte"
-  import { SvelteSet } from "svelte/reactivity"
-  import { DEFAULT_PARAMS, createSynth } from "./synth/engine.js"
-  import { createPlayer, createRecorder } from "./synth/looper.js"
-  import { BEATS_PER_BAR, transport } from "./transport.js"
-  import { FACTORY_PRESETS } from "./synth/factory_presets.js"
+<script lang="ts">
+  import { onMount, type Snippet, untrack } from 'svelte'
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+
+  import type { Synth } from './synth/engine.js'
+  import type { Player } from './synth/looper.js'
+  import type {
+    LoadPresetReply,
+    Loop,
+    PresetSummary,
+    SavePresetReply,
+    Scene,
+    SynthParams,
+    TransportDetail,
+    Wave
+  } from './types.js'
+
+  import { createSynth, DEFAULT_PARAMS } from './synth/engine.js'
+  import { FACTORY_PRESETS } from './synth/factory_presets.js'
+  import { createPlayer, createRecorder } from './synth/looper.js'
+  import { BEATS_PER_BAR, transport } from './transport.js'
 
   // `params`/`loops` come from the open song and are read once at mount; the page
   // remounts this component when a different song is opened. Edits are reported
   // through `onparams`/`onloops`; `savePreset`/`loadPreset` talk to the server.
-  let { presets = [], params: songParams = null, loops = [], onparams, onloops, savePreset: storePreset, loadPreset: fetchPreset } =
-    $props()
+  let {
+    loadPreset: fetchPreset,
+    loops = [],
+    onloops,
+    onparams,
+    params: songParams = null,
+    presets = [],
+    savePreset: storePreset
+  }: {
+    loadPreset: (id: string) => Promise<LoadPresetReply>
+    loops?: Loop[]
+    onloops?: (loops: Loop[]) => void
+    onparams?: (params: SynthParams) => void
+    params?: null | Partial<SynthParams>
+    presets?: PresetSummary[]
+    savePreset: (name: string, params: SynthParams) => Promise<SavePresetReply>
+  } = $props()
 
-  let params = $state({ ...DEFAULT_PARAMS, ...untrack(() => songParams) })
-  let presetName = $state("")
-  let selectedId = $state("")
-  let status = $state("")
+  type NumericParam = {
+    [K in keyof SynthParams]: SynthParams[K] extends number ? K : never
+  }[keyof SynthParams]
+
+  let params: SynthParams = $state({ ...DEFAULT_PARAMS, ...untrack(() => songParams) })
+  let presetName = $state('')
+  let selectedId = $state('')
+  let status = $state('')
   let baseOctave = $state(4)
-  const active = new SvelteSet()
-  const heldKeys = new Map()
-  let synth = null
-  let statusTimer
+  const active = new SvelteSet<number>()
+  const heldKeys = new SvelteMap<string, number>()
+  let synth: null | Synth = null
+  let statusTimer: ReturnType<typeof setTimeout> | undefined
 
   // Loop pads: each slot holds a recorded loop (with the synth params it was
   // recorded with) and plays independently. `players`/`recorder` need the synth,
   // so they're created in onMount; `pads` is just the UI state.
   const PAD_COUNT = 8
   const saved = untrack(() => new Map(loops.map((l) => [l.slot, l])))
-  const loopData = Array.from({ length: PAD_COUNT }, (_, slot) => saved.get(slot) ?? null)
-  let pads = $state(
-    Array.from({ length: PAD_COUNT }, (_, slot) => ({
-      filled: saved.has(slot),
-      label: saved.has(slot) ? barsLabel(saved.get(slot)) : "",
-      playing: false,
-      pos: 0,
-    })),
+  const loopData: (Loop | null)[] = Array.from(
+    { length: PAD_COUNT },
+    (_, slot) => saved.get(slot) ?? null
+  )
+  interface Pad {
+    filled: boolean
+    label: string
+    playing: boolean
+    pos: number
+  }
+  let pads: Pad[] = $state(
+    Array.from({ length: PAD_COUNT }, (_, slot) => {
+      const loop = saved.get(slot)
+      return {
+        filled: !!loop,
+        label: loop ? barsLabel(loop) : '',
+        playing: false,
+        pos: 0
+      }
+    })
   )
   let recording = $state(-1) // slot being recorded, or -1
   let countingIn = $state(false) // recording armed, waiting for its first bar
-  let recordParams = null
+  let recordParams: Partial<SynthParams> = {}
   const recorder = createRecorder(transport)
-  let loopTimer
-  const players = []
+  let loopTimer: ReturnType<typeof setInterval> | undefined
+  const players: (null | Player)[] = []
 
   // "2 bars"; loops saved before tempo sync (no bpm) are measured at the current tempo.
-  function barsLabel(loop) {
+  function barsLabel(loop: Pick<Loop, 'bpm' | 'length'>): string {
     const bars = (loop.length * (loop.bpm ?? transport.bpm)) / 60 / BEATS_PER_BAR
     const n = Math.round(bars * 10) / 10
-    return `${n} bar${n === 1 ? "" : "s"}`
+    return `${n} bar${n === 1 ? '' : 's'}`
   }
 
-  const WAVES = ["sine", "triangle", "sawtooth", "square"]
-  const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-  const KEY_MAP = "awsedftgyhujkolp;"
+  const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
+  const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+  const KEY_MAP = 'awsedftgyhujkolp;'
 
   const baseMidi = $derived(12 * (baseOctave + 1))
   const keys = $derived.by(() => {
     let white = 0
     return Array.from({ length: 25 }, (_, i) => {
       const midi = baseMidi + i
-      const name = NOTE_NAMES[midi % 12]
-      const black = name.includes("#")
-      const key = { midi, black, label: name + (Math.floor(midi / 12) - 1), white }
+      const name = NOTE_NAMES[midi % 12] ?? ''
+      const black = name.includes('#')
+      const key = { black, label: name + (Math.floor(midi / 12) - 1), midi, white }
       if (!black) white++
       return key
     })
   })
   const whiteCount = 15
-
-  function press(midi) {
-    if (!synth) return
-    active.add(midi)
-    synth.noteOn(midi)
-    if (recording >= 0) recorder.note(midi, true)
-  }
-
-  function release(midi) {
-    if (!active.has(midi)) return
-    active.delete(midi)
-    synth.noteOff(midi)
-    if (recording >= 0) recorder.note(midi, false)
-  }
-
-  function tapPad(slot) {
-    if (!synth) return
-    if (recording === slot) return finishRecording()
-    if (!pads[slot].filled) return startRecording(slot)
-    players[slot].playing ? stopPad(slot) : startPad(slot)
-  }
-
-  // Recording starts on a bar line: after a one-bar count-in when nothing is
-  // playing, else at the next bar. The metronome clicks until it's finished.
-  function startRecording(slot) {
-    if (recording >= 0) finishRecording()
-    const counting = !transport.running
-    transport.acquire("rec")
-    recorder.start([...active], counting ? BEATS_PER_BAR : transport.nextBar())
-    transport.metronome(0)
-    // Master volume stays a global control, so a loop doesn't pin its own level.
-    const { volume, ...sound } = $state.snapshot(params)
-    recordParams = sound
-    recording = slot
-    countingIn = true
-  }
 
   function finishRecording() {
     const slot = recording
@@ -111,29 +120,35 @@
     const take = recorder.finish()
     // Mirror the server-side loop limits so one bad take can't block saving the song.
     if (take && (take.length > 300 || take.events.length > 4000)) {
-      showStatus("Loop too long (max 5 min / 4000 notes)")
-    } else if (take) {
-      const loop = { slot, ...take, params: recordParams }
+      showStatus('Loop too long (max 5 min / 4000 notes)')
+    } else if (take && synth) {
+      const loop: Loop = { slot, ...take, params: recordParams }
       players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
       pads[slot] = { filled: true, label: barsLabel(loop), playing: false, pos: 0 }
       loopData[slot] = loop
       pushLoops()
       startPad(slot) // acquires the transport before "rec" lets go, so the grid keeps running
     }
-    transport.release("rec")
+    transport.release('rec')
   }
 
-  function pushLoops() {
-    onloops?.(loopData.filter(Boolean))
-  }
-
-  function startPad(slot) {
-    players[slot].start()
-    pads[slot].playing = true
+  // Arrangement scene: pads in the section play from its boundary beat (already
+  // playing ones keep their phase); the rest stop exactly on it.
+  function onScene({ detail }: CustomEvent<Scene>) {
+    players.forEach((p, slot) => {
+      if (!p) return
+      if (detail.pads.includes(slot)) {
+        p.start(detail.beat)
+        const pad = pads[slot]
+        if (pad) pad.playing = true
+      } else {
+        p.stopAt(detail.beat)
+      }
+    })
   }
 
   // Global Play all / Stop all (song bar): start every filled pad, or stop them all.
-  function onTransport(e) {
+  function onTransport(e: CustomEvent<TransportDetail>) {
     players.forEach((p, slot) => {
       if (!p) return
       if (e.detail.play && !p.playing) startPad(slot)
@@ -141,77 +156,99 @@
     })
   }
 
-  // Arrangement scene: pads in the section play from its boundary beat (already
-  // playing ones keep their phase); the rest stop exactly on it.
-  function onScene({ detail }) {
-    players.forEach((p, slot) => {
-      if (!p) return
-      if (detail.pads.includes(slot)) {
-        p.start(detail.beat)
-        pads[slot].playing = true
-      } else {
-        p.stopAt(detail.beat)
-      }
-    })
+  function press(midi: number) {
+    if (!synth) return
+    active.add(midi)
+    synth.noteOn(midi)
+    if (recording >= 0) recorder.note(midi, true)
+  }
+
+  function pushLoops() {
+    onloops?.(loopData.filter((l) => l !== null))
+  }
+
+  function release(midi: number) {
+    if (!active.has(midi)) return
+    active.delete(midi)
+    synth?.noteOff(midi)
+    if (recording >= 0) recorder.note(midi, false)
+  }
+
+  function startPad(slot: number) {
+    const pad = pads[slot]
+    players[slot]?.start()
+    if (pad) pad.playing = true
+  }
+
+  // Recording starts on a bar line: after a one-bar count-in when nothing is
+  // playing, else at the next bar. The metronome clicks until it's finished.
+  function startRecording(slot: number) {
+    if (recording >= 0) finishRecording()
+    const counting = !transport.running
+    transport.acquire('rec')
+    recorder.start([...active], counting ? BEATS_PER_BAR : transport.nextBar())
+    transport.metronome(0)
+    // Master volume stays a global control, so a loop doesn't pin its own level.
+    const sound: Partial<SynthParams> = $state.snapshot(params)
+    delete sound.volume
+    recordParams = sound
+    recording = slot
+    countingIn = true
+  }
+
+  function tapPad(slot: number) {
+    if (!synth) return
+    if (recording === slot) return finishRecording()
+    if (!pads[slot]?.filled) return startRecording(slot)
+    if (players[slot]?.playing) stopPad(slot)
+    else startPad(slot)
   }
 
   const anyPadPlaying = $derived(pads.some((p) => p.playing))
-  const report = (on) => window.dispatchEvent(new CustomEvent("beatbox:state", { detail: { source: "loops", playing: on } }))
+  const report = (on: boolean): void => {
+    window.dispatchEvent(
+      new CustomEvent('beatbox:state', { detail: { playing: on, source: 'loops' } })
+    )
+  }
   const onReport = () => report(anyPadPlaying)
   $effect(() => report(anyPadPlaying))
 
-  function stopPad(slot) {
-    players[slot].stop()
-    pads[slot].playing = false
-    pads[slot].pos = 0
-  }
-
-  function clearPad(slot) {
+  function clearPad(slot: number) {
     if (recording === slot) {
       recording = -1
       transport.metronome(null)
-      transport.release("rec")
+      transport.release('rec')
     }
     players[slot]?.stop()
     players[slot] = null
-    pads[slot] = { filled: false, label: "", playing: false, pos: 0 }
+    pads[slot] = { filled: false, label: '', playing: false, pos: 0 }
     loopData[slot] = null
     pushLoops()
   }
 
-  function shiftOctave(delta) {
+  function shiftOctave(delta: number) {
     baseOctave = Math.min(6, Math.max(1, baseOctave + delta))
   }
 
-  function showStatus(msg) {
+  function showStatus(msg: string) {
     status = msg
     clearTimeout(statusTimer)
-    statusTimer = setTimeout(() => (status = ""), 3000)
+    statusTimer = setTimeout(() => (status = ''), 3000)
   }
 
-  const ignored = (e) =>
-    e.ctrlKey || e.metaKey || e.altKey || ["INPUT", "SELECT", "TEXTAREA"].includes(e.target?.tagName)
-
-  function onKeyDown(e) {
-    if (e.repeat || ignored(e)) return
-    const k = e.key.toLowerCase()
-    if (k === "z") return shiftOctave(-1)
-    if (k === "x") return shiftOctave(1)
-    if (k >= "1" && k <= "8") return tapPad(Number(k) - 1)
-    const offset = KEY_MAP.indexOf(k)
-    if (offset < 0 || heldKeys.has(k)) return
-    const midi = baseMidi + offset
-    heldKeys.set(k, midi)
-    press(midi)
+  function stopPad(slot: number) {
+    players[slot]?.stop()
+    const pad = pads[slot]
+    if (!pad) return
+    pad.playing = false
+    pad.pos = 0
   }
 
-  function onKeyUp(e) {
-    const k = e.key.toLowerCase()
-    const midi = heldKeys.get(k)
-    if (midi === undefined) return
-    heldKeys.delete(k)
-    release(midi)
-  }
+  const ignored = (e: KeyboardEvent) =>
+    e.ctrlKey ||
+    e.metaKey ||
+    e.altKey ||
+    (e.target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName))
 
   function onBlur() {
     synth?.allNotesOff()
@@ -219,40 +256,64 @@
     heldKeys.clear()
   }
 
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.repeat || ignored(e)) return
+    const k = e.key.toLowerCase()
+    if (k === 'z') return shiftOctave(-1)
+    if (k === 'x') return shiftOctave(1)
+    if (k >= '1' && k <= '8') return tapPad(Number(k) - 1)
+    const offset = KEY_MAP.indexOf(k)
+    if (offset < 0 || heldKeys.has(k)) return
+    const midi = baseMidi + offset
+    heldKeys.set(k, midi)
+    press(midi)
+  }
+
+  function onKeyUp(e: KeyboardEvent) {
+    const k = e.key.toLowerCase()
+    const midi = heldKeys.get(k)
+    if (midi === undefined) return
+    heldKeys.delete(k)
+    release(midi)
+  }
+
   onMount(() => {
-    synth = createSynth($state.snapshot(params))
-    for (const [slot, loop] of saved) players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
+    const created = createSynth($state.snapshot(params))
+    synth = created
+    for (const [slot, loop] of saved)
+      players[slot] = createPlayer(created, `pad${slot}:`, loop, transport)
     loopTimer = setInterval(() => {
       // The UI follows the players: a pad stopped by a section boundary plays on until it.
       players.forEach((p, slot) => {
-        if (!p?.playing) return
-        pads[slot].pos = p.tick()
-        if (!p.playing) pads[slot] = { ...pads[slot], playing: false, pos: 0 }
+        const pad = pads[slot]
+        if (!p?.playing || !pad) return
+        pad.pos = p.tick()
+        if (!p.playing) pads[slot] = { ...pad, playing: false, pos: 0 }
       })
       if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
     }, 25)
-    window.addEventListener("keydown", onKeyDown)
-    window.addEventListener("keyup", onKeyUp)
-    window.addEventListener("blur", onBlur)
-    window.addEventListener("beatbox:transport", onTransport)
-    window.addEventListener("beatbox:report", onReport)
-    window.addEventListener("beatbox:scene", onScene)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', onBlur)
+    window.addEventListener('beatbox:transport', onTransport)
+    window.addEventListener('beatbox:report', onReport)
+    window.addEventListener('beatbox:scene', onScene)
     return () => {
-      window.removeEventListener("keydown", onKeyDown)
-      window.removeEventListener("keyup", onKeyUp)
-      window.removeEventListener("blur", onBlur)
-      window.removeEventListener("beatbox:transport", onTransport)
-      window.removeEventListener("beatbox:report", onReport)
-      window.removeEventListener("beatbox:scene", onScene)
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', onBlur)
+      window.removeEventListener('beatbox:transport', onTransport)
+      window.removeEventListener('beatbox:report', onReport)
+      window.removeEventListener('beatbox:scene', onScene)
       report(false)
       clearTimeout(statusTimer)
       clearInterval(loopTimer)
       players.forEach((p) => p?.stop())
       if (recording >= 0) {
         transport.metronome(null)
-        transport.release("rec")
+        transport.release('rec')
       }
-      synth.close()
+      created.close()
     }
   })
 
@@ -268,54 +329,63 @@
     onparams?.(snapshot)
   })
 
-  function loadPreset(e) {
+  function loadPreset(e: Event & { currentTarget: HTMLSelectElement }) {
     const id = e.currentTarget.value
     if (!id) return
-    if (id.startsWith("factory:")) {
+    if (id.startsWith('factory:')) {
       const preset = FACTORY_PRESETS[Number(id.slice(8))]
+      if (!preset) return
       params = { ...DEFAULT_PARAMS, volume: params.volume, ...preset.params }
       presetName = preset.name
       return
     }
-    fetchPreset(id).then((reply) => {
-      if (reply.params) {
-        params = { ...DEFAULT_PARAMS, ...reply.params }
-        presetName = reply.name
-      } else {
-        showStatus(reply.error)
-      }
+    void fetchPreset(id).then((reply) => {
+      if ('error' in reply) return showStatus(reply.error)
+      params = { ...DEFAULT_PARAMS, ...reply.params }
+      presetName = reply.name
     })
   }
 
   function savePreset() {
-    storePreset(presetName, $state.snapshot(params)).then((reply) => {
-      if (reply.ok) selectedId = reply.id
-      showStatus(reply.ok ? "Saved “" + reply.name + "”" : reply.error)
+    void storePreset(presetName, $state.snapshot(params)).then((reply) => {
+      if ('error' in reply) return showStatus(reply.error)
+      selectedId = reply.id
+      showStatus('Saved “' + reply.name + '”')
     })
   }
 
   const cutoffPos = $derived(Math.log(params.filter_cutoff / 20) / Math.log(900))
-  const fmtHz = (hz) => (hz >= 1000 ? (hz / 1000).toFixed(2) + " kHz" : Math.round(hz) + " Hz")
-  const fmtSec = (s) => (s < 1 ? Math.round(s * 1000) + " ms" : s.toFixed(2) + " s")
-  const fmtPct = (v) => Math.round(v * 100) + "%"
-  const fmtInt = (v) => (v > 0 ? "+" : "") + v
-  const fmtCents = (v) => fmtInt(v) + "¢"
-  const fmtNum = (v) => Number(v).toFixed(1)
-  const fmtRate = (v) => Number(v).toFixed(1) + " Hz"
-  const fmtOct = (v) => (v === 0 ? "off" : Number(v).toFixed(2) + " oct")
+  const fmtHz = (hz: number) =>
+    hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz'
+  const fmtSec = (s: number) => (s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(2) + ' s')
+  const fmtPct = (v: number) => Math.round(v * 100) + '%'
+  const fmtInt = (v: number) => (v > 0 ? '+' : '') + String(v)
+  const fmtCents = (v: number) => fmtInt(v) + '¢'
+  const fmtNum = (v: number) => Number(v).toFixed(1)
+  const fmtRate = (v: number) => Number(v).toFixed(1) + ' Hz'
+  const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
 
   const btn =
-    "rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+    'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40'
 </script>
 
-{#snippet slider(key, label, min, max, step, format)}
-  <label class="block space-y-1" for={"synth-" + key}>
-    <span class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400">
+{#snippet slider(
+  key: NumericParam,
+  label: string,
+  min: number,
+  max: number,
+  step: number,
+  format: (v: number) => string
+)}
+  <label class="block space-y-1" for={'synth-' + key}>
+    <span
+      class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
+    >
       <span>{label}</span>
       <span class="font-mono text-amber-300 tabular-nums normal-case">{format(params[key])}</span>
     </span>
     <input
-      id={"synth-" + key}
+      id={'synth-' + key}
       type="range"
       {min}
       {max}
@@ -327,38 +397,44 @@
   </label>
 {/snippet}
 
-{#snippet waveSelect(key)}
-  <div class="grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1" role="group" aria-label="Waveform">
-    {#each WAVES as wave}
+{#snippet waveSelect(key: 'osc1_wave' | 'osc2_wave')}
+  <div
+    class="grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="Waveform"
+  >
+    {#each WAVES as wave (wave)}
       <button
         type="button"
         aria-pressed={params[key] === wave}
         onclick={() => (params[key] = wave)}
         class={[
-          "rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition",
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
           params[key] === wave
-            ? "bg-amber-400 text-zinc-900 shadow shadow-amber-400/30"
-            : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100",
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
         ]}
       >
-        {wave === "sawtooth" ? "saw" : wave === "triangle" ? "tri" : wave}
+        {wave === 'sawtooth' ? 'saw' : wave === 'triangle' ? 'tri' : wave}
       </button>
     {/each}
   </div>
 {/snippet}
 
-{#snippet panel(title, body)}
-  <section class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-inner shadow-black/40">
+{#snippet panel(title: string, body: Snippet)}
+  <section
+    class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-inner shadow-black/40"
+  >
     <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">{title}</h2>
     {@render body()}
   </section>
 {/snippet}
 
-{#snippet osc(n)}
+{#snippet osc(n: 1 | 2)}
   {@render waveSelect(`osc${n}_wave`)}
-  {@render slider(`osc${n}_octave`, "Octave", -2, 2, 1, fmtInt)}
-  {@render slider(`osc${n}_detune`, "Detune", -50, 50, 1, fmtCents)}
-  {@render slider(`osc${n}_level`, "Level", 0, 1, 0.01, fmtPct)}
+  {@render slider(`osc${n}_octave`, 'Octave', -2, 2, 1, fmtInt)}
+  {@render slider(`osc${n}_detune`, 'Detune', -50, 50, 1, fmtCents)}
+  {@render slider(`osc${n}_level`, 'Level', 0, 1, 0.01, fmtPct)}
 {/snippet}
 
 {#snippet osc1()}{@render osc(1)}{/snippet}
@@ -366,9 +442,13 @@
 
 {#snippet filter()}
   <label class="block space-y-1" for="synth-filter_cutoff">
-    <span class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400">
+    <span
+      class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
+    >
       <span>Cutoff</span>
-      <span class="font-mono text-amber-300 tabular-nums normal-case">{fmtHz(params.filter_cutoff)}</span>
+      <span class="font-mono text-amber-300 tabular-nums normal-case"
+        >{fmtHz(params.filter_cutoff)}</span
+      >
     </span>
     <input
       id="synth-filter_cutoff"
@@ -377,23 +457,26 @@
       max="1"
       step="0.001"
       value={cutoffPos}
-      oninput={(e) => (params.filter_cutoff = Math.round(20 * 900 ** Number(e.currentTarget.value)))}
+      oninput={(e) =>
+        (params.filter_cutoff = Math.round(20 * 900 ** Number(e.currentTarget.value)))}
       class="w-full cursor-pointer accent-amber-400"
     />
   </label>
-  {@render slider("filter_resonance", "Resonance", 0, 20, 0.1, fmtNum)}
-  {@render slider("lfo_rate", "LFO rate", 0.1, 20, 0.1, fmtRate)}
-  {@render slider("lfo_depth", "LFO depth", 0, 4, 0.05, fmtOct)}
+  {@render slider('filter_resonance', 'Resonance', 0, 20, 0.1, fmtNum)}
+  {@render slider('lfo_rate', 'LFO rate', 0.1, 20, 0.1, fmtRate)}
+  {@render slider('lfo_depth', 'LFO depth', 0, 4, 0.05, fmtOct)}
 {/snippet}
 
 {#snippet envelope()}
-  {@render slider("attack", "Attack", 0.001, 2, 0.001, fmtSec)}
-  {@render slider("decay", "Decay", 0.001, 2, 0.001, fmtSec)}
-  {@render slider("sustain", "Sustain", 0, 1, 0.01, fmtPct)}
-  {@render slider("release", "Release", 0.01, 4, 0.01, fmtSec)}
+  {@render slider('attack', 'Attack', 0.001, 2, 0.001, fmtSec)}
+  {@render slider('decay', 'Decay', 0.001, 2, 0.001, fmtSec)}
+  {@render slider('sustain', 'Sustain', 0, 1, 0.01, fmtPct)}
+  {@render slider('release', 'Release', 0.01, 4, 0.01, fmtSec)}
 {/snippet}
 
-<div class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6">
+<div
+  class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+>
   <div id="preset-bar" class="flex flex-wrap items-center gap-2">
     <select
       id="preset-select"
@@ -403,8 +486,8 @@
     >
       <option value="">Load preset…</option>
       <optgroup label="Factory">
-        {#each FACTORY_PRESETS as preset, i}
-          <option value={"factory:" + i}>{preset.name}</option>
+        {#each FACTORY_PRESETS as preset, i (preset.name)}
+          <option value={'factory:' + i}>{preset.name}</option>
         {/each}
       </optgroup>
       {#if presets.length}
@@ -426,34 +509,57 @@
     <button
       id="save-preset"
       type="button"
-      disabled={presetName.trim() === ""}
+      disabled={presetName.trim() === ''}
       onclick={savePreset}
       class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
     >
       Save
     </button>
-    <button id="reset-params" type="button" class={btn} onclick={() => (params = { ...DEFAULT_PARAMS })}>
+    <button
+      id="reset-params"
+      type="button"
+      class={btn}
+      onclick={() => (params = { ...DEFAULT_PARAMS })}
+    >
       Reset
     </button>
     <span id="preset-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    {@render panel("Osc 1", osc1)}
-    {@render panel("Osc 2", osc2)}
-    {@render panel("Filter", filter)}
-    {@render panel("Envelope", envelope)}
+    {@render panel('Osc 1', osc1)}
+    {@render panel('Osc 2', osc2)}
+    {@render panel('Filter', filter)}
+    {@render panel('Envelope', envelope)}
   </div>
 
-  <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
+  <div
+    class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
+  >
     <div class="flex items-center gap-2">
-      <button id="octave-down" type="button" class={btn} aria-label="Octave down" onclick={() => shiftOctave(-1)}>−</button>
-      <span class="w-20 text-center font-mono text-sm tabular-nums text-zinc-300">Octave {baseOctave}</span>
-      <button id="octave-up" type="button" class={btn} aria-label="Octave up" onclick={() => shiftOctave(1)}>+</button>
+      <button
+        id="octave-down"
+        type="button"
+        class={btn}
+        aria-label="Octave down"
+        onclick={() => shiftOctave(-1)}>−</button
+      >
+      <span class="w-20 text-center font-mono text-sm tabular-nums text-zinc-300"
+        >Octave {baseOctave}</span
+      >
+      <button
+        id="octave-up"
+        type="button"
+        class={btn}
+        aria-label="Octave up"
+        onclick={() => shiftOctave(1)}>+</button
+      >
     </div>
-    <p class="text-xs text-zinc-500">Play with A–; keys · Z/X change octave · 1–8 trigger loop pads</p>
+    <p class="text-xs text-zinc-500">
+      Play with A–; keys · Z/X change octave · 1–8 trigger loop pads
+    </p>
     <div class="w-full sm:w-56">
-      {@render slider("volume", "Master", 0, 1, 0.01, fmtPct)}
+      {@render slider('volume', 'Master', 0, 1, 0.01, fmtPct)}
     </div>
   </div>
 
@@ -463,36 +569,45 @@
       <p class="text-xs text-zinc-500">Tap an empty pad to record, tap again to loop it</p>
     </div>
     <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
-      {#each pads as pad, slot}
+      {#each pads as pad, slot (slot)}
         <div class="group relative">
           <button
-            id={"loop-pad-" + slot}
+            id={'loop-pad-' + slot}
             type="button"
             aria-label={`Loop pad ${slot + 1}`}
             aria-pressed={pad.playing || recording === slot}
             onclick={() => tapPad(slot)}
             class={[
-              "relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95",
+              'relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95',
               recording === slot
-                ? "animate-pulse border-red-500 bg-red-500/15 text-red-300"
+                ? 'animate-pulse border-red-500 bg-red-500/15 text-red-300'
                 : pad.playing
-                  ? "border-amber-400 bg-amber-400/15 text-amber-200 shadow shadow-amber-400/20"
+                  ? 'border-amber-400 bg-amber-400/15 text-amber-200 shadow shadow-amber-400/20'
                   : pad.filled
-                    ? "border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-amber-400/60 hover:bg-zinc-700"
-                    : "border-dashed border-zinc-700 text-zinc-500 hover:border-red-500/60 hover:text-red-300",
+                    ? 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-amber-400/60 hover:bg-zinc-700'
+                    : 'border-dashed border-zinc-700 text-zinc-500 hover:border-red-500/60 hover:text-red-300'
             ]}
           >
             <span class="font-mono text-lg">{slot + 1}</span>
             <span class="text-[10px] uppercase tracking-wider opacity-80">
-              {recording === slot ? (countingIn ? "Count-in" : "Done") : pad.filled ? pad.label : "Rec"}
+              {recording === slot
+                ? countingIn
+                  ? 'Count-in'
+                  : 'Done'
+                : pad.filled
+                  ? pad.label
+                  : 'Rec'}
             </span>
             {#if pad.playing}
-              <span class="absolute inset-x-0 bottom-0 h-1 bg-amber-400" style="width: {pad.pos * 100}%"></span>
+              <span
+                class="absolute inset-x-0 bottom-0 h-1 bg-amber-400"
+                style="width: {pad.pos * 100}%"
+              ></span>
             {/if}
           </button>
           {#if pad.filled || recording === slot}
             <button
-              id={"loop-clear-" + slot}
+              id={'loop-clear-' + slot}
               type="button"
               aria-label={`Clear loop pad ${slot + 1}`}
               onclick={() => clearPad(slot)}
@@ -519,18 +634,23 @@
         onpointerup={() => release(key.midi)}
         onpointerleave={() => release(key.midi)}
         onpointercancel={() => release(key.midi)}
-        style={key.black ? `left: ${(key.white / whiteCount) * 100}%; width: ${(100 / whiteCount) * 0.6}%; transform: translateX(-50%)` : ""}
+        style={key.black
+          ? `left: ${(key.white / whiteCount) * 100}%; width: ${(100 / whiteCount) * 0.6}%; transform: translateX(-50%)`
+          : ''}
         class={[
-          "transition-colors duration-75",
+          'transition-colors duration-75',
           key.black
-            ? "absolute top-0 z-10 h-[60%] rounded-b-md border border-black shadow-lg shadow-black/60"
-            : "relative h-full flex-1 rounded-b-lg border border-zinc-400 first:rounded-bl-lg",
-          key.black && (active.has(key.midi) ? "bg-amber-500" : "bg-zinc-900 hover:bg-zinc-700"),
-          !key.black && (active.has(key.midi) ? "bg-amber-300" : "bg-zinc-100 hover:bg-white"),
+            ? 'absolute top-0 z-10 h-[60%] rounded-b-md border border-black shadow-lg shadow-black/60'
+            : 'relative h-full flex-1 rounded-b-lg border border-zinc-400 first:rounded-bl-lg',
+          key.black && (active.has(key.midi) ? 'bg-amber-500' : 'bg-zinc-900 hover:bg-zinc-700'),
+          !key.black && (active.has(key.midi) ? 'bg-amber-300' : 'bg-zinc-100 hover:bg-white')
         ]}
       >
         {#if !key.black && key.midi % 12 === 0}
-          <span class="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-zinc-500">{key.label}</span>
+          <span
+            class="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-zinc-500"
+            >{key.label}</span
+          >
         {/if}
       </button>
     {/each}

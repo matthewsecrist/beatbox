@@ -1,7 +1,9 @@
-<script>
-  import Workspace from "$lib/Workspace.svelte"
+<script lang="ts">
+  import Workspace from '$lib/Workspace.svelte'
 
-  let { data } = $props()
+  import type { PageProps } from './$types'
+
+  let { data }: PageProps = $props()
 </script>
 
 {#key data.key}

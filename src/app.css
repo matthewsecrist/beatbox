@@ -1,4 +1,4 @@
-@import "tailwindcss" source(none);
+@import 'tailwindcss' source(none);
 @source "./";
 
 /* Light page around the (always dark) instrument panels. */

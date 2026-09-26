@@ -35,6 +35,7 @@ the tempo for the whole song.
 
 **Loop pads**: eight pads. Tap an empty pad to record, then tap it again to
 finish.
+
 - If nothing is playing, you get a one-bar count-in; otherwise recording starts
   on the next bar. A metronome clicks while you record.
 - Takes are rounded to whole bars.
@@ -54,21 +55,27 @@ stops the drums and every recorded pad.
 
 ### Keyboard
 
-| Keys | Action |
-|---|---|
+| Keys                                | Action                                                           |
+| ----------------------------------- | ---------------------------------------------------------------- |
 | `A W S E D F T G Y H U J K O L P ;` | Play notes, C up to the E an octave above (white and black keys) |
-| `Z` / `X` | Octave down / up |
-| `1`–`8` | Loop pads: record, finish, start or stop |
+| `Z` / `X`                           | Octave down / up                                                 |
+| `1`–`8`                             | Loop pads: record, finish, start or stop                         |
 
 Keys are ignored while you're typing in a text field.
 
 ## Development
 
 ```sh
-npm run check    # svelte-check
-npm test         # JS tests: audio timing, looper, arranger, and the song/preset store
+npm run validate # everything CI runs: lint, type check, tests
+npm run lint     # ESLint, including Prettier formatting (npm run format to fix)
+npm run check    # svelte-check (strict TypeScript)
+npm test         # Vitest: audio timing, looper, arranger, and the song/preset store
 npm run build && npm start   # production build (Node adapter), serves on :3000
 ```
+
+The code is strict TypeScript. ESLint runs type-aware `typescript-eslint` rules,
+the Svelte plugin (runes only), Perfectionist sorting and Prettier. CI should
+run `npm run validate` and `npm run build`, failing on any lint, type or test error.
 
 ### Database
 
@@ -77,30 +84,32 @@ to use another file or any libSQL URL (for example Turso, with
 `DATABASE_AUTH_TOKEN`).
 
 - `npm run db:migrate` applies the migrations in `drizzle/`.
-- After changing `src/lib/server/db/schema.js`, run `npm run db:generate` to
+- After changing `src/lib/server/db/schema.ts`, run `npm run db:generate` to
   write a new migration.
 
 ### Where things live
 
-| Path | What |
-|---|---|
-| `src/lib/server/db/schema.js` | Drizzle tables: `presets` and `songs` (song parts are JSON) |
-| `src/lib/server/validation.js` | Shape and limits for presets and song parts: drums, loops, sections |
-| `src/lib/server/music.js` | Reading and saving presets and songs |
-| `src/routes/api/` | JSON endpoints the page saves and loads through |
-| `src/routes/+page.server.js`, `src/routes/songs/[id]/` | The page for a new song and for a saved one |
-| `src/lib/Workspace.svelte` | The page: song bar, save/load, and the working copy of the open song |
-| `src/lib/Synth.svelte` | Synth controls, keyboard, presets, loop pads |
-| `src/lib/DrumMachine.svelte` | Step sequencer and tempo |
-| `src/lib/Arranger.svelte` | Arrangement panel |
-| `src/lib/audio.js` | The single shared `AudioContext` |
-| `src/lib/transport.js` | Tempo, beat grid and metronome shared by every instrument |
-| `src/lib/synth/` | Synth engine, loop recorder/player, factory presets |
-| `src/lib/drums/engine.js` | Drum sounds and sequencer |
-| `src/lib/arranger.js` | Plays the arrangement section by section |
-| `db/seeds/*.json` | Songs seeded by `db/seed.js` |
+| Path                                                   | What                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------- |
+| `src/lib/server/db/schema.ts`                          | Drizzle tables: `presets` and `songs` (song parts are JSON)          |
+| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections  |
+| `src/lib/server/music.ts`                              | Reading and saving presets and songs                                 |
+| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                      |
+| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                          |
+| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events   |
+| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song |
+| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                         |
+| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                             |
+| `src/lib/Arranger.svelte`                              | Arrangement panel                                                    |
+| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                     |
+| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument            |
+| `src/lib/synth/`                                       | Synth engine, loop recorder/player, factory presets                  |
+| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                            |
+| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                             |
+| `db/seeds/*.json`                                      | Songs seeded by `db/seed.ts`                                         |
 
 How the pieces talk:
+
 - The instruments own the live state. They report each change to
   `Workspace.svelte`, which keeps the unsaved working copy of the song; **Save**
   sends it to the server, which validates and stores it.
