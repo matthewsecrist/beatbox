@@ -1,4 +1,4 @@
-// Run: node --test assets/svelte/synth/
+// Run: node --test assets/svelte/
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { createSynth } from "./engine.js"
@@ -126,6 +126,38 @@ test("loops follow tempo changes", () => {
 
   // Note-off is on beat 2: 1.5 beats after the change at 1 s per beat.
   assert.deepEqual(synth.calls, [["on", 60, 0.05], ["off", 1.8]])
+})
+
+test("stopAt ends a pad exactly on the boundary beat, releasing held notes there", () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, "pad0:", oneBar, transport)
+  player.start(0) // grid starts at 0.05 s; the note is held from beat 0 to beat 2
+  player.stopAt(1) // section boundary mid-note (beat 1 = 0.55 s)
+
+  clock.now = 0.4 // boundary not yet inside the lookahead
+  player.tick()
+  assert.equal(player.playing, true)
+
+  clock.now = 0.5
+  player.tick()
+  assert.deepEqual(synth.calls, [["on", 60, 0.05], ["off", 0.55]])
+  assert.equal(player.playing, false)
+  assert.equal(transport.running, false)
+})
+
+test("start while a stop is pending cancels it and keeps the loop's phase", () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, "pad0:", oneBar, transport)
+  player.start(0)
+  player.stopAt(4)
+  player.start(4) // next section keeps this pad
+
+  clock.now = 2
+  player.tick()
+  assert.deepEqual(synth.calls, [["on", 60, 0.05], ["off", 1.05], ["on", 60, 2.05]])
+  assert.equal(player.playing, true)
 })
 
 test("stop silences loop notes already scheduled inside the lookahead, but not live notes", () => {

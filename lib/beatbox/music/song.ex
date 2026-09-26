@@ -18,11 +18,11 @@ defmodule Beatbox.Music.Song do
     end
 
     create :create do
-      accept [:name, :synth, :drums, :loops]
+      accept [:name, :synth, :drums, :loops, :arrangement]
     end
 
     update :update do
-      accept [:name, :synth, :drums, :loops]
+      accept [:name, :synth, :drums, :loops, :arrangement]
       require_atomic? false
     end
   end
@@ -44,6 +44,13 @@ defmodule Beatbox.Music.Song do
       default: [],
       public?: true,
       constraints: [max_length: 8]
+
+    # Sections played in order by "Play song".
+    attribute :arrangement, {:array, Beatbox.Music.Section},
+      allow_nil?: false,
+      default: [],
+      public?: true,
+      constraints: [max_length: 64]
 
     timestamps()
   end

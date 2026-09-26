@@ -16,12 +16,13 @@ const SCHEDULE_AHEAD = 0.1
 
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
 // so timing stays tight even when the main thread stutters.
-export function createDrums({ onStep, transport = sharedTransport, getCtx = getContext }) {
+export function createDrums({ onStep, onStop = () => {}, transport = sharedTransport, getCtx = getContext }) {
   let ctx, master, noise, timer, raf
   let volume = 0.8
   let running = false
   let nextStep = 0
   let nextBeat = 0 // step times come from the shared transport grid (4 steps per beat)
+  let endBeat = Infinity // set by stopAt(): no steps from this beat on
   let getPattern = () => ({})
   const pending = new Map() // source -> start time; lets stop() silence lookahead hits
   const queue = []
@@ -94,6 +95,10 @@ export function createDrums({ onStep, transport = sharedTransport, getCtx = getC
 
   function schedule() {
     for (;;) {
+      if (nextBeat >= endBeat) {
+        if (transport.timeAt(endBeat) <= ctx.currentTime) stop()
+        break
+      }
       const t = transport.timeAt(nextBeat)
       if (t >= ctx.currentTime + SCHEDULE_AHEAD) break
       const pattern = getPattern()
@@ -109,17 +114,25 @@ export function createDrums({ onStep, transport = sharedTransport, getCtx = getC
     raf = requestAnimationFrame(draw)
   }
 
-  // Starts on the next bar line (or at once if nothing else is playing).
-  function start(patternFn) {
+  // Starts at `atBeat` (default: next bar line, or at once if nothing else is
+  // playing). Already running: just cancels a pending stopAt().
+  function start(patternFn, atBeat) {
+    endBeat = Infinity
+    getPattern = patternFn
+    if (running) return
     ensureContext()
     transport.acquire("drums")
     running = true
-    getPattern = patternFn
     nextStep = 0
-    nextBeat = transport.nextBar()
+    nextBeat = atBeat ?? transport.nextBar()
     schedule()
     timer = setInterval(schedule, LOOKAHEAD_MS)
     raf = requestAnimationFrame(draw)
+  }
+
+  // Stops on `beat` (a section boundary); hits before it still play.
+  function stopAt(beat) {
+    if (running) endBeat = beat
   }
 
   function stop() {
@@ -131,6 +144,7 @@ export function createDrums({ onStep, transport = sharedTransport, getCtx = getC
     for (const [src, t] of pending) if (t > ctx.currentTime) src.disconnect()
     transport.release("drums")
     onStep(-1)
+    onStop()
   }
 
   function trigger(id) {
@@ -150,5 +164,5 @@ export function createDrums({ onStep, transport = sharedTransport, getCtx = getC
     master = null
   }
 
-  return { start, stop, trigger, setVolume, close }
+  return { start, stop, stopAt, trigger, setVolume, close }
 }

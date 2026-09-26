@@ -101,7 +101,7 @@ defmodule Beatbox.MixProject do
         "deps.unlock --unused",
         "format",
         "test",
-        "cmd node --test assets/svelte/synth/"
+        "cmd node --test assets/svelte/"
       ],
       "ash.setup": ["ash.setup", "run priv/repo/seeds.exs"]
     ]

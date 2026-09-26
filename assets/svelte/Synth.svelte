@@ -139,6 +139,20 @@
     })
   }
 
+  // Arrangement scene: pads in the section play from its boundary beat (already
+  // playing ones keep their phase); the rest stop exactly on it.
+  function onScene({ detail }) {
+    players.forEach((p, slot) => {
+      if (!p) return
+      if (detail.pads.includes(slot)) {
+        p.start(detail.beat)
+        pads[slot].playing = true
+      } else {
+        p.stopAt(detail.beat)
+      }
+    })
+  }
+
   const anyPadPlaying = $derived(pads.some((p) => p.playing))
   const report = (on) => window.dispatchEvent(new CustomEvent("beatbox:state", { detail: { source: "loops", playing: on } }))
   const onReport = () => report(anyPadPlaying)
@@ -207,7 +221,12 @@
     synth = createSynth($state.snapshot(params))
     for (const [slot, loop] of saved) players[slot] = createPlayer(synth, `pad${slot}:`, loop, transport)
     loopTimer = setInterval(() => {
-      players.forEach((p, slot) => p?.playing && (pads[slot].pos = p.tick()))
+      // The UI follows the players: a pad stopped by a section boundary plays on until it.
+      players.forEach((p, slot) => {
+        if (!p?.playing) return
+        pads[slot].pos = p.tick()
+        if (!p.playing) pads[slot] = { ...pads[slot], playing: false, pos: 0 }
+      })
       if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
     }, 25)
     window.addEventListener("keydown", onKeyDown)
@@ -215,12 +234,14 @@
     window.addEventListener("blur", onBlur)
     window.addEventListener("beatbox:transport", onTransport)
     window.addEventListener("beatbox:report", onReport)
+    window.addEventListener("beatbox:scene", onScene)
     return () => {
       window.removeEventListener("keydown", onKeyDown)
       window.removeEventListener("keyup", onKeyUp)
       window.removeEventListener("blur", onBlur)
       window.removeEventListener("beatbox:transport", onTransport)
       window.removeEventListener("beatbox:report", onReport)
+      window.removeEventListener("beatbox:scene", onScene)
       report(false)
       clearTimeout(statusTimer)
       clearInterval(loopTimer)

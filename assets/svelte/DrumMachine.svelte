@@ -34,15 +34,26 @@
   let drums = null
 
   onMount(() => {
-    drums = createDrums({ onStep: (s) => (current = s) })
+    drums = createDrums({ onStep: (s) => (current = s), onStop: () => (playing = false) })
     // Global Play all / Stop all (song bar) and its state reports.
     const onTransport = (e) => e.detail.play !== playing && toggle()
     const onReport = () => report(playing)
+    // Arrangement scene: play or stop from the section boundary beat.
+    const onScene = ({ detail }) => {
+      if (detail.drums) {
+        drums.start(() => pattern, detail.beat)
+        playing = true
+      } else {
+        drums.stopAt(detail.beat) // `playing` goes false via onStop on that beat
+      }
+    }
     window.addEventListener("beatbox:transport", onTransport)
     window.addEventListener("beatbox:report", onReport)
+    window.addEventListener("beatbox:scene", onScene)
     return () => {
       window.removeEventListener("beatbox:transport", onTransport)
       window.removeEventListener("beatbox:report", onReport)
+      window.removeEventListener("beatbox:scene", onScene)
       drums.close()
       report(false)
     }
@@ -67,9 +78,9 @@
   $effect(() => drums?.setVolume(volume))
 
   function toggle() {
-    if (playing) drums.stop()
-    else drums.start(() => pattern)
-    playing = !playing
+    if (playing) return drums.stop() // onStop clears `playing`
+    drums.start(() => pattern)
+    playing = true
   }
 
   const btn =

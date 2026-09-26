@@ -41,6 +41,7 @@ defmodule BeatboxWeb.SynthLiveTest do
     {:ok, song} = Music.get_song(id)
     assert song.synth == %{"filter_cutoff" => 300}
     assert %{bpm: 140} = song.drums
+    assert [%{name: "Drop", bars: 8, drums: true, pads: [2]}] = song.arrangement
     assert [%{slot: 2, params: %{"osc1_wave" => "sine"} = loop_params}] = song.loops
     refute Map.has_key?(loop_params, "evil")
 
@@ -50,6 +51,7 @@ defmodule BeatboxWeb.SynthLiveTest do
              props(reopened, "Synth")
 
     assert %{"drums" => %{"bpm" => 140}} = props(reopened, "DrumMachine")
+    assert %{"sections" => [%{"name" => "Drop", "bars" => 8}]} = props(reopened, "Arranger")
   end
 
   test "saving again updates the open song instead of creating another", %{conn: conn} do
@@ -129,6 +131,10 @@ defmodule BeatboxWeb.SynthLiveTest do
   defp push_session(view) do
     render_hook(view, "update_synth", %{"params" => %{"filter_cutoff" => 300, "evil" => "x"}})
     render_hook(view, "update_drums", %{"drums" => drums(140)})
+
+    render_hook(view, "update_arrangement", %{
+      "sections" => [%{"name" => "Drop", "bars" => 8, "drums" => true, "pads" => [2]}]
+    })
 
     render_hook(view, "update_loops", %{
       "loops" => [

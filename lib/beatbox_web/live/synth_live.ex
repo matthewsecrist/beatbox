@@ -180,6 +180,14 @@ defmodule BeatboxWeb.SynthLive do
         props={%{drums: @initial.drums}}
         socket={@socket}
       />
+      <.svelte
+        name="Arranger"
+        id={"arranger-#{@mount_key}"}
+        ssr={false}
+        diff={false}
+        props={%{sections: @initial.arrangement}}
+        socket={@socket}
+      />
     </Layouts.app>
     """
   end
@@ -209,6 +217,11 @@ defmodule BeatboxWeb.SynthLive do
 
   def handle_event("update_drums", %{"drums" => drums}, socket) when is_map(drums) do
     {:noreply, change_doc(socket, :drums, drums)}
+  end
+
+  def handle_event("update_arrangement", %{"sections" => sections}, socket)
+      when is_list(sections) do
+    {:noreply, change_doc(socket, :arrangement, sections)}
   end
 
   def handle_event("update_loops", %{"loops" => loops}, socket) when is_list(loops) do
@@ -259,7 +272,8 @@ defmodule BeatboxWeb.SynthLive do
     doc = %{
       synth: song && song.synth,
       drums: song && drums_to_map(song.drums),
-      loops: if(song, do: Enum.map(song.loops, &loop_to_map/1), else: [])
+      loops: if(song, do: Enum.map(song.loops, &loop_to_map/1), else: []),
+      arrangement: if(song, do: Enum.map(song.arrangement, &section_to_map/1), else: [])
     }
 
     socket
@@ -292,6 +306,8 @@ defmodule BeatboxWeb.SynthLive do
   defp drums_to_map(drums), do: Map.take(drums, [:bpm, :volume, :pattern])
 
   defp loop_to_map(loop), do: Map.take(loop, [:slot, :length, :bpm, :events, :params])
+
+  defp section_to_map(section), do: Map.take(section, [:name, :bars, :drums, :pads])
 
   defp assign_presets(socket) do
     assign(socket, :presets, Enum.map(Music.list_presets!(), &%{id: &1.id, name: &1.name}))

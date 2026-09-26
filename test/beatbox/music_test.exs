@@ -39,6 +39,9 @@ defmodule Beatbox.MusicTest do
     assert {:error, %Ash.Error.Invalid{}} = Music.update_song(song, %{loops: [bad_note]})
 
     assert {:error, %Ash.Error.Invalid{}} =
+             Music.update_song(song, %{arrangement: [%{"bars" => 4, "pads" => [8]}]})
+
+    assert {:error, %Ash.Error.Invalid{}} =
              Music.update_song(song, %{loops: [%{loop | "slot" => 8}]})
 
     assert {:error, %Ash.Error.Invalid{}} =
