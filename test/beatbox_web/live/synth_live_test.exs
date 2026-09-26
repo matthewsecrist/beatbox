@@ -6,6 +6,7 @@ defmodule BeatboxWeb.SynthLiveTest do
   test "saves and loads presets, dropping unknown params", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/")
     assert has_element?(view, "#synth")
+    assert has_element?(view, "#drums")
 
     render_hook(view, "save_preset", %{
       "name" => "Lead",

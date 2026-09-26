@@ -13,6 +13,7 @@ defmodule BeatboxWeb.SynthLive do
     ~H"""
     <Layouts.app flash={@flash}>
       <.svelte name="Synth" id="synth" ssr={false} props={%{presets: @presets}} socket={@socket} />
+      <.svelte name="DrumMachine" id="drums" ssr={false} socket={@socket} />
     </Layouts.app>
     """
   end
