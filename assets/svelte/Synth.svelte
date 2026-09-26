@@ -1,9 +1,10 @@
 <script>
-  import { onMount } from "svelte"
+  import { onMount, untrack } from "svelte"
   import { SvelteSet } from "svelte/reactivity"
   import { DEFAULT_PARAMS, createSynth } from "./synth/engine.js"
+  import { createPlayer, createRecorder } from "./synth/looper.js"
 
-  let { presets = [], live } = $props()
+  let { presets = [], loops = [], live } = $props()
 
   let params = $state({ ...DEFAULT_PARAMS })
   let presetName = $state("")
@@ -14,6 +15,25 @@
   const heldKeys = new Map()
   let synth = null
   let statusTimer
+
+  // Loop pads: each slot holds a recorded loop (with the synth params it was
+  // recorded with) and plays independently. `players`/`recorder` need the synth,
+  // so they're created in onMount; `pads` is just the UI state.
+  const PAD_COUNT = 8
+  const saved = untrack(() => new Map(loops.map((l) => [l.slot, l]))) // mount-time only; pads own state after
+  let pads = $state(
+    Array.from({ length: PAD_COUNT }, (_, slot) => ({
+      filled: saved.has(slot),
+      length: saved.get(slot)?.length ?? 0,
+      playing: false,
+      pos: 0,
+    })),
+  )
+  let recording = $state(-1) // slot being recorded, or -1
+  let recordParams = null
+  let recorder = null
+  let loopTimer
+  const players = []
 
   const WAVES = ["sine", "triangle", "sawtooth", "square"]
   const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -37,12 +57,71 @@
     if (!synth) return
     active.add(midi)
     synth.noteOn(midi)
+    if (recording >= 0) recorder.note(midi, true)
   }
 
   function release(midi) {
     if (!active.has(midi)) return
     active.delete(midi)
     synth.noteOff(midi)
+    if (recording >= 0) recorder.note(midi, false)
+  }
+
+  function tapPad(slot) {
+    if (!synth) return
+    if (recording === slot) return finishRecording()
+    if (!pads[slot].filled) return startRecording(slot)
+    players[slot].playing ? stopPad(slot) : startPad(slot)
+  }
+
+  function startRecording(slot) {
+    if (recording >= 0) finishRecording()
+    recorder.start([...active])
+    // Master volume stays a global control, so a loop doesn't pin its own level.
+    const { volume, ...sound } = $state.snapshot(params)
+    recordParams = sound
+    recording = slot
+  }
+
+  function finishRecording() {
+    const slot = recording
+    recording = -1
+    const take = recorder.finish()
+    if (!take) return
+    const loop = { ...take, params: recordParams }
+    const player = createPlayer(synth, `pad${slot}:`, loop)
+    players[slot] = player
+    pads[slot] = { filled: true, length: loop.length, playing: false, pos: 0 }
+    startPad(slot)
+    live.pushEvent("save_loop", { slot, ...loop }, (reply) => {
+      if (!reply.error) return
+      // Only roll back if the pad still holds this take (not re-recorded/cleared since).
+      if (players[slot] === player) {
+        player.stop()
+        players[slot] = null
+        pads[slot] = { filled: false, length: 0, playing: false, pos: 0 }
+      }
+      showStatus("Loop not saved: " + reply.error)
+    })
+  }
+
+  function startPad(slot) {
+    players[slot].start()
+    pads[slot].playing = true
+  }
+
+  function stopPad(slot) {
+    players[slot].stop()
+    pads[slot].playing = false
+    pads[slot].pos = 0
+  }
+
+  function clearPad(slot) {
+    if (recording === slot) recording = -1
+    players[slot]?.stop()
+    players[slot] = null
+    pads[slot] = { filled: false, length: 0, playing: false, pos: 0 }
+    live.pushEvent("clear_loop", { slot }, (reply) => reply.error && showStatus("Loop not cleared: " + reply.error))
   }
 
   function shiftOctave(delta) {
@@ -63,6 +142,7 @@
     const k = e.key.toLowerCase()
     if (k === "z") return shiftOctave(-1)
     if (k === "x") return shiftOctave(1)
+    if (k >= "1" && k <= "8") return tapPad(Number(k) - 1)
     const offset = KEY_MAP.indexOf(k)
     if (offset < 0 || heldKeys.has(k)) return
     const midi = baseMidi + offset
@@ -86,6 +166,11 @@
 
   onMount(() => {
     synth = createSynth($state.snapshot(params))
+    recorder = createRecorder(synth)
+    for (const [slot, loop] of saved) players[slot] = createPlayer(synth, `pad${slot}:`, loop)
+    loopTimer = setInterval(() => {
+      players.forEach((p, slot) => p?.playing && (pads[slot].pos = p.tick()))
+    }, 25)
     window.addEventListener("keydown", onKeyDown)
     window.addEventListener("keyup", onKeyUp)
     window.addEventListener("blur", onBlur)
@@ -94,6 +179,8 @@
       window.removeEventListener("keyup", onKeyUp)
       window.removeEventListener("blur", onBlur)
       clearTimeout(statusTimer)
+      clearInterval(loopTimer)
+      players.forEach((p) => p?.stop())
       synth.allNotesOff()
     }
   })
@@ -267,11 +354,60 @@
       <span class="w-20 text-center font-mono text-sm tabular-nums text-zinc-300">Octave {baseOctave}</span>
       <button id="octave-up" type="button" class={btn} aria-label="Octave up" onclick={() => shiftOctave(1)}>+</button>
     </div>
-    <p class="text-xs text-zinc-500">Play with A–; keys · Z/X change octave</p>
+    <p class="text-xs text-zinc-500">Play with A–; keys · Z/X change octave · 1–8 trigger loop pads</p>
     <div class="w-full sm:w-56">
       {@render slider("volume", "Master", 0, 1, 0.01, fmtPct)}
     </div>
   </div>
+
+  <section id="loop-pads" class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Loops</h2>
+      <p class="text-xs text-zinc-500">Tap an empty pad to record, tap again to loop it</p>
+    </div>
+    <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
+      {#each pads as pad, slot}
+        <div class="group relative">
+          <button
+            id={"loop-pad-" + slot}
+            type="button"
+            aria-label={`Loop pad ${slot + 1}`}
+            aria-pressed={pad.playing || recording === slot}
+            onclick={() => tapPad(slot)}
+            class={[
+              "relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95",
+              recording === slot
+                ? "animate-pulse border-red-500 bg-red-500/15 text-red-300"
+                : pad.playing
+                  ? "border-amber-400 bg-amber-400/15 text-amber-200 shadow shadow-amber-400/20"
+                  : pad.filled
+                    ? "border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-amber-400/60 hover:bg-zinc-700"
+                    : "border-dashed border-zinc-700 text-zinc-500 hover:border-red-500/60 hover:text-red-300",
+            ]}
+          >
+            <span class="font-mono text-lg">{slot + 1}</span>
+            <span class="text-[10px] uppercase tracking-wider opacity-80">
+              {recording === slot ? "Done" : pad.filled ? pad.length.toFixed(1) + "s" : "Rec"}
+            </span>
+            {#if pad.playing}
+              <span class="absolute inset-x-0 bottom-0 h-1 bg-amber-400" style="width: {pad.pos * 100}%"></span>
+            {/if}
+          </button>
+          {#if pad.filled || recording === slot}
+            <button
+              id={"loop-clear-" + slot}
+              type="button"
+              aria-label={`Clear loop pad ${slot + 1}`}
+              onclick={() => clearPad(slot)}
+              class="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-zinc-600 bg-zinc-900 text-xs text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:border-red-500 hover:text-red-400 focus:opacity-100 pointer-coarse:opacity-100"
+            >
+              ×
+            </button>
+          {/if}
+        </div>
+      {/each}
+    </div>
+  </section>
 
   <div id="keyboard" class="relative flex h-40 select-none sm:h-48" style="touch-action: none">
     {#each keys as key (key.midi)}

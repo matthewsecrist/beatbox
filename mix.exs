@@ -96,7 +96,13 @@ defmodule Beatbox.MixProject do
       "assets.deploy": [
         "assets.build"
       ],
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"],
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "test",
+        "cmd node --test assets/svelte/synth/"
+      ],
       "ash.setup": ["ash.setup", "run priv/repo/seeds.exs"]
     ]
   end

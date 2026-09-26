@@ -19,4 +19,18 @@ defmodule Beatbox.MusicTest do
 
     assert ~w(Arp Lead Pad) == Enum.map(Music.list_presets!(), & &1.name)
   end
+
+  test "saving to an occupied loop slot replaces it" do
+    Music.save_loop!(3, 1.0, [%{"t" => 0, "midi" => 60, "on" => true}], %{})
+    Music.save_loop!(3, 2.0, [%{"t" => 0, "midi" => 64, "on" => true}], %{})
+
+    assert [%{slot: 3, length: 2.0, events: [%{midi: 64}]}] = Music.list_loops!()
+  end
+
+  test "loops reject notes outside the MIDI range and slots outside the pad grid" do
+    assert {:error, %Ash.Error.Invalid{}} =
+             Music.save_loop(0, 1.0, [%{"t" => 0, "midi" => 128, "on" => true}], %{})
+
+    assert {:error, %Ash.Error.Invalid{}} = Music.save_loop(8, 1.0, [], %{})
+  end
 end
