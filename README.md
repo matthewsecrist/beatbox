@@ -43,6 +43,17 @@ finish.
   changes.
 - A pad started while something else plays joins on the next bar line.
 
+**Piano roll**: the pencil on a pad opens its loop as notes (on an empty pad,
+it starts an empty one-bar loop to draw in).
+
+- Click to add a note and drag to set its length; drag a note to move it, or its
+  right edge to resize. Right-click or double-click deletes it; a focused note
+  moves with the arrow keys (Shift: an octave).
+- Everything snaps to the grid (1/4 to 1/32). **Quantize** moves note starts to
+  it, and − / + change the loop length in bars.
+- Edits are heard straight away, even while the pad plays, and are saved with
+  the song.
+
 **Arrangement**: a list of sections, each with a length in bars, a drum pattern
 (or none) and toggles for each pad. **Play song** plays the sections in order,
 and every change lands on the section boundary.
@@ -89,24 +100,25 @@ to use another file or any libSQL URL (for example Turso, with
 
 ### Where things live
 
-| Path                                                   | What                                                                 |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| `src/lib/server/db/schema.ts`                          | Drizzle tables: `presets` and `songs` (song parts are JSON)          |
-| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections  |
-| `src/lib/server/music.ts`                              | Reading and saving presets and songs                                 |
-| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                      |
-| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                          |
-| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events   |
-| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song |
-| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                         |
-| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                             |
-| `src/lib/Arranger.svelte`                              | Arrangement panel                                                    |
-| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                     |
-| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument            |
-| `src/lib/synth/`                                       | Synth engine, loop recorder/player, factory presets                  |
-| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                            |
-| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                             |
-| `db/seeds/*.json`                                      | Songs seeded by `db/seed.ts`                                         |
+| Path                                                   | What                                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `src/lib/server/db/schema.ts`                          | Drizzle tables: `presets` and `songs` (song parts are JSON)                     |
+| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections             |
+| `src/lib/server/music.ts`                              | Reading and saving presets and songs                                            |
+| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                                 |
+| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                     |
+| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events              |
+| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song            |
+| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                    |
+| `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                      |
+| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                                        |
+| `src/lib/Arranger.svelte`                              | Arrangement panel                                                               |
+| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                                |
+| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument                       |
+| `src/lib/synth/`                                       | Synth engine, loop recorder/player, piano-roll note conversion, factory presets |
+| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                                       |
+| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                                        |
+| `db/seeds/*.json`                                      | Songs seeded by `db/seed.ts`                                                    |
 
 How the pieces talk:
 

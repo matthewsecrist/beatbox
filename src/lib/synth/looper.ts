@@ -14,11 +14,18 @@ const LATE_PRESS = 0.25 // beats (a 16th note)
 
 export interface Player {
   readonly playing: boolean
+  // Swaps in edited notes/length; a playing loop keeps its place in the bar.
+  setLoop(next: PlayerLoop): void
   start(atBeat?: number): void
   stop(): void
   stopAt(beat: number): void
   tick(): number
 }
+
+// Plays one loop ({ events, length, params, bpm }) on voices keyed `${prefix}${midi}`,
+// from a bar line. Loops saved before tempo sync have no `bpm`; they're taken to be
+// at the tempo in effect when they start.
+export type PlayerLoop = Pick<Loop, 'bpm' | 'events' | 'length' | 'params'>
 
 export interface Recorder {
   finish(): null | Take
@@ -40,18 +47,16 @@ interface BeatEvent {
   on: boolean
 }
 
-// Plays one loop ({ events, length, params, bpm }) on voices keyed `${prefix}${midi}`,
-// from a bar line. Loops saved before tempo sync have no `bpm`; they're taken to be
-// at the tempo in effect when they start.
 export function createPlayer(
   synth: Pick<Synth, 'cancelPending' | 'noteOff' | 'noteOn'>,
   prefix: string,
-  loop: Pick<Loop, 'bpm' | 'events' | 'length' | 'params'>,
+  initial: PlayerLoop,
   transport: Pick<
     Transport,
     'acquire' | 'beatAt' | 'bpm' | 'nextBar' | 'now' | 'release' | 'timeAt'
   >
 ): Player {
+  let loop = initial
   let lengthBeats = 0
   let events: (LoopEvent & { beat: number })[] = []
   let playing = false
@@ -60,6 +65,23 @@ export function createPlayer(
   let cursor = 0
   let endBeat = Infinity // set by stopAt(); playback ends exactly on this beat
   const sounding = new Set<string>()
+
+  // Converts the loop to beats; loops recorded before tempo sync (no bpm) are
+  // taken to be at the current tempo.
+  function load() {
+    const toBeats = (loop.bpm ?? transport.bpm) / 60
+    // Lengths are stored to the millisecond; snap to 1/192 beat so a loop doesn't
+    // drift against the grid a little more on every cycle.
+    lengthBeats = Math.max(1 / 192, Math.round(loop.length * toBeats * 192) / 192)
+    events = loop.events.map((e) => ({ ...e, beat: e.t * toBeats }))
+  }
+
+  // Stops notes already scheduled or sounding, so the loop can be rescheduled.
+  function silence(at?: number) {
+    synth.cancelPending((key) => typeof key === 'string' && key.startsWith(prefix))
+    for (const key of sounding) synth.noteOff(key, at)
+    sounding.clear()
+  }
 
   function finish() {
     for (const key of sounding) synth.noteOff(key, transport.timeAt(endBeat))
@@ -72,14 +94,29 @@ export function createPlayer(
     get playing(): boolean {
       return playing
     },
+    setLoop(next: PlayerLoop): void {
+      loop = next
+      if (!playing) return
+      silence()
+      load()
+      // Pick up at the same point of the (possibly shorter) cycle.
+      const now = transport.beatAt(transport.now())
+      const into = Math.max(0, now - startBeat)
+      const phase = lengthBeats > 0 ? into % lengthBeats : 0
+      cycleStart = startBeat + into - phase
+      cursor = events.findIndex((e) => cycleStart + e.beat >= Math.max(now, startBeat))
+      if (cursor < 0) {
+        cursor = 0
+        cycleStart += lengthBeats
+      }
+      tick()
+    },
     // Starts at `atBeat` (default: next bar line). Already playing: just cancels a
     // pending stopAt(), so the loop keeps its phase.
     start(atBeat = transport.nextBar()): void {
       endBeat = Infinity
       if (playing) return
-      const toBeats = (loop.bpm ?? transport.bpm) / 60
-      lengthBeats = loop.length * toBeats
-      events = loop.events.map((e) => ({ ...e, beat: e.t * toBeats }))
+      load()
       transport.acquire(prefix)
       playing = true
       startBeat = cycleStart = atBeat
@@ -91,9 +128,7 @@ export function createPlayer(
     stop(): void {
       if (!playing) return
       playing = false
-      synth.cancelPending((key) => typeof key === 'string' && key.startsWith(prefix))
-      for (const key of sounding) synth.noteOff(key)
-      sounding.clear()
+      silence()
       transport.release(prefix)
     },
     // Stops on `beat` (a section boundary): notes before it still play, anything
@@ -106,9 +141,11 @@ export function createPlayer(
 
   // Schedules everything due before now + LOOKAHEAD; returns loop position 0..1.
   function tick(): number {
-    if (!playing || events.length === 0) return 0
+    if (!playing) return 0
     const now = transport.now()
-    for (;;) {
+    // An empty loop schedules nothing but still stops on its stop beat.
+    if (events.length === 0 && transport.timeAt(endBeat) < now + LOOKAHEAD) finish()
+    while (events.length > 0) {
       const e = events[cursor]
       if (!e) break
       const beat = cycleStart + e.beat
