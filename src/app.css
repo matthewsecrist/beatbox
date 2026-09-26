@@ -1,0 +1,8 @@
+@import 'tailwindcss' source(none);
+@source "./";
+
+/* Light page around the (always dark) instrument panels. */
+body {
+  background-color: var(--color-zinc-50);
+  color: var(--color-zinc-900);
+}

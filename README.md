@@ -4,19 +4,19 @@ A music workstation in the browser: a polyphonic synth, a 16-step drum machine,
 eight loop pads and an arranger, all locked to one tempo. Sessions are saved as
 songs. Sound is generated live with the Web Audio API; nothing is sampled.
 
-Built with Phoenix LiveView, [Ash](https://ash-hq.org) on SQLite, and Svelte 5
-components via [LiveSvelte](https://github.com/woutdp/live_svelte).
+Built with [SvelteKit](https://svelte.dev/docs/kit) and Svelte 5, with
+[Drizzle](https://orm.drizzle.team) on SQLite (libSQL).
 
 ## Getting started
 
-Requirements: Elixir/Erlang and Node.js (for Vite).
+Requirements: Node.js 22+.
 
 ```sh
-mix setup        # deps, database, migrations, seeds, JS packages, assets
-mix phx.server   # or: iex -S mix phx.server
+npm run setup    # packages, database migrations, seed songs
+npm run dev
 ```
 
-Open [localhost:4000](http://localhost:4000). A song, **Midnight Arcade**, is
+Open [localhost:5173](http://localhost:5173). A song, **Midnight Arcade**, is
 seeded for you: pick it from **Open ▾** and press **Play song**.
 
 ## What's in it
@@ -35,6 +35,7 @@ the tempo for the whole song.
 
 **Loop pads**: eight pads. Tap an empty pad to record, then tap it again to
 finish.
+
 - If nothing is playing, you get a one-bar count-in; otherwise recording starts
   on the next bar. A metronome clicks while you record.
 - Takes are rounded to whole bars.
@@ -54,56 +55,72 @@ stops the drums and every recorded pad.
 
 ### Keyboard
 
-| Keys | Action |
-|---|---|
+| Keys                                | Action                                                           |
+| ----------------------------------- | ---------------------------------------------------------------- |
 | `A W S E D F T G Y H U J K O L P ;` | Play notes, C up to the E an octave above (white and black keys) |
-| `Z` / `X` | Octave down / up |
-| `1`–`8` | Loop pads: record, finish, start or stop |
+| `Z` / `X`                           | Octave down / up                                                 |
+| `1`–`8`                             | Loop pads: record, finish, start or stop                         |
 
 Keys are ignored while you're typing in a text field.
 
 ## Development
 
 ```sh
-mix precommit    # compile (warnings as errors), format, Elixir tests, JS tests
-mix test         # Elixir tests only
-node --test assets/svelte/   # JS tests only (audio timing, looper, arranger)
+npm run validate # everything CI runs: lint, type check, tests
+npm run lint     # ESLint, including Prettier formatting (npm run format to fix)
+npm run check    # svelte-check (strict TypeScript)
+npm test         # Vitest: audio timing, looper, arranger, and the song/preset store
+npm run build && npm start   # production build (Node adapter), serves on :3000
 ```
+
+The code is strict TypeScript. ESLint runs type-aware `typescript-eslint` rules,
+the Svelte plugin (runes only), Perfectionist sorting and Prettier. CI should
+run `npm run validate` and `npm run build`, failing on any lint, type or test error.
+
+### Database
+
+Songs and presets live in SQLite, `beatbox.db` by default. Set `DATABASE_URL`
+to use another file or any libSQL URL (for example Turso, with
+`DATABASE_AUTH_TOKEN`).
+
+- `npm run db:migrate` applies the migrations in `drizzle/`.
+- After changing `src/lib/server/db/schema.ts`, run `npm run db:generate` to
+  write a new migration.
 
 ### Where things live
 
-| Path | What |
-|---|---|
-| `lib/beatbox/music/` | Ash resources: `Preset`, `Song`, and song parts `Drums`, `Loop`, `Section` |
-| `lib/beatbox_web/live/synth_live.ex` | The page: song bar, save/load, and the working copy of the open song |
-| `assets/svelte/Synth.svelte` | Synth controls, keyboard, presets, loop pads |
-| `assets/svelte/DrumMachine.svelte` | Step sequencer and tempo |
-| `assets/svelte/Arranger.svelte` | Arrangement panel |
-| `assets/svelte/audio.js` | The single shared `AudioContext` |
-| `assets/svelte/transport.js` | Tempo, beat grid and metronome shared by every instrument |
-| `assets/svelte/synth/` | Synth engine, loop recorder/player, factory presets |
-| `assets/svelte/drums/engine.js` | Drum sounds and sequencer |
-| `assets/svelte/arranger.js` | Plays the arrangement section by section |
-| `priv/repo/seeds/*.json` | Songs seeded by `priv/repo/seeds.exs` |
+| Path                                                   | What                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------- |
+| `src/lib/server/db/schema.ts`                          | Drizzle tables: `presets` and `songs` (song parts are JSON)          |
+| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections  |
+| `src/lib/server/music.ts`                              | Reading and saving presets and songs                                 |
+| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                      |
+| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                          |
+| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events   |
+| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song |
+| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                         |
+| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                             |
+| `src/lib/Arranger.svelte`                              | Arrangement panel                                                    |
+| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                     |
+| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument            |
+| `src/lib/synth/`                                       | Synth engine, loop recorder/player, factory presets                  |
+| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                            |
+| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                             |
+| `db/seeds/*.json`                                      | Songs seeded by `db/seed.ts`                                         |
 
 How the pieces talk:
-- The Svelte components own the live state. They push each change to the
-  LiveView, which keeps the unsaved working copy of the song; **Save** writes it
-  through Ash.
-- Opening a song remounts the components with that song's state.
+
+- The instruments own the live state. They report each change to
+  `Workspace.svelte`, which keeps the unsaved working copy of the song; **Save**
+  sends it to the server, which validates and stores it.
+- Opening a song remounts the instruments with that song's state.
 - Instruments coordinate in the browser through window events:
   `beatbox:transport` for Play all / Stop all, `beatbox:scene` for arrangement
   sections, and `beatbox:state` for what's currently playing.
 
 ### Seed songs
 
-`priv/repo/seeds.exs` creates each song in `priv/repo/seeds/*.json` that doesn't
-already exist by name, so it never overwrites songs you've edited. It's skipped
-when `MIX_ENV=test`. To add a song, export it to that folder as JSON with the
-keys `name`, `synth`, `drums`, `loops` and `arrangement`.
-
-### Gotcha: Vite dev server caching
-
-If you add a Svelte component or a colocated LiveView hook and the page doesn't
-pick it up (for example, "unknown hook" in the console), restart
-`mix phx.server`. The Vite dev server caches some generated modules.
+`npm run db:seed` creates each song in `db/seeds/*.json` that doesn't already
+exist by name, so it never overwrites songs you've edited. To add a song, export
+it to that folder as JSON with the keys `name`, `synth`, `drums`, `loops` and
+`arrangement`.

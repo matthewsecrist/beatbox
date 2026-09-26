@@ -1,0 +1,298 @@
+import { expect, test, vi } from 'vitest'
+
+import type { Loop } from '../types.js'
+
+import { createTransport } from '../transport.js'
+import { createSynth } from './engine.js'
+import { createPlayer, createRecorder } from './looper.js'
+
+const OSCS_PER_VOICE = 3 // osc1, osc2, filter LFO; osc1 of voice n is oscs[n * 3]
+
+interface FakeNode {
+  disconnected?: boolean
+  startAt?: number
+  stopAt?: number
+}
+
+function defined<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('expected a value')
+  return value
+}
+
+// Minimal AudioContext stand-in with a hand-driven clock; records oscillator
+// start/stop so we can see what would actually sound.
+function fakeAudio() {
+  const clock = { now: 0 }
+  const oscs: FakeNode[] = []
+  const param = () => ({
+    cancelScheduledValues: vi.fn(),
+    exponentialRampToValueAtTime: vi.fn(),
+    linearRampToValueAtTime: vi.fn(),
+    setTargetAtTime: vi.fn(),
+    setValueAtTime: vi.fn(),
+    value: 0
+  })
+  const node = () => {
+    const n: FakeNode & Record<string, unknown> = {
+      connect: <T>(next: T) => next,
+      detune: param(),
+      disconnect() {
+        n.disconnected = true
+      },
+      frequency: param(),
+      gain: param(),
+      Q: param()
+    }
+    return n
+  }
+  const ctx = {
+    createBiquadFilter: () => node(),
+    createGain: () => node(),
+    createOscillator() {
+      const o = node()
+      o.start = (t: number) => (o.startAt = t)
+      o.stop = (t: number) => (o.stopAt = t)
+      oscs.push(o)
+      return o
+    },
+    get currentTime() {
+      return clock.now
+    },
+    destination: {},
+    state: 'running'
+  }
+  const getCtx = () => ctx as unknown as BaseAudioContext
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // 0.5 s per beat, 2 s per bar
+  return { clock, oscs, synth: createSynth({}, getCtx), transport }
+}
+
+// Synth stand-in that records scheduled notes as [kind, midi|key, time].
+function spySynth() {
+  const calls: (number | string)[][] = []
+  return {
+    calls,
+    cancelPending: vi.fn(),
+    noteOff: (_key: number | string, at = NaN) => calls.push(['off', +at.toFixed(3)]),
+    noteOn: (midi: number, at = NaN) => calls.push(['on', midi, +at.toFixed(3)])
+  }
+}
+
+// One bar at 120 BPM: note on at the downbeat, off on beat 3.
+const oneBar: Loop = {
+  bpm: 120,
+  events: [
+    { midi: 60, on: true, t: 0 },
+    { midi: 60, on: false, t: 1 }
+  ],
+  length: 2,
+  params: {},
+  slot: 0
+}
+
+test('tempo changes keep the current beat position', () => {
+  const { clock, transport } = fakeAudio()
+  transport.acquire('x') // grid starts at 0.05 s
+  clock.now = 1.05 // beat 2 at 120 BPM
+  transport.setBpm(60)
+
+  expect(transport.beatAt(1.05)).toBe(2)
+  expect(transport.timeAt(4)).toBe(3.05) // two more beats at 1 s each
+  expect(transport.nextBar()).toBe(4)
+
+  transport.release('x')
+  expect(transport.running).toBe(false)
+})
+
+test('player repeats the loop on the beat grid', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+
+  player.start() // first user: grid (and loop) start at 0.05 s
+  clock.now = 2
+  player.tick()
+
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 1.05],
+    ['on', 60, 2.05]
+  ])
+})
+
+test('a pad started mid-bar waits for the next bar line', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  transport.acquire('drums')
+  clock.now = 0.8 // beat 1.5
+
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start()
+  expect(synth.calls).toStrictEqual([])
+
+  clock.now = 2
+  player.tick()
+  expect(synth.calls).toStrictEqual([['on', 60, 2.05]]) // bar 2 = beat 4
+})
+
+test('loops follow tempo changes', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start()
+
+  clock.now = 0.3 // beat 0.5
+  transport.setBpm(60)
+  clock.now = 1.75
+  player.tick()
+
+  // Note-off is on beat 2: 1.5 beats after the change at 1 s per beat.
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 1.8]
+  ])
+})
+
+test('stopAt ends a pad exactly on the boundary beat, releasing held notes there', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start(0) // grid starts at 0.05 s; the note is held from beat 0 to beat 2
+  player.stopAt(1) // section boundary mid-note (beat 1 = 0.55 s)
+
+  clock.now = 0.4 // boundary not yet inside the lookahead
+  player.tick()
+  expect(player.playing).toBe(true)
+
+  clock.now = 0.5
+  player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 0.55]
+  ])
+  expect(player.playing).toBe(false)
+  expect(transport.running).toBe(false)
+})
+
+test("start while a stop is pending cancels it and keeps the loop's phase", () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start(0)
+  player.stopAt(4)
+  player.start(4) // next section keeps this pad
+
+  clock.now = 2
+  player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 1.05],
+    ['on', 60, 2.05]
+  ])
+  expect(player.playing).toBe(true)
+})
+
+test('stop silences loop notes already scheduled inside the lookahead, but not live notes', () => {
+  const { clock, oscs, synth, transport } = fakeAudio()
+  synth.noteOn(60) // live note, key 60
+  const loop = {
+    ...oneBar,
+    events: [
+      { midi: 64, on: true, t: 0.01 },
+      { midi: 64, on: false, t: 0.03 }
+    ]
+  }
+  const player = createPlayer(synth, 'pad1:', loop, transport)
+  player.start() // note-on at 0.06 and note-off at 0.08 both scheduled now
+
+  const [liveOsc, loopOsc] = [defined(oscs[0]), defined(oscs[OSCS_PER_VOICE])]
+  expect(+defined(loopOsc.startAt).toFixed(3)).toBe(0.06)
+
+  clock.now = 0.02
+  player.stop()
+
+  expect(
+    defined(loopOsc.stopAt) <= defined(loopOsc.startAt),
+    'pending loop note never starts'
+  ).toBeTruthy()
+  expect(liveOsc.stopAt).toBe(undefined)
+})
+
+test('stopping one pad leaves another pad on the same pitch playing', () => {
+  const { clock, oscs, synth, transport } = fakeAudio()
+  const loop = {
+    ...oneBar,
+    events: [
+      { midi: 60, on: true, t: 0.01 },
+      { midi: 60, on: false, t: 1.5 }
+    ]
+  }
+  const pad0 = createPlayer(synth, 'pad0:', loop, transport)
+  const pad1 = createPlayer(synth, 'pad1:', loop, transport)
+  pad0.start()
+  pad1.start() // both note-ons scheduled at 0.06, not yet started
+  const [osc0, osc1] = [defined(oscs[0]), defined(oscs[OSCS_PER_VOICE])]
+
+  clock.now = 0.02
+  pad0.stop()
+
+  expect(
+    defined(osc0.stopAt) <= defined(osc0.startAt),
+    "stopped pad's pending note never starts"
+  ).toBeTruthy()
+  expect(osc1.stopAt).toBe(undefined)
+  expect(transport.running).toBe(true)
+
+  clock.now = 0.3
+  pad1.tick()
+  pad0.tick()
+  expect(oscs.length).toBe(2 * OSCS_PER_VOICE)
+})
+
+test('recorder counts in, rounds the take to whole bars and closes held notes', () => {
+  const { clock, transport } = fakeAudio()
+  const rec = createRecorder(transport)
+  transport.acquire('rec') // grid starts at 0.05 s
+  rec.start([48], 4) // 48 held; take starts after a one-bar count-in (beat 4 = 2.05 s)
+
+  clock.now = 1.0 // still counting in: lands on beat 0 of the take
+  rec.note(60, true)
+  clock.now = 2.55 // take beat 1
+  rec.note(48, false)
+  clock.now = 6.05 // take beat 8: starts past the rounded end, dropped
+  rec.note(64, true)
+  clock.now = 6.3 // 8.5 beats in -> rounds to 2 bars (8 beats = 4 s)
+
+  expect(rec.finish()).toStrictEqual({
+    bpm: 120,
+    events: [
+      { midi: 48, on: true, t: 0 },
+      { midi: 60, on: true, t: 0 },
+      { midi: 48, on: false, t: 0.5 },
+      { midi: 60, on: false, t: 4 }
+    ],
+    length: 4
+  })
+
+  rec.start([], 12)
+  clock.now = 7 // still in the count-in
+  expect(rec.finish()).toBe(null)
+})
+
+test('a take stopped early in a bar keeps the notes already played in it', () => {
+  const { clock, transport } = fakeAudio()
+  const rec = createRecorder(transport)
+  transport.acquire('rec') // grid starts at 0.05 s
+  rec.start([], 0)
+
+  clock.now = 0.05
+  rec.note(60, true)
+  clock.now = 2.55 // take beat 5: a quarter into bar 2
+  rec.note(64, true)
+  clock.now = 2.65 // 5.2 beats in: rounds to 1 bar, but the note on beat 5 was meant
+
+  const take = rec.finish()
+  if (!take) throw new Error('expected a take')
+  expect(take.length).toBe(4) // extended to 2 bars (8 beats = 4 s)
+  expect(take.events.filter((e) => e.on).map((e) => e.midi)).toStrictEqual([60, 64])
+})

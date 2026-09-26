@@ -1,0 +1,6 @@
+# Package managers
+package-lock.json
+
+# Generated
+/drizzle/
+/static/
