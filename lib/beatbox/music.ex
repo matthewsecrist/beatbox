@@ -8,11 +8,11 @@ defmodule Beatbox.Music do
       define :get_preset, action: :read, get_by: [:id]
     end
 
-    resource Beatbox.Music.Loop do
-      define :list_loops, action: :list
-      define :save_loop, action: :save, args: [:slot, :length, :events, :params]
-      define :get_loop_by_slot, action: :read, get_by: [:slot]
-      define :clear_loop, action: :destroy
+    resource Beatbox.Music.Song do
+      define :list_songs, action: :list
+      define :get_song, action: :read, get_by: [:id]
+      define :create_song, action: :create
+      define :update_song, action: :update
     end
   end
 end

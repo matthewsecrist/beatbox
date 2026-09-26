@@ -5,9 +5,11 @@
   import { createPlayer, createRecorder } from "./synth/looper.js"
   import { FACTORY_PRESETS } from "./synth/factory_presets.js"
 
-  let { presets = [], loops = [], live } = $props()
+  // `params`/`loops` come from the open song and are read once at mount; the page
+  // remounts this component when a different song is opened.
+  let { presets = [], params: songParams = null, loops = [], live } = $props()
 
-  let params = $state({ ...DEFAULT_PARAMS })
+  let params = $state({ ...DEFAULT_PARAMS, ...untrack(() => songParams) })
   let presetName = $state("")
   let selectedId = $state("")
   let status = $state("")
@@ -21,7 +23,8 @@
   // recorded with) and plays independently. `players`/`recorder` need the synth,
   // so they're created in onMount; `pads` is just the UI state.
   const PAD_COUNT = 8
-  const saved = untrack(() => new Map(loops.map((l) => [l.slot, l]))) // mount-time only; pads own state after
+  const saved = untrack(() => new Map(loops.map((l) => [l.slot, l])))
+  const loopData = Array.from({ length: PAD_COUNT }, (_, slot) => saved.get(slot) ?? null)
   let pads = $state(
     Array.from({ length: PAD_COUNT }, (_, slot) => ({
       filled: saved.has(slot),
@@ -89,21 +92,18 @@
     recording = -1
     const take = recorder.finish()
     if (!take) return
-    const loop = { ...take, params: recordParams }
-    const player = createPlayer(synth, `pad${slot}:`, loop)
-    players[slot] = player
+    // Mirror the Loop resource limits so one bad take can't block saving the song.
+    if (take.length > 300 || take.events.length > 4000) return showStatus("Loop too long (max 5 min / 4000 notes)")
+    const loop = { slot, ...take, params: recordParams }
+    players[slot] = createPlayer(synth, `pad${slot}:`, loop)
     pads[slot] = { filled: true, length: loop.length, playing: false, pos: 0 }
+    loopData[slot] = loop
+    pushLoops()
     startPad(slot)
-    live.pushEvent("save_loop", { slot, ...loop }, (reply) => {
-      if (!reply.error) return
-      // Only roll back if the pad still holds this take (not re-recorded/cleared since).
-      if (players[slot] === player) {
-        player.stop()
-        players[slot] = null
-        pads[slot] = { filled: false, length: 0, playing: false, pos: 0 }
-      }
-      showStatus("Loop not saved: " + reply.error)
-    })
+  }
+
+  function pushLoops() {
+    live.pushEvent("update_loops", { loops: loopData.filter(Boolean) })
   }
 
   function startPad(slot) {
@@ -122,7 +122,8 @@
     players[slot]?.stop()
     players[slot] = null
     pads[slot] = { filled: false, length: 0, playing: false, pos: 0 }
-    live.pushEvent("clear_loop", { slot }, (reply) => reply.error && showStatus("Loop not cleared: " + reply.error))
+    loopData[slot] = null
+    pushLoops()
   }
 
   function shiftOctave(delta) {
@@ -182,13 +183,20 @@
       clearTimeout(statusTimer)
       clearInterval(loopTimer)
       players.forEach((p) => p?.stop())
-      synth.allNotesOff()
+      synth.close()
     }
   })
 
+  // Push settings to the song's working copy. Deliberately not debounced: effects
+  // flush in a microtask right after the edit, so this push is on the socket
+  // before any later Save click can be handled, and Save never sees stale state.
+  // The mount run is skipped so an untouched song isn't marked dirty.
+  let firstRun = true
   $effect(() => {
     const snapshot = $state.snapshot(params)
     synth?.setParams(snapshot)
+    if (firstRun) return void (firstRun = false)
+    live.pushEvent("update_synth", { params: snapshot })
   })
 
   function loadPreset(e) {

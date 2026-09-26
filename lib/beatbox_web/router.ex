@@ -18,6 +18,7 @@ defmodule BeatboxWeb.Router do
     pipe_through :browser
 
     live "/", SynthLive
+    live "/songs/:id", SynthLive
   end
 
   # Other scopes may use custom stacks.

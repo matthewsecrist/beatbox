@@ -1,5 +1,5 @@
 defmodule Beatbox.MusicTest do
-  use Beatbox.DataCase, async: true
+  use Beatbox.DataCase
 
   alias Beatbox.Music
 
@@ -20,17 +20,33 @@ defmodule Beatbox.MusicTest do
     assert ~w(Arp Lead Pad) == Enum.map(Music.list_presets!(), & &1.name)
   end
 
-  test "saving to an occupied loop slot replaces it" do
-    Music.save_loop!(3, 1.0, [%{"t" => 0, "midi" => 60, "on" => true}], %{})
-    Music.save_loop!(3, 2.0, [%{"t" => 0, "midi" => 64, "on" => true}], %{})
+  test "songs keep their loops and drums, and reject invalid ones" do
+    loop = %{
+      "slot" => 3,
+      "length" => 2.0,
+      "params" => %{},
+      "events" => [%{"t" => 0, "midi" => 64, "on" => true}]
+    }
 
-    assert [%{slot: 3, length: 2.0, events: [%{midi: 64}]}] = Music.list_loops!()
+    drums = %{"bpm" => 140, "volume" => 0.5, "pattern" => %{"kick" => [true, false]}}
+
+    song = Music.create_song!(%{name: "Jam", loops: [loop], drums: drums})
+
+    assert {:ok, %{loops: [%{slot: 3, events: [%{midi: 64}]}], drums: %{bpm: 140}}} =
+             Music.get_song(song.id)
+
+    bad_note = put_in(loop, ["events"], [%{"t" => 0, "midi" => 128, "on" => true}])
+    assert {:error, %Ash.Error.Invalid{}} = Music.update_song(song, %{loops: [bad_note]})
+
+    assert {:error, %Ash.Error.Invalid{}} =
+             Music.update_song(song, %{loops: [%{loop | "slot" => 8}]})
+
+    assert {:error, %Ash.Error.Invalid{}} =
+             Music.update_song(song, %{drums: %{drums | "bpm" => 999}})
   end
 
-  test "loops reject notes outside the MIDI range and slots outside the pad grid" do
-    assert {:error, %Ash.Error.Invalid{}} =
-             Music.save_loop(0, 1.0, [%{"t" => 0, "midi" => 128, "on" => true}], %{})
-
-    assert {:error, %Ash.Error.Invalid{}} = Music.save_loop(8, 1.0, [], %{})
+  test "song names are unique" do
+    Music.create_song!(%{name: "Jam"})
+    assert {:error, %Ash.Error.Invalid{}} = Music.create_song(%{name: "Jam"})
   end
 end

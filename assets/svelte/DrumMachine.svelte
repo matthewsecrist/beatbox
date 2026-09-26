@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte"
+  import { onMount, untrack } from "svelte"
   import { STEPS, TRACKS, createDrums } from "./drums/engine.js"
 
   const row = (on) => Array.from({ length: STEPS }, (_, i) => on.includes(i))
@@ -19,16 +19,32 @@
       TRACKS.map(({ id }) => [id, Array.from({ length: STEPS }, (_, i) => (id === "kick" && i === 0) || Math.random() < DENSITY[id])]),
     )
 
-  let pattern = $state(clone(DEFAULT_PATTERN))
-  let bpm = $state(110)
-  let volume = $state(0.8)
+  // `drums` comes from the open song and is read once at mount; the page remounts
+  // this component when a different song is opened.
+  let { drums: songDrums = null, live } = $props()
+  const initial = untrack(() => songDrums)
+  const fromSong = (p) => Object.fromEntries(TRACKS.map(({ id }) => [id, Array.from({ length: STEPS }, (_, i) => !!p?.[id]?.[i])]))
+
+  let pattern = $state(initial ? fromSong(initial.pattern) : clone(DEFAULT_PATTERN))
+  let bpm = $state(initial?.bpm ?? 110)
+  let volume = $state(initial?.volume ?? 0.8)
   let playing = $state(false)
   let current = $state(-1)
   let drums = null
 
   onMount(() => {
     drums = createDrums({ onStep: (s) => (current = s) })
-    return () => drums.stop()
+    return () => drums.close()
+  })
+
+  // Push to the song's working copy. Not debounced, so the push is on the socket
+  // before any later Save click (see Synth.svelte). The mount run is skipped so an
+  // untouched song isn't marked dirty.
+  let firstRun = true
+  $effect(() => {
+    const snapshot = { bpm, volume, pattern: $state.snapshot(pattern) }
+    if (firstRun) return void (firstRun = false)
+    live.pushEvent("update_drums", { drums: snapshot })
   })
 
   $effect(() => drums?.setBpm(bpm))

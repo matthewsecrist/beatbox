@@ -1,32 +1,8 @@
 defmodule Beatbox.Music.Loop do
-  use Ash.Resource,
-    otp_app: :beatbox,
-    domain: Beatbox.Music,
-    data_layer: AshSqlite.DataLayer
-
-  sqlite do
-    table "loops"
-    repo Beatbox.Repo
-  end
-
-  actions do
-    defaults [:read, :destroy]
-
-    read :list do
-      prepare build(sort: [slot: :asc])
-    end
-
-    create :save do
-      accept [:slot, :length, :events, :params]
-      upsert? true
-      upsert_identity :unique_slot
-      upsert_fields [:length, :events, :params, :updated_at]
-    end
-  end
+  @moduledoc "One recorded loop pad, embedded in a `Beatbox.Music.Song`."
+  use Ash.Resource, data_layer: :embedded
 
   attributes do
-    uuid_primary_key :id
-
     attribute :slot, :integer,
       allow_nil?: false,
       public?: true,
@@ -54,11 +30,5 @@ defmodule Beatbox.Music.Loop do
 
     # Synth params captured at record time, so the loop keeps its own sound.
     attribute :params, :map, allow_nil?: false, public?: true
-
-    timestamps()
-  end
-
-  identities do
-    identity :unique_slot, [:slot]
   end
 end

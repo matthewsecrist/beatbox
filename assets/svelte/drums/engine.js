@@ -137,5 +137,11 @@ export function createDrums({ onStep }) {
     if (ctx) master.gain.setTargetAtTime(v, ctx.currentTime, 0.01)
   }
 
-  return { start, stop, trigger, setBpm, setVolume }
+  function close() {
+    stop()
+    ctx?.close()
+    ctx = null
+  }
+
+  return { start, stop, trigger, setBpm, setVolume, close }
 }

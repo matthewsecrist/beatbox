@@ -13,31 +13,8 @@
     {
       "default": "nil",
       "size": null,
-      "type": "bigint",
-      "source": "slot",
-      "references": null,
-      "allow_nil?": false,
-      "primary_key?": false,
-      "generated?": false
-    },
-    {
-      "default": "nil",
-      "size": null,
-      "type": "float",
-      "source": "length",
-      "references": null,
-      "allow_nil?": false,
-      "primary_key?": false,
-      "generated?": false
-    },
-    {
-      "default": "nil",
-      "size": null,
-      "type": [
-        "array",
-        "map"
-      ],
-      "source": "events",
+      "type": "text",
+      "source": "name",
       "references": null,
       "allow_nil?": false,
       "primary_key?": false,
@@ -47,7 +24,30 @@
       "default": "nil",
       "size": null,
       "type": "map",
-      "source": "params",
+      "source": "synth",
+      "references": null,
+      "allow_nil?": true,
+      "primary_key?": false,
+      "generated?": false
+    },
+    {
+      "default": "nil",
+      "size": null,
+      "type": "map",
+      "source": "drums",
+      "references": null,
+      "allow_nil?": true,
+      "primary_key?": false,
+      "generated?": false
+    },
+    {
+      "default": "[]",
+      "size": null,
+      "type": [
+        "array",
+        "map"
+      ],
+      "source": "loops",
       "references": null,
       "allow_nil?": false,
       "primary_key?": false,
@@ -74,8 +74,8 @@
       "generated?": false
     }
   ],
-  "table": "loops",
-  "hash": "057EBA5F4BB593670479696DDEEC4E4C51BB798AC8FDD93BA777EC74287C7C06",
+  "table": "songs",
+  "hash": "5A28F52E433FBABEB44DC2C6B9A09639AAC34AB073FBA7623C88C9B14EF2EB91",
   "multitenancy": {
     "global": null,
     "strategy": null,
@@ -83,13 +83,13 @@
   },
   "identities": [
     {
-      "name": "unique_slot",
+      "name": "unique_name",
       "keys": [
-        "slot"
+        "name"
       ],
       "base_filter": null,
       "nils_distinct?": true,
-      "index_name": "loops_unique_slot_index"
+      "index_name": "songs_unique_name_index"
     }
   ],
   "repo": "Elixir.Beatbox.Repo",

@@ -162,5 +162,13 @@ export function createSynth(initialParams) {
     }
   }
 
-  return { noteOn, noteOff, allNotesOff, cancelPending, now, setParams }
+  // Release the AudioContext (browsers cap how many can exist at once).
+  function close() {
+    ctx?.close()
+    ctx = null
+    voices.clear()
+    alive.clear()
+  }
+
+  return { noteOn, noteOff, allNotesOff, cancelPending, now, setParams, close }
 }
