@@ -16,6 +16,7 @@
 
   import Arranger from './Arranger.svelte'
   import DrumMachine from './DrumMachine.svelte'
+  import { keepPendingSong, takePendingSong } from './pending_song.js'
   import { SongStore } from './song.svelte.js'
   import Synth from './Synth.svelte'
 
@@ -139,10 +140,12 @@
     menuOpen = false
   }
 
-  // Signing in leaves the page (the link is followed from the email), so the
-  // working copy would be lost.
+  // Signing in leaves the page (the link is followed from the email), so an unsaved
+  // song is kept in the browser and restored once signed in (see onMount). If the
+  // browser won't keep it, ask before losing it.
   function signIn(e: MouseEvent) {
-    if (!discardOk()) e.preventDefault()
+    if (!dirty) return
+    if (!keepPendingSong({ name, song: store.toSongDoc() }) && !discardOk()) e.preventDefault()
   }
 
   // Global transport: starts/stops the drums and every filled loop pad. The
@@ -156,6 +159,15 @@
   }
 
   onMount(() => {
+    // Just signed in with a song made while signed out: carry on with it, unsaved.
+    const pending = start.signedIn && !start.song ? takePendingSong() : null
+    if (pending) {
+      store.replace(pending.song)
+      name = pending.name
+      dirty = true
+      flash = { kind: 'info', message: 'Restored the song you were working on. Save to keep it.' }
+    }
+
     const onState = (e: CustomEvent<StateDetail>) => {
       playingBy.set(e.detail.source, e.detail.playing)
       anyPlaying = [...playingBy.values()].some(Boolean)

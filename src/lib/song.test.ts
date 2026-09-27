@@ -127,3 +127,28 @@ test('arrangement sections add, move, duplicate and rename with stable ids', () 
   expect(store.arrangement[2]?.name).toBe('Drop')
   expect(store.toSongDoc().arrangement.every((s) => !('id' in s))).toBe(true)
 })
+
+test('replace swaps in a whole song, with no history and no change reported', () => {
+  const onchange = vi.fn()
+  const store = new SongStore(null, onchange)
+  store.setDrums({ bpm: 90 })
+  store.setLoop(loop(5))
+  onchange.mockClear()
+
+  store.replace(song)
+
+  expect(onchange).not.toHaveBeenCalled()
+  expect(store.canUndo).toBe(false)
+  expect(store.synth).toStrictEqual({ filter_cutoff: 300 })
+  expect(store.drums.bpm).toBe(140)
+  expect(store.loops[5]).toBe(null)
+  expect(store.loops[2]).toStrictEqual(loop(2))
+  expect(store.toSongDoc().arrangement).toStrictEqual(song.arrangement)
+
+  // Edits after it undo back to the replaced song, not before it.
+  store.setDrums({ bpm: 100 })
+  expect(onchange).toHaveBeenCalled()
+  store.undo()
+  expect(store.drums.bpm).toBe(140)
+  expect(store.canUndo).toBe(false)
+})

@@ -29,8 +29,9 @@ username (like `groovy-reverb-7916`, shown top right) and your own copy of
 
 **Accounts**: without one, the home page is a new song with every instrument,
 factory preset and the arranger working, but **Save** and **Open ▾** become
-**Sign in to save**, and synth presets can't be saved. Signing in leaves the page,
-so it asks first if you have unsaved changes. Sign-in is by magic link (Better
+**Sign in to save**, and synth presets can't be saved. An unsaved song is kept in
+the browser while you sign in and comes back, still unsaved, once you're signed
+in (even if the link opens in another tab of the same browser). Sign-in is by magic link (Better
 Auth): enter your email and follow the link you're sent; it works once, for five
 minutes. Everything you save (songs, with their loops and arrangement, and synth presets)
 belongs to your account, and nobody else can see or change it. Song and preset
@@ -151,6 +152,7 @@ Sign-in links are only logged for now: before deploying, make
 | `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                                                         |
 | `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events                                                  |
 | `src/lib/song.svelte.ts`                               | `SongStore`: the open song as a Yjs document, with undo/redo                                                        |
+| `src/lib/pending_song.ts`                              | A signed-out visitor's song, kept in `localStorage` while they sign in                                              |
 | `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song                                                |
 | `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                                                        |
 | `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                                                          |
