@@ -25,11 +25,31 @@ const params = z.object({
 
 const name = (max: number) => z.string().trim().min(1, "can't be blank").max(max)
 
-const steps = z.array(z.boolean()).max(16)
+// A step is plain on/off, or carries its own velocity, accent, probability and ratchet.
+const steps = z
+  .array(
+    z.union([
+      z.boolean(),
+      z.object({
+        accent: z.boolean().exactOptional(),
+        on: z.boolean().exactOptional(),
+        probability: z.number().min(0).max(1).exactOptional(),
+        ratchet: z.int().min(1).max(4).exactOptional(),
+        velocity: z.number().min(0).max(1).exactOptional()
+      })
+    ])
+  )
+  .max(16)
 
-// Drum machine state: tempo, level and patterns A-D of 16 steps.
+const voice = z.object({
+  decay: z.number().min(0.25).max(2).exactOptional(),
+  tune: z.number().min(-12).max(12).exactOptional()
+})
+
+// Drum machine state: tempo, feel, kit, level and patterns A-D of 16 steps.
 const drums = z.object({
   bpm: z.int().min(60).max(200),
+  kit: z.enum(['808', '909', 'classic']).exactOptional(),
   // Patterns A-D (index 0-3); arrangement sections pick one by index.
   patterns: z
     .array(
@@ -44,6 +64,17 @@ const drums = z.object({
     )
     .min(1)
     .max(4),
+  swing: z.number().min(50).max(75).exactOptional(),
+  voices: z
+    .object({
+      chat: voice.exactOptional(),
+      clap: voice.exactOptional(),
+      kick: voice.exactOptional(),
+      ohat: voice.exactOptional(),
+      snare: voice.exactOptional(),
+      tom: voice.exactOptional()
+    })
+    .exactOptional(),
   volume: z.number().min(0).max(1)
 })
 
