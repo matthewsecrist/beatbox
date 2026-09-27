@@ -1,13 +1,18 @@
+import type { LibSQLDatabase } from 'drizzle-orm/libsql'
+
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, beforeEach, expect, test } from 'vitest'
+
+import type * as schema from './db/schema.js'
 
 import { db } from './db/index.js'
 import { users } from './db/schema.js'
 import { generateUsername, randomUsername } from './usernames.js'
 
 beforeAll(async () => {
-  await migrate(db, {
+  // Tests run on libSQL, never D1.
+  await migrate(db as LibSQLDatabase<typeof schema>, {
     migrationsFolder: fileURLToPath(new URL('../../../drizzle', import.meta.url))
   })
 })

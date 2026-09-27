@@ -1,9 +1,12 @@
+import type { LibSQLDatabase } from 'drizzle-orm/libsql'
+
 import { eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, beforeEach, expect, test } from 'vitest'
 
 import type { Drums, Loop } from '../types.js'
+import type * as schema from './db/schema.js'
 
 import { db } from './db/index.js'
 import { presets, songs, users } from './db/schema.js'
@@ -12,7 +15,8 @@ import { InvalidError } from './music.js'
 
 // DATABASE_URL is ":memory:" under Vitest (see vite.config.ts).
 beforeAll(async () => {
-  await migrate(db, {
+  // Tests run on libSQL, never D1.
+  await migrate(db as LibSQLDatabase<typeof schema>, {
     migrationsFolder: fileURLToPath(new URL('../../../drizzle', import.meta.url))
   })
 })

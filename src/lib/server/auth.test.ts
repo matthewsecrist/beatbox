@@ -1,7 +1,11 @@
+import type { LibSQLDatabase } from 'drizzle-orm/libsql'
+
 import { eq } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { fileURLToPath } from 'node:url'
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest'
+
+import type * as schema from './db/schema.js'
 
 import { auth } from './auth.js'
 import { db } from './db/index.js'
@@ -14,7 +18,8 @@ vi.mock('$app/server', () => ({ getRequestEvent: () => undefined }))
 vi.mock('./email.js', () => ({ sendMagicLink: vi.fn() }))
 
 beforeAll(async () => {
-  await migrate(db, {
+  // Tests run on libSQL, never D1.
+  await migrate(db as LibSQLDatabase<typeof schema>, {
     migrationsFolder: fileURLToPath(new URL('../../../drizzle', import.meta.url))
   })
 })
