@@ -18,9 +18,9 @@
   } from './synth/notes.js'
   import { BEATS_PER_BAR } from './transport.js'
 
-  // Note editor for one loop pad. Opens on `loop` (the parent remounts it when the
-  // loop is replaced from outside, e.g. re-recorded) and reports every finished
-  // edit as a whole new loop through `onchange`.
+  // Note editor for one loop pad. Opens on `loop` and reports every finished edit
+  // as a whole new loop through `onchange`; when `loop` changes from outside (undo,
+  // redo), it reloads the notes from it.
   let {
     bpm,
     loop,
@@ -59,8 +59,11 @@
     { label: '1/32', value: 0.125 }
   ]
 
-  const tempo = untrack(() => loop.bpm ?? bpm)
+  let tempo = untrack(() => loop.bpm ?? bpm)
   let view: NoteLoop = $state(untrack(() => notesFromLoop(loop, tempo)))
+  // The last loop sent up, as JSON: when `loop` comes back different (undo, redo),
+  // the notes are reloaded from it.
+  let sent = untrack(() => JSON.stringify(loop))
   let grid = $state(0.25)
   let selected: null | number = $state(null)
   // Length of the next drawn note: the last one drawn or resized.
@@ -77,7 +80,9 @@
   let scroller: HTMLDivElement | undefined = $state()
 
   function commit() {
-    onchange(loopFromNotes($state.snapshot(loop), $state.snapshot(view), tempo))
+    const next = loopFromNotes($state.snapshot(loop), $state.snapshot(view), tempo)
+    sent = JSON.stringify(next)
+    onchange(next)
   }
 
   function remove(id: number) {
@@ -106,6 +111,18 @@
     x: number
     y: number
   } = null
+
+  $effect(() => {
+    const json = JSON.stringify(loop)
+    if (json === sent) return
+    sent = json
+    untrack(() => {
+      tempo = loop.bpm ?? bpm
+      view = notesFromLoop(loop, tempo)
+      selected = null
+      drag = null
+    })
+  })
 
   function beginDrag(e: PointerEvent, note: Note, mode: 'move' | 'resize', changed: boolean) {
     selected = note.id

@@ -11,6 +11,10 @@ See README.md for layout and commands.
 - Use Svelte 5 runes (`$state`, `$derived`, `$effect`, `$props`) and event
   attributes (`onclick`), not Svelte 4 syntax (`export let`, `on:click`, stores for local state).
   Type props with an annotation on `$props()`; use `lang="ts"` in every component.
+- The open song lives in `SongStore` (`src/lib/song.svelte.ts`, a Yjs document with
+  undo/redo). Components read its mirrors and change the song only through its
+  methods, never by keeping their own copy; UI-only state (playing, selection) stays
+  local. New song data needs a place in the document and a store method.
 - Shared shapes live in `src/lib/types.ts`. Server-only code lives in `src/lib/server/`.
   Validate anything a client sends with the zod schemas in `src/lib/server/validation.ts`
   before storing it.

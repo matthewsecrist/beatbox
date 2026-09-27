@@ -50,6 +50,7 @@
     "@libsql/client": "^0.18.0",
     "@lucide/svelte": "^1.48.0",
     "drizzle-orm": "^0.45.3",
+    "yjs": "^13.6.33",
     "zod": "^4.6.5"
   }
 }

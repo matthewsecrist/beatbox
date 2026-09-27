@@ -1,34 +1,19 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte'
+  import { onMount } from 'svelte'
 
-  import type { Scene, Section, StateDetail, TransportDetail } from './types.js'
+  import type { ArrangementSection, SongStore } from './song.svelte.js'
+  import type { Scene, StateDetail, TransportDetail } from './types.js'
 
   import { createArranger, type Position } from './arranger.js'
   import { transport } from './transport.js'
 
-  // `sections` comes from the open song and is read once at mount; the page
-  // remounts this component when a different song is opened. Edits are reported via `onchange`.
-  let {
-    onchange,
-    sections: songSections = []
-  }: { onchange?: (sections: Section[]) => void; sections?: Section[] } = $props()
-
-  type EditableSection = Section & { name: string }
+  // Sections live in the song store (and its undo history).
+  let { store }: { store: SongStore } = $props()
 
   const PAD_SLOTS = [0, 1, 2, 3, 4, 5, 6, 7]
   const MAX_BARS = 64
   const DRUM_PATTERNS = ['A', 'B', 'C', 'D']
-  let sections: EditableSection[] = $state(
-    untrack(() =>
-      songSections.map((s) => ({
-        bars: s.bars,
-        drums: s.drums,
-        name: s.name ?? '',
-        pads: [...s.pads],
-        pattern: s.pattern ?? 0
-      }))
-    )
-  )
+  const sections = $derived(store.arrangement)
   let position: null | Position = $state(null) // while the song plays
   let timer: ReturnType<typeof setInterval> | undefined
 
@@ -54,7 +39,7 @@
 
   function play() {
     say('beatbox:transport', { play: false }) // start from a clean slate
-    position = arranger.start($state.snapshot(sections))
+    position = arranger.start(sections)
     timer = setInterval(() => (position = arranger.tick() ?? position), 25)
   }
 
@@ -83,46 +68,16 @@
     }
   })
 
-  // Report to the song's working copy. Not debounced, so it's up to date before
-  // any later Save click (see Synth.svelte). Mount run skipped.
-  let firstRun = true
-  $effect(() => {
-    const snapshot = $state.snapshot(sections)
-    if (firstRun) return void (firstRun = false)
-    onchange?.(snapshot)
-  })
-
-  function addSection() {
-    const last = sections.at(-1)
-    sections.push(
-      last
-        ? {
-            bars: last.bars,
-            drums: last.drums,
-            name: '',
-            pads: [...last.pads],
-            pattern: last.pattern
-          }
-        : { bars: 4, drums: true, name: '', pads: [], pattern: 0 }
-    )
+  function togglePad(index: number, section: ArrangementSection, slot: number) {
+    store.updateSection(index, {
+      pads: section.pads.includes(slot)
+        ? section.pads.filter((p) => p !== slot)
+        : [...section.pads, slot].sort((a, b) => a - b)
+    })
   }
 
-  function move(i: number, delta: number) {
-    const a = sections[i]
-    const b = sections[i + delta]
-    if (!a || !b) return
-    sections[i] = b
-    sections[i + delta] = a
-  }
-
-  function togglePad(section: EditableSection, slot: number) {
-    section.pads = section.pads.includes(slot)
-      ? section.pads.filter((p) => p !== slot)
-      : [...section.pads, slot].sort((a, b) => a - b)
-  }
-
-  const setBars = (section: EditableSection, n: number) =>
-    (section.bars = Math.min(MAX_BARS, Math.max(1, n)))
+  const setBars = (index: number, n: number) =>
+    store.updateSection(index, { bars: Math.min(MAX_BARS, Math.max(1, n)) })
 
   const chip = (on: boolean) => [
     'h-7 min-w-7 rounded-md px-1.5 text-xs font-semibold transition active:scale-95',
@@ -161,7 +116,7 @@
     <button
       id="add-section"
       type="button"
-      onclick={addSection}
+      onclick={() => store.addSection()}
       disabled={sections.length >= 64}
       class="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:opacity-40"
     >
@@ -170,7 +125,7 @@
   </div>
 
   <ol id="sections" class="space-y-2">
-    {#each sections as section, i (section)}
+    {#each sections as section, i (section.id)}
       {@const current = position?.index === i}
       <li
         id={'section-' + i}
@@ -189,7 +144,8 @@
           type="text"
           maxlength="30"
           placeholder={'Section ' + (i + 1)}
-          bind:value={section.name}
+          value={section.name}
+          oninput={(e) => store.updateSection(i, { name: e.currentTarget.value })}
           aria-label={'Section ' + (i + 1) + ' name'}
           class="w-32 min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none"
         />
@@ -200,7 +156,7 @@
             class={iconBtn}
             aria-label="Fewer bars"
             disabled={section.bars <= 1}
-            onclick={() => setBars(section, section.bars - 1)}>−</button
+            onclick={() => setBars(i, section.bars - 1)}>−</button
           >
           <span class="w-16 text-center font-mono text-xs tabular-nums text-zinc-300">
             {current ? `${position?.bar ?? 1}/${section.bars}` : section.bars}
@@ -211,7 +167,7 @@
             class={iconBtn}
             aria-label="More bars"
             disabled={section.bars >= MAX_BARS}
-            onclick={() => setBars(section, section.bars + 1)}>+</button
+            onclick={() => setBars(i, section.bars + 1)}>+</button
           >
         </div>
 
@@ -233,7 +189,7 @@
               class={chip(!section.drums)}
               aria-pressed={!section.drums}
               aria-label="No drums"
-              onclick={() => (section.drums = false)}>–</button
+              onclick={() => store.updateSection(i, { drums: false })}>–</button
             >
             {#each DRUM_PATTERNS as letter, p (letter)}
               {@const on = section.drums && section.pattern === p}
@@ -243,8 +199,7 @@
                 aria-pressed={on}
                 aria-label={'Drum pattern ' + letter}
                 onclick={() => {
-                  section.drums = true
-                  section.pattern = p
+                  store.updateSection(i, { drums: true, pattern: p })
                 }}>{letter}</button
               >
             {/each}
@@ -255,7 +210,7 @@
               class={chip(section.pads.includes(slot))}
               aria-pressed={section.pads.includes(slot)}
               aria-label={'Pad ' + (slot + 1)}
-              onclick={() => togglePad(section, slot)}
+              onclick={() => togglePad(i, section, slot)}
             >
               {slot + 1}
             </button>
@@ -268,29 +223,27 @@
             class={iconBtn}
             aria-label="Move up"
             disabled={i === 0}
-            onclick={() => move(i, -1)}>↑</button
+            onclick={() => store.moveSection(i, -1)}>↑</button
           >
           <button
             type="button"
             class={iconBtn}
             aria-label="Move down"
             disabled={i === sections.length - 1}
-            onclick={() => move(i, 1)}>↓</button
+            onclick={() => store.moveSection(i, 1)}>↓</button
           >
           <button
             type="button"
             class={iconBtn}
             aria-label="Duplicate"
             disabled={sections.length >= 64}
-            onclick={() =>
-              sections.splice(i + 1, 0, { ...$state.snapshot(section), pads: [...section.pads] })}
-            >⧉</button
+            onclick={() => store.duplicateSection(i)}>⧉</button
           >
           <button
             type="button"
             class={[iconBtn, 'hover:text-red-400']}
             aria-label="Delete section"
-            onclick={() => sections.splice(i, 1)}>✕</button
+            onclick={() => store.removeSection(i)}>✕</button
           >
         </div>
 
