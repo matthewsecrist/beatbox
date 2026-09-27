@@ -26,13 +26,16 @@
 
   // Synth settings and loops live in the song store (and its undo history); this
   // component reads them and changes them through the store. `savePreset`/
-  // `loadPreset` talk to the server.
+  // `loadPreset` talk to the server. Signed out (`canSave` false), only the factory
+  // presets can be loaded and nothing can be saved.
   let {
+    canSave = true,
     loadPreset: fetchPreset,
     presets = [],
     savePreset: storePreset,
     store
   }: {
+    canSave?: boolean
     loadPreset: (id: string) => Promise<LoadPresetReply>
     presets?: PresetSummary[]
     savePreset: (name: string, params: SynthParams) => Promise<SavePresetReply>
@@ -549,14 +552,15 @@
       id="preset-name"
       type="text"
       maxlength="60"
-      placeholder="Preset name"
+      placeholder={canSave ? 'Preset name' : 'Sign in to save presets'}
+      disabled={!canSave}
       bind:value={presetName}
-      class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none"
+      class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
     />
     <button
       id="save-preset"
       type="button"
-      disabled={presetName.trim() === ''}
+      disabled={!canSave || presetName.trim() === ''}
       onclick={savePreset}
       class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
     >

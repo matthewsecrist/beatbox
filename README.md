@@ -18,17 +18,21 @@ npm run setup    # packages and database migrations
 npm run dev
 ```
 
-Open [localhost:5173](http://localhost:5173) and sign in with your email. There's
-no mail provider yet, so the sign-in link is printed in the `npm run dev` output;
-open it to sign in. Your first sign-in creates your account, with a generated
+Open [localhost:5173](http://localhost:5173): everything plays without an account.
+To save, press **Sign in to save** and enter your email. There's no mail
+provider yet, so the sign-in link is printed in the `npm run dev` output; open it
+to sign in. Your first sign-in creates your account, with a generated
 username (like `groovy-reverb-7916`, shown top right) and your own copy of
 **Midnight Arcade**: pick it from **Open ▾** and press **Play song**.
 
 ## What's in it
 
-**Accounts**: sign-in is by magic link (Better Auth). Enter your email on the
-sign-in page and follow the link you're sent; it works once, for five minutes.
-Everything you save (songs, with their loops and arrangement, and synth presets)
+**Accounts**: without one, the home page is a new song with every instrument,
+factory preset and the arranger working, but **Save** and **Open ▾** become
+**Sign in to save**, and synth presets can't be saved. Signing in leaves the page,
+so it asks first if you have unsaved changes. Sign-in is by magic link (Better
+Auth): enter your email and follow the link you're sent; it works once, for five
+minutes. Everything you save (songs, with their loops and arrangement, and synth presets)
 belongs to your account, and nobody else can see or change it. Song and preset
 names only need to be unique among your own. **Sign out** is in the header.
 
@@ -137,7 +141,7 @@ Sign-in links are only logged for now: before deploying, make
 | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/server/db/schema.ts`                          | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
 | `src/lib/server/auth.ts`                               | Better Auth setup: magic links, and a new user's username and starter songs                                         |
-| `src/hooks.server.ts`                                  | Loads the signed-in user; sends signed-out visitors to `/login`                                                     |
+| `src/hooks.server.ts`                                  | Loads the signed-in user; only `/` and `/login` are open to signed-out visitors                                     |
 | `src/lib/server/usernames.ts`                          | Generated usernames                                                                                                 |
 | `src/lib/server/starter_songs/`                        | Songs every new user gets a copy of (Midnight Arcade)                                                               |
 | `src/routes/login/`, `src/routes/logout/`              | Sign-in page and sign-out                                                                                           |

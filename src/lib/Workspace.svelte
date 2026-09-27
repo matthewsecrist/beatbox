@@ -41,6 +41,9 @@
     start.notice ? { kind: 'error', message: start.notice } : null
   )
   let menuOpen = $state(false)
+  // Signed out, everything plays but nothing is saved: Save and Open become a link
+  // to sign in. Signing in reloads the page, so this never changes while mounted.
+  const signedIn = start.signedIn
 
   const store = new SongStore(start.song, () => (dirty = true))
 
@@ -99,7 +102,7 @@
 
   async function saveSong(e: SubmitEvent) {
     e.preventDefault()
-    if (saving) return
+    if (saving || !signedIn) return
     saving = true
     const body = { ...store.toSongDoc(), name }
     const reply = await (song
@@ -134,6 +137,12 @@
   function openSong(e: MouseEvent) {
     if (!discardOk()) return e.preventDefault()
     menuOpen = false
+  }
+
+  // Signing in leaves the page (the link is followed from the email), so the
+  // working copy would be lost.
+  function signIn(e: MouseEvent) {
+    if (!discardOk()) e.preventDefault()
   }
 
   // Global transport: starts/stops the drums and every filled loop pad. The
@@ -202,14 +211,26 @@
         class="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-lg font-semibold tracking-tight text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none"
       />
     </div>
-    <button
-      id="save-song"
-      type="submit"
-      disabled={saving}
-      class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:opacity-60"
-    >
-      Save
-    </button>
+    {#if signedIn}
+      <button
+        id="save-song"
+        type="submit"
+        disabled={saving}
+        class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:opacity-60"
+      >
+        Save
+      </button>
+    {:else}
+      <a
+        id="sign-in-to-save"
+        href={resolve('/login')}
+        onclick={signIn}
+        title="Songs are saved to your account"
+        class="shrink-0 rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95"
+      >
+        Sign in to save
+      </a>
+    {/if}
   </form>
 
   <div class="flex items-center" role="group" aria-label="History">
@@ -246,37 +267,39 @@
     New
   </a>
 
-  <details id="song-menu" class="group relative" bind:open={menuOpen}>
-    <summary
-      class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700"
-    >
-      Open <ChevronDown class="size-4 transition group-open:rotate-180" />
-    </summary>
-    <ul
-      class="absolute right-0 z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl shadow-black/60"
-    >
-      {#each songs as s (s.id)}
-        <li>
-          <a
-            id={'open-song-' + s.id}
-            href={resolve('/songs/[id]', { id: s.id })}
-            onclick={openSong}
-            class={[
-              'block truncate rounded-md px-3 py-2 text-sm transition hover:bg-zinc-800',
-              song?.id === s.id ? 'text-amber-300' : 'text-zinc-200'
-            ]}
-          >
-            {s.name}
-          </a>
-        </li>
-      {:else}
-        <li class="px-3 py-2 text-sm text-zinc-500">No saved songs yet</li>
-      {/each}
-    </ul>
-  </details>
+  {#if signedIn}
+    <details id="song-menu" class="group relative" bind:open={menuOpen}>
+      <summary
+        class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700"
+      >
+        Open <ChevronDown class="size-4 transition group-open:rotate-180" />
+      </summary>
+      <ul
+        class="absolute right-0 z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl shadow-black/60"
+      >
+        {#each songs as s (s.id)}
+          <li>
+            <a
+              id={'open-song-' + s.id}
+              href={resolve('/songs/[id]', { id: s.id })}
+              onclick={openSong}
+              class={[
+                'block truncate rounded-md px-3 py-2 text-sm transition hover:bg-zinc-800',
+                song?.id === s.id ? 'text-amber-300' : 'text-zinc-200'
+              ]}
+            >
+              {s.name}
+            </a>
+          </li>
+        {:else}
+          <li class="px-3 py-2 text-sm text-zinc-500">No saved songs yet</li>
+        {/each}
+      </ul>
+    </details>
+  {/if}
 </div>
 
-<Synth {store} {presets} {savePreset} {loadPreset} />
+<Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
 <DrumMachine {store} />
 <Arranger {store} />
 
