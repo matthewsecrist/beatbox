@@ -120,6 +120,17 @@ test('player repeats the loop on the beat grid', () => {
   ])
 })
 
+test('a pad started after the audio clock has run starts right away', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  clock.now = 10 // e.g. a note was previewed a while ago
+
+  player.start()
+
+  expect(synth.calls[0]).toStrictEqual(['on', 60, 10.05])
+})
+
 test('a pad started mid-bar waits for the next bar line', () => {
   const { clock, transport } = fakeAudio()
   const synth = spySynth()

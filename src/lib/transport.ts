@@ -79,8 +79,10 @@ export function createTransport(getCtx: () => BaseAudioContext = getContext): Tr
       return bpm
     },
     metronome,
-    // First bar line at or after audio time `t` (beat 0 right after the grid starts).
+    // First bar line at or after audio time `t`. Stopped: 0, where the grid starts
+    // on the next acquire.
     nextBar(t = now()): number {
+      if (!running) return 0
       return Math.max(0, Math.ceil(beatAt(t) / BEATS_PER_BAR - 1e-9) * BEATS_PER_BAR)
     },
 
