@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beatbox",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2026-09-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "vars": { "BETTER_AUTH_URL": "https://beatbox.matthewsecrist.workers.dev" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "beatbox",
+      "database_id": "a7400677-a514-45ed-a84e-02b069b49302",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "observability": { "enabled": true },
+  // Previews (`wrangler preview`) share the `beatbox-preview` database, never
+  // production's. Its migrations run through wrangler.preview-migrations.jsonc.
+  "previews": {
+    "vars": { "BETTER_AUTH_ALLOWED_HOSTS": "*-beatbox.matthewsecrist.workers.dev" },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "beatbox-preview",
+        "database_id": "90db787a-4834-4928-8b19-f82e02aed22f"
+      }
+    ]
+  }
+}

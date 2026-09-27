@@ -19,15 +19,23 @@ import { generateUsername } from './usernames.js'
 //
 // Environment (see .env.example): BETTER_AUTH_SECRET signs sessions and is required
 // in production; BETTER_AUTH_URL is the site's public URL, used in the links sent
-// (in development it defaults to Vite's dev server).
+// (in development it defaults to Vite's dev server). Previews are served on many
+// hosts, so they set BETTER_AUTH_ALLOWED_HOSTS (comma-separated, `*` wildcards)
+// instead, and links use the host each request came in on.
 // A blank value (as in a copied .env.example) counts as unset.
+const allowedHosts = (env.BETTER_AUTH_ALLOWED_HOSTS ?? '')
+  .split(',')
+  .map((host) => host.trim())
+  .filter((host) => host !== '')
 const configuredURL = env.BETTER_AUTH_URL?.trim()
 const baseURL =
-  configuredURL !== undefined && configuredURL !== ''
-    ? configuredURL
-    : dev
-      ? 'http://localhost:5173'
-      : undefined
+  allowedHosts.length > 0
+    ? { allowedHosts, protocol: 'https' as const }
+    : configuredURL !== undefined && configuredURL !== ''
+      ? configuredURL
+      : dev
+        ? 'http://localhost:5173'
+        : undefined
 // `vite build` loads this module to analyse the app, without the runtime
 // environment, and Better Auth refuses to start without a secret. Nothing is
 // signed during the build.

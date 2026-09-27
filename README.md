@@ -103,7 +103,7 @@ npm run validate # everything CI runs: lint, type check, tests
 npm run lint     # ESLint, including Prettier formatting (npm run format to fix)
 npm run check    # svelte-check (strict TypeScript)
 npm test         # Vitest: audio timing, looper, arranger, song/preset store, sign-in
-npm run build && npm start   # production build (Node adapter), serves on :3000
+npm run build && npm run preview   # production build (Cloudflare adapter)
 ```
 
 The code is strict TypeScript. ESLint runs type-aware `typescript-eslint` rules,
@@ -112,14 +112,16 @@ run `npm run validate` and `npm run build`, failing on any lint, type or test er
 
 ### Database
 
-Users, sessions, songs and presets live in SQLite, `beatbox.db` by default. Set
-`DATABASE_URL` to use another file or any libSQL URL (for example Turso, with
-`DATABASE_AUTH_TOKEN`).
+Users, sessions, songs and presets live in SQLite: locally `beatbox.db` by default
+(set `DATABASE_URL` to use another file or any libSQL URL, for example Turso, with
+`DATABASE_AUTH_TOKEN`); deployed, the D1 database `beatbox`, bound as `DB` in
+`wrangler.jsonc`.
 
 The migration that added accounts drops songs and presets saved before then,
 since they have no owner; new users get Midnight Arcade on first sign-in.
 
-- `npm run db:migrate` applies the migrations in `drizzle/`.
+- `npm run db:migrate` applies the migrations in `drizzle/` locally;
+  `npx wrangler d1 migrations apply beatbox --remote` applies them to D1.
 - After changing `src/lib/server/db/schema.ts`, run `npm run db:generate` to
   write a new migration.
 
@@ -133,8 +135,24 @@ Settings come from the environment (or a `.env` file; see `.env.example`):
 | `BETTER_AUTH_URL`    | The site's public URL, used in sign-in links. Defaults to `http://localhost:5173` in dev |
 | `DATABASE_URL`       | SQLite file or libSQL URL; defaults to `file:beatbox.db`                                 |
 
-Sign-in links are only logged for now: before deploying, make
-`src/lib/server/email.ts` send them by email.
+### Deploying
+
+The app runs on Cloudflare Workers at
+[beatbox.matthewsecrist.workers.dev](https://beatbox.matthewsecrist.workers.dev).
+Apply any new migrations to D1 (above), then `npm run deploy`. `BETTER_AUTH_URL` is
+set in `wrangler.jsonc`; `BETTER_AUTH_SECRET` is a Worker secret
+(`npx wrangler secret put BETTER_AUTH_SECRET`).
+
+Pushed branches get a Preview (Workers Builds runs `npx wrangler preview`) at
+`<branch>-beatbox.matthewsecrist.workers.dev`. Previews use the `previews` block of
+`wrangler.jsonc`: their own D1 database, `beatbox-preview`, and
+`BETTER_AUTH_ALLOWED_HOSTS` in place of `BETTER_AUTH_URL`. Their
+`BETTER_AUTH_SECRET` is set with `npx wrangler preview base-config secret put`. Apply
+new migrations to the Previews database before pushing them:
+`npx wrangler d1 migrations apply beatbox-preview --remote --config wrangler.preview-migrations.jsonc`.
+
+Sign-in links are only logged for now: read them with `npx wrangler tail beatbox`,
+and make `src/lib/server/email.ts` send them by email before inviting anyone.
 
 ### Where things live
 

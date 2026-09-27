@@ -3,6 +3,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  // Provided by the Workers runtime (see src/lib/server/db/index.ts).
+  build: { rolldownOptions: { external: ['cloudflare:workers'] } },
   plugins: [tailwindcss(), sveltekit()],
   test: {
     env: {
