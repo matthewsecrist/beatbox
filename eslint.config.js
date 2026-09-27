@@ -24,7 +24,7 @@ export default defineConfig(
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
       parserOptions: {
-        // vite.config.ts, drizzle.config.ts and db/ are in the TS project via
+        // vite.config.ts and drizzle.config.ts are in the TS project via
         // .svelte-kit/tsconfig.json (see kit.typescript.config in svelte.config.js).
         // Only the root JS config files need allowDefaultProject.
         projectService: {

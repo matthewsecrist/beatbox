@@ -89,3 +89,5 @@ export function describe(error: ZodError): string {
   if (!issue) return 'is invalid'
   return issue.path.length ? `${issue.path.map(String).join('.')}: ${issue.message}` : issue.message
 }
+
+export const signInSchema = z.object({ email: z.email('enter a valid email address').max(254) })

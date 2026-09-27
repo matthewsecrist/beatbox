@@ -1,6 +1,6 @@
 import type { z } from 'zod'
 
-import { asc, eq, ne } from 'drizzle-orm'
+import { and, asc, eq, ne } from 'drizzle-orm'
 
 import type { PresetSummary } from '../types.js'
 
@@ -34,58 +34,91 @@ async function uniqueName<T>(query: Promise<T>): Promise<T> {
 const nameOf = (attrs: unknown): unknown =>
   typeof attrs === 'object' && attrs !== null && 'name' in attrs ? attrs.name : undefined
 
-export async function createSong(attrs: unknown): Promise<Song> {
-  const name = await nameOrUntitled(nameOf(attrs))
+// Every function here acts for one user (`userId`): songs and presets belong to the
+// user who saved them, and other users' are treated as missing.
+
+export async function createSong(userId: string, attrs: unknown): Promise<Song> {
+  const name = await nameOrUntitled(userId, nameOf(attrs))
   const values = parse(songSchema, { ...(attrs as object), name })
-  const [song] = await uniqueName(db.insert(songs).values(values).returning())
+  const [song] = await uniqueName(
+    db
+      .insert(songs)
+      .values({ ...values, userId })
+      .returning()
+  )
   if (!song) throw new Error('song insert returned no row')
   return song
 }
 
-export async function getPreset(id: string): Promise<null | Preset> {
-  return (await db.select().from(presets).where(eq(presets.id, id)))[0] ?? null
+export async function getPreset(userId: string, id: string): Promise<null | Preset> {
+  const rows = await db
+    .select()
+    .from(presets)
+    .where(and(eq(presets.userId, userId), eq(presets.id, id)))
+  return rows[0] ?? null
 }
 
-export async function getSong(id: string): Promise<null | Song> {
-  return (await db.select().from(songs).where(eq(songs.id, id)))[0] ?? null
+export async function getSong(userId: string, id: string): Promise<null | Song> {
+  const rows = await db
+    .select()
+    .from(songs)
+    .where(and(eq(songs.userId, userId), eq(songs.id, id)))
+  return rows[0] ?? null
 }
 
-export function listPresets(): Promise<PresetSummary[]> {
-  return db.select({ id: presets.id, name: presets.name }).from(presets).orderBy(asc(presets.name))
+export function listPresets(userId: string): Promise<PresetSummary[]> {
+  return db
+    .select({ id: presets.id, name: presets.name })
+    .from(presets)
+    .where(eq(presets.userId, userId))
+    .orderBy(asc(presets.name))
 }
 
-export function listSongs(): Promise<PresetSummary[]> {
-  return db.select({ id: songs.id, name: songs.name }).from(songs).orderBy(asc(songs.name))
+export function listSongs(userId: string): Promise<PresetSummary[]> {
+  return db
+    .select({ id: songs.id, name: songs.name })
+    .from(songs)
+    .where(eq(songs.userId, userId))
+    .orderBy(asc(songs.name))
 }
 
-// Saving under an existing name overwrites that preset.
-export async function savePreset(attrs: unknown): Promise<Preset> {
+// Saving under a name the user already has overwrites that preset.
+export async function savePreset(userId: string, attrs: unknown): Promise<Preset> {
   const { name, params } = parse(presetSchema, attrs)
   const [preset] = await db
     .insert(presets)
-    .values({ name, params })
-    .onConflictDoUpdate({ set: { params, updatedAt: new Date() }, target: presets.name })
+    .values({ name, params, userId })
+    .onConflictDoUpdate({
+      set: { params, updatedAt: new Date() },
+      target: [presets.userId, presets.name]
+    })
     .returning()
   if (!preset) throw new Error('preset upsert returned no row')
   return preset
 }
 
-// Returns null if there's no song with that id.
-export async function updateSong(id: string, attrs: unknown): Promise<null | Song> {
-  const name = await nameOrUntitled(nameOf(attrs), id)
+// Returns null if the user has no song with that id.
+export async function updateSong(userId: string, id: string, attrs: unknown): Promise<null | Song> {
+  const name = await nameOrUntitled(userId, nameOf(attrs), id)
   const values = parse(songSchema, { ...(attrs as object), name })
-  const [song] = await uniqueName(db.update(songs).set(values).where(eq(songs.id, id)).returning())
+  const [song] = await uniqueName(
+    db
+      .update(songs)
+      .set(values)
+      .where(and(eq(songs.userId, userId), eq(songs.id, id)))
+      .returning()
+  )
   return song ?? null
 }
 
-// A blank name becomes the first free "Untitled", "Untitled 2", ... (ignoring the
-// song being saved, so re-saving it keeps its name).
-async function nameOrUntitled(name: unknown, id?: string): Promise<unknown> {
+// A blank name becomes the user's first free "Untitled", "Untitled 2", ... (ignoring
+// the song being saved, so re-saving it keeps its name).
+async function nameOrUntitled(userId: string, name: unknown, id?: string): Promise<unknown> {
   if (typeof name === 'string' && name.trim() !== '') return name
   const others = await db
     .select({ name: songs.name })
     .from(songs)
-    .where(id ? ne(songs.id, id) : undefined)
+    .where(and(eq(songs.userId, userId), id ? ne(songs.id, id) : undefined))
   const taken = new Set(others.map((s) => s.name))
   for (let n = 1; ; n++) {
     const candidate = n === 1 ? 'Untitled' : `Untitled ${n}`
