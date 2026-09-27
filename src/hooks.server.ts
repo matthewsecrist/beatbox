@@ -6,8 +6,9 @@ import { auth } from '$lib/server/auth.js'
 import { json, redirect } from '@sveltejs/kit'
 import { isAuthPath, svelteKitHandler } from 'better-auth/svelte-kit'
 
-// Pages anyone can see, signed in or not.
-const PUBLIC_PAGES = new Set<string>([resolve('/login')])
+// Pages anyone can see, signed in or not. A signed-out visitor can play with a new
+// song on the home page, but saving and opening songs needs an account.
+const PUBLIC_PAGES = new Set<string>([resolve('/'), resolve('/login')])
 
 export const handle: Handle = async ({ event, resolve: resolveEvent }) => {
   // Better Auth's own endpoints (/api/auth/*), such as the magic link itself.
@@ -19,7 +20,7 @@ export const handle: Handle = async ({ event, resolve: resolveEvent }) => {
   event.locals.user = session?.user ?? null
   event.locals.session = session?.session ?? null
 
-  // Everything else needs a signed-in user.
+  // Everything else (saved songs, the save/load API) needs a signed-in user.
   if (!event.locals.user && !PUBLIC_PAGES.has(event.url.pathname)) {
     if (event.url.pathname.startsWith('/api/')) {
       return json({ error: 'Sign in first' }, { status: 401 })

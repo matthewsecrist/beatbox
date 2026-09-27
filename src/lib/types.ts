@@ -118,6 +118,8 @@ export interface WorkspaceData {
   key: string
   notice: null | string
   presets: PresetSummary[]
+  // Signed out, the instruments all work but nothing can be saved or opened.
+  signedIn: boolean
   song: null | SavedSong
   songs: PresetSummary[]
 }

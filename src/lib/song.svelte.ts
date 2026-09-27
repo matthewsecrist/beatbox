@@ -36,6 +36,9 @@ export type ArrangementSection = Section & { id: string; name: string }
 // How long consecutive edits merge into one undo step (a slider drag, typing).
 const CAPTURE_MS = 400
 
+// Origin of transactions that load a whole song: not undoable, not a change.
+const LOAD = Symbol('load')
+
 export class SongStore {
   arrangement: ArrangementSection[] = $state.raw([])
   canRedo = $state(false)
@@ -65,12 +68,7 @@ export class SongStore {
     this.loopsMap = this.doc.getMap('loops')
     this.arrangementArray = this.doc.getArray('arrangement')
     // Loading runs before the history and listeners exist: not undoable, not a change.
-    this.doc.transact(() => {
-      for (const [key, value] of Object.entries(song?.synth ?? {})) this.synthMap.set(key, value)
-      this.writeDrums(song?.drums ?? null)
-      for (const loop of song?.loops ?? []) this.loopsMap.set(String(loop.slot), loop)
-      this.arrangementArray.push((song?.arrangement ?? []).map(sectionMap))
-    })
+    this.doc.transact(() => this.write(song), LOAD)
 
     this.undoManager = new Y.UndoManager(
       [this.synthMap, this.drumsMap, this.patternsArray, this.loopsMap, this.arrangementArray],
@@ -89,7 +87,7 @@ export class SongStore {
     this.loopsMap.observe((e) => this.readLoops([...e.keysChanged].map(String)))
     this.arrangementArray.observeDeep(() => this.readArrangement())
     this.doc.on('afterTransaction', (tr: Y.Transaction) => {
-      if (tr.changed.size > 0) onchange()
+      if (tr.changed.size > 0 && tr.origin !== LOAD) onchange()
     })
 
     this.readSynth()
@@ -140,6 +138,22 @@ export class SongStore {
   removeSection(index: number): void {
     if (!this.arrangement[index]) return
     this.edit(() => this.arrangementArray.delete(index, 1), true)
+  }
+
+  // Swaps in a whole song (one kept while signing in, say). Like the song the store
+  // was created with, it isn't undoable and doesn't count as a change.
+  replace(song: SongDoc): void {
+    this.doc.transact(() => {
+      this.synthMap.clear()
+      this.drumsMap.clear()
+      this.patternsArray.delete(0, this.patternsArray.length)
+      this.loopsMap.clear()
+      this.arrangementArray.delete(0, this.arrangementArray.length)
+      this.write(song)
+    }, LOAD)
+    this.undoManager.clear()
+    this.canUndo = false
+    this.canRedo = false
   }
 
   // Drum tempo and level (also the song tempo).
@@ -251,6 +265,13 @@ export class SongStore {
   }
 
   // A song without drums gets the default groove on pattern A.
+  private write(song: null | SongDoc) {
+    for (const [key, value] of Object.entries(song?.synth ?? {})) this.synthMap.set(key, value)
+    this.writeDrums(song?.drums ?? null)
+    for (const loop of song?.loops ?? []) this.loopsMap.set(String(loop.slot), loop)
+    this.arrangementArray.push((song?.arrangement ?? []).map(sectionMap))
+  }
+
   private writeDrums(drums: Drums | null) {
     this.drumsMap.set('bpm', drums?.bpm ?? 110)
     this.drumsMap.set('volume', drums?.volume ?? 0.8)
