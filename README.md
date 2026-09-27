@@ -49,6 +49,17 @@ Randomize, Clear and Reset act on the pattern you're editing. Switching patterns
 while the drums play changes over on the next bar. Its **Tempo** slider sets
 the tempo for the whole song.
 
+- **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.
+- The step edit buttons pick what a click on a step does: **Hits** turns it on
+  or off; **Velocity** (100/75/50/25%), **Chance** (the odds it plays each time
+  round, same steps) and **Ratchet** (1–4 hits in the step) cycle through their
+  values; **Accent** makes it louder. Outside Hits, clicking an off step turns
+  it on. A step keeps its settings when switched off. Quieter steps look dimmer,
+  a chance below 100% shows a dashed outline, accents a red dot.
+- **Kit** picks a synthesized kit: Classic, 808 or 909. Each voice has its own
+  **Tune** (±12 semitones) and **Decay** sliders at the end of its row; picking
+  a kit resets them.
+
 **Loop pads**: eight pads. Tap an empty pad to record, then tap it again to
 finish.
 
@@ -81,8 +92,8 @@ both ask first if you have unsaved changes. **Play all / Stop all** starts or
 stops the drums and every recorded pad.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
-cover every edit to the song: synth settings and presets, drum steps, tempo and
-level, recording or clearing a pad, piano-roll edits and the arrangement. A
+cover every edit to the song: synth settings and presets, drum steps, kit, tuning,
+tempo, swing and level, recording or clearing a pad, piano-roll edits and the arrangement. A
 slider drag or a burst of typing is one step. The history lasts until you open
 another song; the song name keeps the browser's own text undo.
 

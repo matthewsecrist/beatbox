@@ -102,6 +102,8 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { arrangement: [{ bars: 4, pads: [8] }] },
     { arrangement: [{ bars: 4, drums: true, pattern: 4 }] },
     { drums: { ...drums(120), patterns: Array<object>(5).fill({}) } },
+    { drums: { ...drums(120), patterns: [{ kick: [{ on: true, ratchet: 5 }] }] } },
+    { drums: { ...drums(120), swing: 90 } },
     { drums: drums(999) }
   ]
   for (const attrs of invalid) {

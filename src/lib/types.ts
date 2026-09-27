@@ -1,14 +1,34 @@
 // Shapes shared by the instruments, the page and the server.
 
 // One drum pattern: 16 steps per track.
-export type DrumPattern = Record<TrackId, boolean[]>
+export type DrumPattern = Record<TrackId, DrumStep[]>
 
 export interface Drums {
   bpm: number
-  // Patterns A-D; saved songs may omit tracks.
-  patterns: Partial<DrumPattern>[]
+  // Absent in songs saved before kits: 'classic'.
+  kit?: KitId
+  // Patterns A-D; saved songs may omit tracks, and store plain on/off steps.
+  patterns: Partial<Record<TrackId, SavedStep[]>>[]
+  // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing.
+  swing?: number
+  voices?: Partial<Record<TrackId, Partial<VoiceTweak>>>
   volume: number
 }
+
+// One step of a drum track. Settings stay when the step is switched off.
+export interface DrumStep {
+  accent: boolean
+  on: boolean
+  // 0-1: chance the step plays each time round.
+  probability: number
+  // 1-4 hits spread over the step.
+  ratchet: number
+  // 0-1
+  velocity: number
+}
+
+// Synthesized drum kits; each voice is built from oscillators and noise.
+export type KitId = '808' | '909' | 'classic'
 
 // One recorded loop pad.
 export interface Loop {
@@ -33,6 +53,9 @@ export interface PresetSummary {
   id: string
   name: string
 }
+
+// A saved step: plain on/off when it has default settings.
+export type SavedStep = boolean | Partial<DrumStep>
 
 // Announced by the arranger ahead of each section boundary.
 export interface Scene {
@@ -91,6 +114,14 @@ export type TrackId = 'chat' | 'clap' | 'kick' | 'ohat' | 'snare' | 'tom'
 // Window events the instruments use to coordinate.
 export interface TransportDetail {
   play: boolean
+}
+
+// Per-voice adjustment on top of the kit.
+export interface VoiceTweak {
+  // Multiplier on the kit's decay times (0.25-2).
+  decay: number
+  // Semitones (-12 to 12).
+  tune: number
 }
 export type Wave = 'sawtooth' | 'sine' | 'square' | 'triangle'
 

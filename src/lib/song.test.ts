@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest'
 import type { Loop, SongDoc } from './types.js'
 
 import { STEPS, TRACKS } from './drums/engine.js'
-import { DEFAULT_PATTERN, SongStore } from './song.svelte.js'
+import { DEFAULT_PATTERN, SongStore, STEP } from './song.svelte.js'
 
 const loop = (slot: number, midi = 60): Loop => ({
   bpm: 120,
@@ -29,7 +29,7 @@ test('a saved song loads into the mirrors and saves back the same', () => {
   expect(store.synth).toStrictEqual({ filter_cutoff: 300 })
   expect(store.drums.bpm).toBe(140)
   expect(store.drums.patterns).toHaveLength(4)
-  expect(store.drums.patterns[0]?.kick[0]).toBe(true)
+  expect(store.drums.patterns[0]?.kick[0]?.on).toBe(true)
   expect(store.loops[2]).toStrictEqual(loop(2))
   expect(store.arrangement[0]).toMatchObject({ bars: 8, name: 'Drop', pattern: 1 })
 
@@ -47,8 +47,9 @@ test('a new song starts with default drums and nothing to undo', () => {
   expect(store.drums.bpm).toBe(110)
   expect(store.drums.patterns[0]).toStrictEqual(DEFAULT_PATTERN)
   expect(store.drums.patterns[3]).toStrictEqual(
-    Object.fromEntries(TRACKS.map(({ id }) => [id, Array<boolean>(STEPS).fill(false)]))
+    Object.fromEntries(TRACKS.map(({ id }) => [id, Array<unknown>(STEPS).fill(STEP)]))
   )
+  expect(store.drums).toMatchObject({ kit: 'classic', swing: 50 })
   expect(store.toSongDoc().synth).toBe(null)
   expect(store.canUndo).toBe(false)
   expect(onchange).not.toHaveBeenCalled()
@@ -59,7 +60,7 @@ test('edits across instruments undo and redo, and each reports a change', () => 
   const store = new SongStore(song, onchange)
 
   store.setParams({ ...store.synth, filter_cutoff: 900 } as never)
-  store.toggleStep(1, 'snare', 4)
+  store.setStep(1, 'snare', 4, { on: true })
   store.setLoop(loop(5, 72))
   store.removeSection(0)
   expect(onchange).toHaveBeenCalledTimes(4)
@@ -70,7 +71,7 @@ test('edits across instruments undo and redo, and each reports a change', () => 
   store.undo()
   expect(store.loops[5]).toBe(null)
   store.undo()
-  expect(store.drums.patterns[1]?.snare[4]).toBe(false)
+  expect(store.drums.patterns[1]?.snare[4]?.on).toBe(false)
   store.undo()
   expect(store.synth).toStrictEqual({ filter_cutoff: 300 })
   expect(store.canUndo).toBe(false)
@@ -79,8 +80,42 @@ test('edits across instruments undo and redo, and each reports a change', () => 
   store.redo()
   store.redo()
   expect(store.synth.filter_cutoff).toBe(900)
-  expect(store.drums.patterns[1]?.snare[4]).toBe(true)
+  expect(store.drums.patterns[1]?.snare[4]?.on).toBe(true)
   expect(store.canRedo).toBe(true)
+})
+
+test('step settings survive switching off and saving; plain steps save as on/off', () => {
+  const store = new SongStore(song)
+  store.setStep(0, 'kick', 2, { accent: true, on: true, probability: 0.5, ratchet: 3 })
+  store.setStep(0, 'kick', 2, { on: false })
+
+  const saved = store.toSongDoc().drums?.patterns[0]?.kick
+  expect(saved?.slice(0, 3)).toStrictEqual([
+    true,
+    false,
+    { accent: true, on: false, probability: 0.5, ratchet: 3, velocity: 1 }
+  ])
+  const reopened = new SongStore({ ...song, drums: store.toSongDoc().drums })
+  expect(reopened.drums.patterns[0]?.kick[2]).toStrictEqual({
+    ...STEP,
+    accent: true,
+    probability: 0.5,
+    ratchet: 3
+  })
+})
+
+test('choosing a kit resets voice tweaks, and undoes as one step', () => {
+  const drums = { bpm: 140, patterns: [], voices: { kick: { tune: 5 } }, volume: 0.5 }
+  const store = new SongStore({ ...song, drums })
+  expect(store.drums.voices.kick).toStrictEqual({ decay: 1, tune: 5 })
+
+  store.setKit('808')
+  expect(store.drums.kit).toBe('808')
+  expect(store.drums.voices.kick).toStrictEqual({ decay: 1, tune: 0 })
+
+  store.undo()
+  expect(store.drums.kit).toBe('classic')
+  expect(store.drums.voices.kick.tune).toBe(5)
 })
 
 test('a slider drag is one undo step; a discrete edit after it is another', () => {
