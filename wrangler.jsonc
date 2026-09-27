@@ -17,5 +17,17 @@
       "migrations_dir": "drizzle"
     }
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Previews (`wrangler preview`) share the `beatbox-preview` database, never
+  // production's. Its migrations run through wrangler.preview-migrations.jsonc.
+  "previews": {
+    "vars": { "BETTER_AUTH_ALLOWED_HOSTS": "*-beatbox.matthewsecrist.workers.dev" },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "beatbox-preview",
+        "database_id": "90db787a-4834-4928-8b19-f82e02aed22f"
+      }
+    ]
+  }
 }

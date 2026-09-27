@@ -1,0 +1,13 @@
+// Only for applying migrations to the Previews database (see `previews` in wrangler.jsonc):
+// npx wrangler d1 migrations apply beatbox-preview --remote --config wrangler.preview-migrations.jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "beatbox-preview",
+      "database_id": "90db787a-4834-4928-8b19-f82e02aed22f",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}

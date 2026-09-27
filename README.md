@@ -143,6 +143,14 @@ Apply any new migrations to D1 (above), then `npm run deploy`. `BETTER_AUTH_URL`
 set in `wrangler.jsonc`; `BETTER_AUTH_SECRET` is a Worker secret
 (`npx wrangler secret put BETTER_AUTH_SECRET`).
 
+Pushed branches get a Preview (Workers Builds runs `npx wrangler preview`) at
+`<branch>-beatbox.matthewsecrist.workers.dev`. Previews use the `previews` block of
+`wrangler.jsonc`: their own D1 database, `beatbox-preview`, and
+`BETTER_AUTH_ALLOWED_HOSTS` in place of `BETTER_AUTH_URL`. Their
+`BETTER_AUTH_SECRET` is set with `npx wrangler preview base-config secret put`. Apply
+new migrations to the Previews database before pushing them:
+`npx wrangler d1 migrations apply beatbox-preview --remote --config wrangler.preview-migrations.jsonc`.
+
 Sign-in links are only logged for now: read them with `npx wrangler tail beatbox`,
 and make `src/lib/server/email.ts` send them by email before inviting anyone.
 
