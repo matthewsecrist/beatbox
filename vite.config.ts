@@ -5,7 +5,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   test: {
-    env: { DATABASE_URL: ':memory:' },
+    env: {
+      BETTER_AUTH_SECRET: 'test-secret-that-is-at-least-32-characters',
+      BETTER_AUTH_URL: 'http://localhost:5173',
+      DATABASE_URL: ':memory:'
+    },
     environment: 'node',
     expect: { requireAssertions: true },
     include: ['src/**/*.{test,spec}.ts']

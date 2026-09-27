@@ -2,24 +2,35 @@
 
 A music workstation in the browser: a polyphonic synth, a 16-step drum machine,
 eight loop pads and an arranger, all locked to one tempo. Sessions are saved as
-songs. Sound is generated live with the Web Audio API; nothing is sampled.
+songs, and each user has their own. Sound is generated live with the Web Audio
+API; nothing is sampled.
 
 Built with [SvelteKit](https://svelte.dev/docs/kit) and Svelte 5, with
-[Drizzle](https://orm.drizzle.team) on SQLite (libSQL).
+[Drizzle](https://orm.drizzle.team) on SQLite (libSQL) and
+[Better Auth](https://better-auth.com) for sign-in.
 
 ## Getting started
 
 Requirements: Node.js 22+.
 
 ```sh
-npm run setup    # packages, database migrations, seed songs
+npm run setup    # packages and database migrations
 npm run dev
 ```
 
-Open [localhost:5173](http://localhost:5173). A song, **Midnight Arcade**, is
-seeded for you: pick it from **Open ▾** and press **Play song**.
+Open [localhost:5173](http://localhost:5173) and sign in with your email. There's
+no mail provider yet, so the sign-in link is printed in the `npm run dev` output;
+open it to sign in. Your first sign-in creates your account, with a generated
+username (like `groovy-reverb-7916`, shown top right) and your own copy of
+**Midnight Arcade**: pick it from **Open ▾** and press **Play song**.
 
 ## What's in it
+
+**Accounts**: sign-in is by magic link (Better Auth). Enter your email on the
+sign-in page and follow the link you're sent; it works once, for five minutes.
+Everything you save (songs, with their loops and arrangement, and synth presets)
+belongs to your account, and nobody else can see or change it. Song and preset
+names only need to be unique among your own. **Sign out** is in the header.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
 a resonant low-pass filter with an LFO for wobbles, an ADSR envelope and 16
@@ -86,7 +97,7 @@ Keys are ignored while you're typing in a text field.
 npm run validate # everything CI runs: lint, type check, tests
 npm run lint     # ESLint, including Prettier formatting (npm run format to fix)
 npm run check    # svelte-check (strict TypeScript)
-npm test         # Vitest: audio timing, looper, arranger, and the song/preset store
+npm test         # Vitest: audio timing, looper, arranger, song/preset store, sign-in
 npm run build && npm start   # production build (Node adapter), serves on :3000
 ```
 
@@ -96,36 +107,56 @@ run `npm run validate` and `npm run build`, failing on any lint, type or test er
 
 ### Database
 
-Songs and presets live in SQLite, `beatbox.db` by default. Set `DATABASE_URL`
-to use another file or any libSQL URL (for example Turso, with
+Users, sessions, songs and presets live in SQLite, `beatbox.db` by default. Set
+`DATABASE_URL` to use another file or any libSQL URL (for example Turso, with
 `DATABASE_AUTH_TOKEN`).
+
+The migration that added accounts drops songs and presets saved before then,
+since they have no owner; new users get Midnight Arcade on first sign-in.
 
 - `npm run db:migrate` applies the migrations in `drizzle/`.
 - After changing `src/lib/server/db/schema.ts`, run `npm run db:generate` to
   write a new migration.
 
+### Configuration
+
+Settings come from the environment (or a `.env` file; see `.env.example`):
+
+| Variable             | What                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET` | Signs sessions. Required in production (`openssl rand -base64 32`)                       |
+| `BETTER_AUTH_URL`    | The site's public URL, used in sign-in links. Defaults to `http://localhost:5173` in dev |
+| `DATABASE_URL`       | SQLite file or libSQL URL; defaults to `file:beatbox.db`                                 |
+
+Sign-in links are only logged for now: before deploying, make
+`src/lib/server/email.ts` send them by email.
+
 ### Where things live
 
-| Path                                                   | What                                                                            |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `src/lib/server/db/schema.ts`                          | Drizzle tables: `presets` and `songs` (song parts are JSON)                     |
-| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections             |
-| `src/lib/server/music.ts`                              | Reading and saving presets and songs                                            |
-| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                                 |
-| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                     |
-| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events              |
-| `src/lib/song.svelte.ts`                               | `SongStore`: the open song as a Yjs document, with undo/redo                    |
-| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song            |
-| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                    |
-| `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                      |
-| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                                        |
-| `src/lib/Arranger.svelte`                              | Arrangement panel                                                               |
-| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                                |
-| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument                       |
-| `src/lib/synth/`                                       | Synth engine, loop recorder/player, piano-roll note conversion, factory presets |
-| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                                       |
-| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                                        |
-| `db/seeds/*.json`                                      | Songs seeded by `db/seed.ts`                                                    |
+| Path                                                   | What                                                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/server/db/schema.ts`                          | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
+| `src/lib/server/auth.ts`                               | Better Auth setup: magic links, and a new user's username and starter songs                                         |
+| `src/hooks.server.ts`                                  | Loads the signed-in user; sends signed-out visitors to `/login`                                                     |
+| `src/lib/server/usernames.ts`                          | Generated usernames                                                                                                 |
+| `src/lib/server/starter_songs/`                        | Songs every new user gets a copy of (Midnight Arcade)                                                               |
+| `src/routes/login/`, `src/routes/logout/`              | Sign-in page and sign-out                                                                                           |
+| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections                                                 |
+| `src/lib/server/music.ts`                              | Reading and saving a user's presets and songs                                                                       |
+| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                                                                     |
+| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                                                         |
+| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events                                                  |
+| `src/lib/song.svelte.ts`                               | `SongStore`: the open song as a Yjs document, with undo/redo                                                        |
+| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song                                                |
+| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                                                        |
+| `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                                                          |
+| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                                                                            |
+| `src/lib/Arranger.svelte`                              | Arrangement panel                                                                                                   |
+| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                                                                    |
+| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument                                                           |
+| `src/lib/synth/`                                       | Synth engine, loop recorder/player, piano-roll note conversion, factory presets                                     |
+| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                                                                           |
+| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                                                                            |
 
 How the pieces talk:
 
@@ -139,9 +170,9 @@ How the pieces talk:
   `beatbox:transport` for Play all / Stop all, `beatbox:scene` for arrangement
   sections, and `beatbox:state` for what's currently playing.
 
-### Seed songs
+### Starter songs
 
-`npm run db:seed` creates each song in `db/seeds/*.json` that doesn't already
-exist by name, so it never overwrites songs you've edited. To add a song, export
-it to that folder as JSON with the keys `name`, `synth`, `drums`, `loops` and
-`arrangement`.
+Every new user gets their own copy of each song in `src/lib/server/starter_songs/`
+when their account is created. To add one, export it from the app to that folder
+as JSON (with the keys `name`, `synth`, `drums`, `loops` and `arrangement`) and
+add it to `STARTER_SONGS` in `index.ts`.
