@@ -335,9 +335,13 @@
   {/if}
 </div>
 
-<Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
-<DrumMachine {store} />
-<Arranger {store} />
+<div class="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-4 xl:space-y-0">
+  <Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
+  <div class="space-y-4">
+    <DrumMachine {store} />
+    <Arranger {store} />
+  </div>
+</div>
 <LoopBrowser {store} bind:open={libraryOpen} />
 
 {#if flash}

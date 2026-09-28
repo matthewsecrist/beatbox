@@ -577,7 +577,7 @@
     <span id="preset-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
   </div>
 
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2">
     {@render panel('Osc 1', osc1)}
     {@render panel('Osc 2', osc2)}
     {@render panel('Filter', filter)}
