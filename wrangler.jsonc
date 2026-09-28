@@ -8,7 +8,10 @@
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare"
   },
-  "vars": { "BETTER_AUTH_URL": "https://beatbox.matthewsecrist.workers.dev" },
+  "vars": {
+    "BETTER_AUTH_URL": "https://beatbox.matthewsecrist.workers.dev",
+    "EMAIL_FROM": "Beatbox <noreply@beatbox.matthewsecrist.dev>"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -21,7 +24,10 @@
   // Previews (`wrangler preview`) share the `beatbox-preview` database, never
   // production's. Its migrations run through wrangler.preview-migrations.jsonc.
   "previews": {
-    "vars": { "BETTER_AUTH_ALLOWED_HOSTS": "*-beatbox.matthewsecrist.workers.dev" },
+    "vars": {
+      "BETTER_AUTH_ALLOWED_HOSTS": "*-beatbox.matthewsecrist.workers.dev",
+      "EMAIL_FROM": "Beatbox <noreply@beatbox.matthewsecrist.dev>"
+    },
     "d1_databases": [
       {
         "binding": "DB",

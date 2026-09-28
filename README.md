@@ -19,9 +19,9 @@ npm run dev
 ```
 
 Open [localhost:5173](http://localhost:5173): everything plays without an account.
-To save, press **Sign in to save** and enter your email. There's no mail
-provider yet, so the sign-in link is printed in the `npm run dev` output; open it
-to sign in. Your first sign-in creates your account, with a generated
+To save, press **Sign in to save** and enter your email. Unless `RESEND_API_KEY`
+is set, the sign-in link isn't emailed but printed in the `npm run dev` output;
+open it to sign in. Your first sign-in creates your account, with a generated
 username (like `groovy-reverb-7916`, shown top right) and your own copy of
 **Midnight Arcade**: pick it from **Open ▾** and press **Play song**.
 
@@ -145,6 +145,8 @@ Settings come from the environment (or a `.env` file; see `.env.example`):
 | `BETTER_AUTH_SECRET` | Signs sessions. Required in production (`openssl rand -base64 32`)                       |
 | `BETTER_AUTH_URL`    | The site's public URL, used in sign-in links. Defaults to `http://localhost:5173` in dev |
 | `DATABASE_URL`       | SQLite file or libSQL URL; defaults to `file:beatbox.db`                                 |
+| `RESEND_API_KEY`     | Emails sign-in links with Resend. Unset, they're only printed in the server log          |
+| `EMAIL_FROM`         | Sender of those emails, on a domain verified in Resend. Required with `RESEND_API_KEY`   |
 
 ### Deploying
 
@@ -162,8 +164,11 @@ Pushed branches get a Preview (Workers Builds runs `npx wrangler preview`) at
 new migrations to the Previews database before pushing them:
 `npx wrangler d1 migrations apply beatbox-preview --remote --config wrangler.preview-migrations.jsonc`.
 
-Sign-in links are only logged for now: read them with `npx wrangler tail beatbox`,
-and make `src/lib/server/email.ts` send them by email before inviting anyone.
+Sign-in links are emailed with Resend. `EMAIL_FROM` is set in `wrangler.jsonc`
+(its domain must be verified in Resend); `RESEND_API_KEY` is a Worker secret
+(`npx wrangler secret put RESEND_API_KEY`, and `npx wrangler preview base-config
+secret put RESEND_API_KEY` for Previews). Without it, links are only logged
+(`npx wrangler tail beatbox`).
 
 ### Where things live
 
