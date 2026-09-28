@@ -7,8 +7,13 @@ const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
 const params = z.object({
   attack: z.number().exactOptional(),
   decay: z.number().exactOptional(),
+  filter_attack: z.number().exactOptional(),
   filter_cutoff: z.number().exactOptional(),
+  filter_decay: z.number().exactOptional(),
+  filter_env_amount: z.number().exactOptional(),
+  filter_release: z.number().exactOptional(),
   filter_resonance: z.number().exactOptional(),
+  filter_sustain: z.number().exactOptional(),
   lfo1_depth: z.number().exactOptional(),
   lfo1_rate: z.number().exactOptional(),
   lfo1_target: lfoTarget.exactOptional(),

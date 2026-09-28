@@ -38,7 +38,10 @@ belongs to your account, and nobody else can see or change it. Song and preset
 names only need to be unique among your own. **Sign out** is in the header.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
-a resonant low-pass filter, two LFOs, an ADSR envelope and 16 voices. Each LFO
+a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope and 16 voices. The
+filter envelope sweeps the cutoff from each note's start: **Env amount** sets how
+far (up to ±4 octaves; negative sweeps down, 0 is off), with its own attack, decay, sustain and
+release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
 has its own rate, depth and target: **Filter** (wobbles; depth in octaves),
 **Pitch** (vibrato; depth in cents) or **Amp** (tremolo; depth as a share of the
 level), so a slow filter sweep can run under a fast vibrato. Switching target

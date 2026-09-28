@@ -1,4 +1,4 @@
-import { expect, test, vi } from 'vitest'
+import { expect, type Mock, test, vi } from 'vitest'
 
 import { createSynth } from './engine.js'
 
@@ -14,10 +14,11 @@ interface FakeNode {
 }
 
 interface FakeParam {
-  linearRampToValueAtTime: ReturnType<typeof vi.fn>
+  cancelScheduledValues: Mock<AudioParam['cancelScheduledValues']>
+  linearRampToValueAtTime: Mock<AudioParam['linearRampToValueAtTime']>
   name: string
-  setTargetAtTime: ReturnType<typeof vi.fn>
-  setValueAtTime: ReturnType<typeof vi.fn>
+  setTargetAtTime: Mock<AudioParam['setTargetAtTime']>
+  setValueAtTime: Mock<AudioParam['setValueAtTime']>
   value: number
 }
 
@@ -25,6 +26,7 @@ interface FakeParam {
 function fakeAudio() {
   const nodes: FakeNode[] = []
   const param = (name: string): FakeParam => ({
+    cancelScheduledValues: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
     name,
     setTargetAtTime: vi.fn(),
@@ -57,7 +59,8 @@ function fakeAudio() {
     currentTime: 0,
     destination: {}
   }
-  return { ctx: ctx as unknown as BaseAudioContext, nodes }
+  // `clock` is the same context, to move its time.
+  return { clock: ctx, ctx: ctx as unknown as BaseAudioContext, nodes }
 }
 
 // The gain LFO `n` of the first voice feeds (its depth), and the params that gain drives.
@@ -118,4 +121,45 @@ test('a held note follows a change of target', () => {
 
   expect(lfoTargets(nodes)).toStrictEqual(['osc.detune', 'osc.detune'])
   expect(lfoDepth(nodes).gain.setTargetAtTime).toHaveBeenLastCalledWith(50, 0, 0.01)
+})
+
+test('the filter envelope sweeps the cutoff in octaves, and releases from where it is', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth(
+    {
+      filter_attack: 0.1,
+      filter_decay: 0.2,
+      filter_env_amount: 2,
+      filter_release: 0.5,
+      filter_sustain: 0.25
+    },
+    () => ctx
+  )
+  synth.noteOn(60)
+  const detune = nodes.find((n) => n.kind === 'filter')?.detune
+
+  expect(detune?.setValueAtTime.mock.calls).toStrictEqual([[0, 0]])
+  const ramps = detune?.linearRampToValueAtTime.mock.calls.map(([v, t]) => [v, +t.toFixed(3)])
+  // Two octaves up by the end of the attack, then down to a quarter of that.
+  expect(ramps).toStrictEqual([
+    [2400, 0.1],
+    [600, 0.3]
+  ])
+
+  clock.currentTime = 0.05 // halfway up the attack
+  synth.noteOff(60)
+  expect(detune?.cancelScheduledValues).toHaveBeenCalledWith(0.05)
+  expect(detune?.setValueAtTime).toHaveBeenLastCalledWith(1200, 0.05)
+  expect(detune?.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 0.55)
+})
+
+test('with no envelope amount the cutoff is left alone', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ filter_env_amount: 0 }, () => ctx)
+  synth.noteOn(60)
+  synth.noteOff(60)
+
+  const detune = nodes.find((n) => n.kind === 'filter')?.detune
+  expect(detune?.setValueAtTime).not.toHaveBeenCalled()
+  expect(detune?.linearRampToValueAtTime).not.toHaveBeenCalled()
 })

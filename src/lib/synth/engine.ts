@@ -5,8 +5,15 @@ import { getContext } from '../audio.js'
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
   decay: 0.3,
+  // Filter envelope: sweeps the cutoff by up to `filter_env_amount` octaves
+  // (negative sweeps down) with its own ADSR. 0 = off.
+  filter_attack: 0.005,
   filter_cutoff: 2400,
+  filter_decay: 0.3,
+  filter_env_amount: 0,
+  filter_release: 0.3,
   filter_resonance: 4,
+  filter_sustain: 0,
   lfo1_depth: 0, // units follow the target (LFO_DEPTH_MAX)
   lfo1_rate: 4,
   lfo1_target: 'filter',
@@ -68,10 +75,20 @@ export interface Synth {
 
 export type VoiceKey = number | string
 
+interface FilterEnv {
+  amount: number
+  attack: number
+  decay: number
+  release: number
+  sustain: number
+}
+
 interface Voice {
   amp: GainNode
   attack: number
   decay: number
+  // The filter envelope this note started with; amount in cents.
+  fenv: FilterEnv
   filter: BiquadFilterNode
   g1: GainNode
   g2: GainNode
@@ -144,15 +161,19 @@ export function createSynth(
     }
   }
 
-  // Envelope level at time t, computed from the voice's start so releases can be
-  // scheduled in the future (the looper) without reading gain.value.
-  function envAt(v: Voice, t: number): number {
+  // Envelope level at time t (the amp's, or the filter's with `env`), computed
+  // from the voice's start so releases can be scheduled in the future (the
+  // looper) without reading the param's value.
+  function envAt(
+    v: Voice,
+    t: number,
+    env: Pick<Voice, 'attack' | 'decay' | 'sustain'> = v
+  ): number {
     const x = t - v.t0
     if (x <= 0) return 0
-    if (x < v.attack) return (HEADROOM * x) / v.attack
-    if (x < v.attack + v.decay)
-      return HEADROOM + (HEADROOM * v.sustain - HEADROOM) * ((x - v.attack) / v.decay)
-    return HEADROOM * v.sustain
+    if (x < env.attack) return x / env.attack
+    if (x < env.attack + env.decay) return 1 + (env.sustain - 1) * ((x - env.attack) / env.decay)
+    return env.sustain
   }
 
   // Points one of the voice's LFOs at `target`.
@@ -176,8 +197,14 @@ export function createSynth(
     const t = Math.max(at, ctx.currentTime)
     const g = v.amp.gain
     g.cancelScheduledValues(t)
-    g.setValueAtTime(envAt(v, t), t)
+    g.setValueAtTime(HEADROOM * envAt(v, t), t)
     g.linearRampToValueAtTime(0, t + time)
+    if (v.fenv.amount) {
+      const d = v.filter.detune
+      d.cancelScheduledValues(t)
+      d.setValueAtTime(v.fenv.amount * envAt(v, t, v.fenv), t)
+      d.linearRampToValueAtTime(0, t + v.fenv.release)
+    }
     for (const s of v.srcs) s.stop(t + time + 0.05)
   }
 
@@ -231,11 +258,29 @@ export function createSynth(
     amp.gain.linearRampToValueAtTime(HEADROOM, t + attack)
     amp.gain.linearRampToValueAtTime(HEADROOM * sustain, t + attack + decay)
 
+    // The filter envelope moves the cutoff's detune; a filter LFO adds on top.
+    const fenv: FilterEnv = {
+      amount: p.filter_env_amount * 1200,
+      attack: p.filter_attack,
+      decay: p.filter_decay,
+      release: p.filter_release,
+      sustain: p.filter_sustain
+    }
+    if (fenv.amount) {
+      filter.detune.setValueAtTime(0, t)
+      filter.detune.linearRampToValueAtTime(fenv.amount, t + fenv.attack)
+      filter.detune.linearRampToValueAtTime(
+        fenv.amount * fenv.sustain,
+        t + fenv.attack + fenv.decay
+      )
+    }
+
     const srcs = [osc1, osc2, ...lfos.map((l) => l.osc)]
     const v: Voice = {
       amp,
       attack,
       decay,
+      fenv,
       filter,
       g1,
       g2,

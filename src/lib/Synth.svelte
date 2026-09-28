@@ -506,6 +506,7 @@
   const fmtNum = (v: number) => Number(v).toFixed(1)
   const fmtRate = (v: number) => Number(v).toFixed(1) + ' Hz'
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
+  const fmtEnvAmount = (v: number) => (v === 0 ? 'off' : fmtInt(Number(v.toFixed(2))) + ' oct')
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
   const fmtTremolo = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   // Depth slider per LFO target: octaves of cutoff, cents of pitch, share of level.
@@ -616,6 +617,11 @@
     />
   </label>
   {@render slider('filter_resonance', 'Resonance', 0, 20, 0.1, fmtNum)}
+  {@render slider('filter_env_amount', 'Env amount', -4, 4, 0.05, fmtEnvAmount)}
+  {@render slider('filter_attack', 'Env attack', 0.001, 2, 0.001, fmtSec)}
+  {@render slider('filter_decay', 'Env decay', 0.001, 2, 0.001, fmtSec)}
+  {@render slider('filter_sustain', 'Env sustain', 0, 1, 0.01, fmtPct)}
+  {@render slider('filter_release', 'Env release', 0.01, 4, 0.01, fmtSec)}
 {/snippet}
 
 {#snippet lfo(n: 1 | 2)}

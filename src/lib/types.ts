@@ -116,8 +116,15 @@ export interface StateDetail {
 export interface SynthParams {
   attack: number
   decay: number
+  // Filter envelope: times in seconds, sustain 0-1, amount in octaves (can be
+  // negative; 0 = off).
+  filter_attack: number
   filter_cutoff: number
+  filter_decay: number
+  filter_env_amount: number
+  filter_release: number
   filter_resonance: number
+  filter_sustain: number
   // Two LFOs, each with its own rate and target. Depth units follow the
   // target: octaves (filter), cents (pitch), 0-1 (amp).
   lfo1_depth: number
