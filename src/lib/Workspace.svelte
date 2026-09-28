@@ -167,14 +167,21 @@
     if (!keepPendingSong({ name, song: store.toSongDoc() }) && !discardOk()) e.preventDefault()
   }
 
-  // Global transport: starts/stops the drums and every filled loop pad. The
-  // instruments report their state as `beatbox:state`, so the label follows them
-  // even when started/stopped individually.
+  // Song-bar transport: Play song plays the arrangement (the Arranger listens for
+  // `beatbox:song`), or, with no sections yet, starts the drums and every filled
+  // loop pad. Stop stops whatever is playing. The instruments report their state
+  // as `beatbox:state`, so the button follows them even when started individually.
   const playingBy = new SvelteMap<string, boolean>()
   let anyPlaying = $state(false)
 
   function toggleTransport() {
-    window.dispatchEvent(new CustomEvent('beatbox:transport', { detail: { play: !anyPlaying } }))
+    if (anyPlaying) {
+      window.dispatchEvent(new CustomEvent('beatbox:transport', { detail: { play: false } }))
+    } else if (store.arrangement.length) {
+      window.dispatchEvent(new CustomEvent('beatbox:song', { detail: { play: true } }))
+    } else {
+      window.dispatchEvent(new CustomEvent('beatbox:transport', { detail: { play: true } }))
+    }
   }
 
   onMount(() => {
@@ -214,12 +221,17 @@
     id="transport"
     type="button"
     aria-pressed={anyPlaying}
+    title={anyPlaying
+      ? 'Stop everything'
+      : store.arrangement.length
+        ? 'Play the arrangement from the start'
+        : 'No arrangement yet: play the drums and every loop pad'}
     onclick={toggleTransport}
     class="group flex items-center gap-1.5 rounded-md bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-zinc-950 shadow shadow-emerald-500/20 transition hover:bg-emerald-400 active:scale-95 aria-pressed:bg-zinc-100 aria-pressed:shadow-none aria-pressed:hover:bg-white"
   >
     <Play class="size-4 fill-current group-aria-pressed:hidden" />
     <Square class="hidden size-4 fill-current group-aria-pressed:block" />
-    <span>{anyPlaying ? 'Stop all' : 'Play all'}</span>
+    <span>{anyPlaying ? 'Stop' : 'Play song'}</span>
   </button>
 
   <form id="song-form" onsubmit={saveSong} class="flex min-w-0 flex-1 items-center gap-2">

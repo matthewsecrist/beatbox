@@ -1,0 +1,3031 @@
+{
+  "arrangement": [
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Intro",
+      "pads": [4],
+      "pattern": 0
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Groove",
+      "pads": [0],
+      "pattern": 0
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Stabs",
+      "pads": [0, 2],
+      "pattern": 1
+    },
+    {
+      "bars": 4,
+      "drums": true,
+      "name": "Build",
+      "pads": [0, 3],
+      "pattern": 3
+    },
+    {
+      "bars": 16,
+      "drums": true,
+      "name": "Peak",
+      "pads": [1, 2, 3],
+      "pattern": 1
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Breakdown",
+      "pads": [2, 3],
+      "pattern": 2
+    },
+    {
+      "bars": 4,
+      "drums": true,
+      "name": "Build 2",
+      "pads": [4, 3],
+      "pattern": 3
+    },
+    {
+      "bars": 16,
+      "drums": true,
+      "name": "Peak 2",
+      "pads": [1, 2, 3],
+      "pattern": 1
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Outro",
+      "pads": [0],
+      "pattern": 0
+    },
+    {
+      "bars": 4,
+      "drums": true,
+      "name": "Fade",
+      "pads": [4, 3],
+      "pattern": 2
+    }
+  ],
+  "drums": {
+    "bpm": 126,
+    "kit": "909",
+    "patterns": [
+      {
+        "chat": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
+        "kick": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "ohat": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false
+        ]
+      },
+      {
+        "chat": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          }
+        ],
+        "clap": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "ohat": [
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          }
+        ]
+      },
+      {
+        "chat": [
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          }
+        ],
+        "clap": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "chat": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
+        "kick": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 2,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 2,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          }
+        ],
+        "tom": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          false
+        ]
+      }
+    ],
+    "swing": 55,
+    "voices": {
+      "kick": {
+        "decay": 1.2,
+        "tune": -1
+      },
+      "ohat": {
+        "decay": 0.75
+      },
+      "tom": {
+        "tune": -2
+      }
+    },
+    "volume": 0.75
+  },
+  "effects": {
+    "delay_feedback": 0.4,
+    "delay_mix": 0.5,
+    "delay_time": "1/8d",
+    "drums_delay": 0,
+    "drums_reverb": 0.12,
+    "reverb_mix": 0.45,
+    "reverb_size": 2,
+    "synth_delay": 0.25,
+    "synth_reverb": 0.2
+  },
+  "loops": [
+    {
+      "bpm": 126,
+      "events": [
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.119
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.357
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 0.417
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.476
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.595
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.714
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 0.714
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 0.893
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 0.952
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.952
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 43,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.31
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.429
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 1.429
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.548
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 1.607
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.667
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 1.667
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.786
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.024
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.024
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.143
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.381
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.5
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 2.619
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 2.798
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 3.214
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 3.274
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 3.333
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 3.333
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 3.452
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 3.571
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 3.69
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 3.69
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 3.929
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.167
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.226
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.286
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.405
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.524
+        },
+        {
+          "midi": 53,
+          "on": true,
+          "t": 4.524
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 53,
+          "on": false,
+          "t": 4.702
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 4.762
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.762
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.119
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.238
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5.238
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.357
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 5.417
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.476
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5.476
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.595
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 5.833
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 5.833
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 5.952
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.19
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.31
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 6.429
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 6.607
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 7.024
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 7.083
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 7.143
+        },
+        {
+          "midi": 47,
+          "on": true,
+          "t": 7.143
+        },
+        {
+          "midi": 47,
+          "on": false,
+          "t": 7.262
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 7.381
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 7.5
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 7.5
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 7.619
+        }
+      ],
+      "length": 7.619,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.18,
+        "filter_attack": 0.001,
+        "filter_cutoff": 250,
+        "filter_decay": 0.22,
+        "filter_env_amount": 3.5,
+        "filter_release": 0.08,
+        "filter_resonance": 16,
+        "filter_sustain": 0,
+        "glide": 0.08,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_rate": 4,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": -1,
+        "osc1_wave": "sawtooth",
+        "osc2_detune": 0,
+        "osc2_level": 0,
+        "osc2_octave": -1,
+        "osc2_wave": "square",
+        "release": 0.08,
+        "sustain": 0.3
+      },
+      "slot": 0
+    },
+    {
+      "bpm": 126,
+      "events": [
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.119
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.119
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 0.298
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.357
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 0.357
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 0.476
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.476
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.595
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.595
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 0.714
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 0.774
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 0.833
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.952
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.071
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.19
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 1.31
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 1.369
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 1.429
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 1.429
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.548
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.607
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.667
+        },
+        {
+          "midi": 43,
+          "on": true,
+          "t": 1.667
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 1.786
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.786
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.905
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.024
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 2.262
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 2.321
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 2.381
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.381
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.5
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 2.619
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 2.798
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.976
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 3.095
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 3.214
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 3.333
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 3.452
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 3.512
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 3.571
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 3.571
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 3.69
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 3.75
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 3.929
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 3.929
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.107
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.167
+        },
+        {
+          "midi": 53,
+          "on": true,
+          "t": 4.167
+        },
+        {
+          "midi": 53,
+          "on": false,
+          "t": 4.286
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.286
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.405
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.405
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 4.524
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.583
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 4.643
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.762
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.881
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5
+        },
+        {
+          "midi": 53,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5.119
+        },
+        {
+          "midi": 53,
+          "on": false,
+          "t": 5.179
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 5.238
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5.238
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.357
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.417
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.476
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 5.476
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 5.595
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.595
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.714
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 5.833
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 6.071
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.131
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 6.19
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.19
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.31
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 6.429
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 6.607
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.786
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.905
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 7.024
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 7.143
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 7.262
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 7.321
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 7.381
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 7.381
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 7.5
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 7.56
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 7.619
+        }
+      ],
+      "length": 7.619,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.25,
+        "filter_attack": 0.001,
+        "filter_cutoff": 320,
+        "filter_decay": 0.45,
+        "filter_env_amount": 4,
+        "filter_release": 0.08,
+        "filter_resonance": 18,
+        "filter_sustain": 0,
+        "glide": 0.07,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_rate": 4,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": -1,
+        "osc1_wave": "sawtooth",
+        "osc2_detune": 0,
+        "osc2_level": 0,
+        "osc2_octave": -1,
+        "osc2_wave": "square",
+        "release": 0.08,
+        "sustain": 0.35
+      },
+      "slot": 1
+    },
+    {
+      "bpm": 126,
+      "events": [
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 0.357
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 0.357
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 0.357
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 0.357
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 3.214
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 3.214
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 3.214
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 3.214
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 4.167
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 4.167
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.167
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 4.167
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 7.024
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 7.024
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 7.024
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 7.024
+        }
+      ],
+      "length": 7.619,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.3,
+        "filter_attack": 0.001,
+        "filter_cutoff": 700,
+        "filter_decay": 0.18,
+        "filter_env_amount": 2.5,
+        "filter_release": 0.15,
+        "filter_resonance": 6,
+        "filter_sustain": 0,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_rate": 4,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.45,
+        "osc1_octave": 0,
+        "osc1_wave": "sawtooth",
+        "osc2_detune": 0,
+        "osc2_level": 0.2,
+        "osc2_octave": 1,
+        "osc2_wave": "square",
+        "release": 0.25,
+        "sustain": 0
+      },
+      "slot": 2
+    },
+    {
+      "bpm": 126,
+      "events": [
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.905
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 1.905
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 1.905
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 1.905
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 5.714
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 5.714
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.714
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 5.714
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 59,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 7.619
+        },
+        {
+          "midi": 59,
+          "on": false,
+          "t": 7.619
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 7.619
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 7.619
+        }
+      ],
+      "length": 7.619,
+      "params": {
+        "attack": 0.3,
+        "decay": 0.8,
+        "filter_attack": 0.005,
+        "filter_cutoff": 900,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 5,
+        "filter_sustain": 0,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0.9,
+        "lfo1_rate": 0.1,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0.7,
+        "lfo2_rate": 4.2,
+        "lfo2_target": "amp",
+        "osc1_detune": -7,
+        "osc1_level": 0.3,
+        "osc1_octave": 0,
+        "osc1_wave": "sawtooth",
+        "osc2_detune": 7,
+        "osc2_level": 0.3,
+        "osc2_octave": 0,
+        "osc2_wave": "sawtooth",
+        "release": 1.5,
+        "sustain": 0.8
+      },
+      "slot": 3
+    },
+    {
+      "bpm": 126,
+      "events": [
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.119
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 0.238
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.357
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 0.417
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.476
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.595
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 0.714
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 0.714
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 0.833
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 0.893
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 0.952
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 0.952
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.071
+        },
+        {
+          "midi": 43,
+          "on": true,
+          "t": 1.19
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 1.31
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.31
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.429
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 1.429
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.548
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 1.607
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 1.667
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 1.667
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 1.786
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 1.905
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.024
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.024
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.143
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 2.143
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 2.262
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.381
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.5
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 2.619
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.738
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 2.798
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 2.857
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 2.976
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 3.095
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 3.214
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 3.274
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 3.333
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 3.333
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 3.452
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 3.571
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 3.69
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 3.69
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 3.81
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 3.929
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.048
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.167
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.226
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.286
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.405
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.524
+        },
+        {
+          "midi": 53,
+          "on": true,
+          "t": 4.524
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 4.643
+        },
+        {
+          "midi": 53,
+          "on": false,
+          "t": 4.702
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 4.762
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 4.762
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 4.881
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 5
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 5.119
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.119
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.238
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5.238
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 5.357
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 5.417
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 5.476
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 5.476
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.595
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 5.714
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 5.833
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 5.833
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 5.952
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.952
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.071
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.19
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.31
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 6.429
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.548
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 6.607
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": true,
+          "t": 6.667
+        },
+        {
+          "midi": 52,
+          "on": false,
+          "t": 6.786
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 6.905
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 7.024
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 7.083
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 7.143
+        },
+        {
+          "midi": 47,
+          "on": true,
+          "t": 7.143
+        },
+        {
+          "midi": 47,
+          "on": false,
+          "t": 7.262
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 7.381
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 7.5
+        },
+        {
+          "midi": 55,
+          "on": true,
+          "t": 7.5
+        },
+        {
+          "midi": 55,
+          "on": false,
+          "t": 7.619
+        }
+      ],
+      "length": 7.619,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.18,
+        "filter_attack": 0.001,
+        "filter_cutoff": 160,
+        "filter_decay": 0.15,
+        "filter_env_amount": 1.5,
+        "filter_release": 0.08,
+        "filter_resonance": 12,
+        "filter_sustain": 0,
+        "glide": 0.08,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_rate": 4,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": -1,
+        "osc1_wave": "sawtooth",
+        "osc2_detune": 0,
+        "osc2_level": 0,
+        "osc2_octave": -1,
+        "osc2_wave": "square",
+        "release": 0.08,
+        "sustain": 0.3
+      },
+      "slot": 4
+    }
+  ],
+  "name": "Acid Sunrise",
+  "performance": {
+    "arp": "up",
+    "arp_rate": "1/16",
+    "chord": "min7"
+  },
+  "synth": {
+    "attack": 0.001,
+    "decay": 0.25,
+    "filter_attack": 0.001,
+    "filter_cutoff": 900,
+    "filter_decay": 0.15,
+    "filter_env_amount": 2.5,
+    "filter_release": 0.15,
+    "filter_resonance": 10,
+    "filter_sustain": 0,
+    "glide": 0,
+    "glide_mode": "legato",
+    "lfo1_depth": 0,
+    "lfo1_rate": 4,
+    "lfo1_target": "filter",
+    "lfo2_depth": 0,
+    "lfo2_rate": 5,
+    "lfo2_target": "pitch",
+    "osc1_detune": 0,
+    "osc1_level": 0.6,
+    "osc1_octave": 0,
+    "osc1_wave": "square",
+    "osc2_detune": 0,
+    "osc2_level": 0.3,
+    "osc2_octave": 1,
+    "osc2_wave": "sawtooth",
+    "release": 0.2,
+    "sustain": 0,
+    "volume": 0.7
+  }
+}

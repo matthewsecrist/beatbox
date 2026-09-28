@@ -4,10 +4,13 @@ import type { TrackId } from './types.js'
 //
 // A loop's `score` is bars separated by `|`, each 16 sixteenth-note steps: a note
 // (`A3`, `C#4`, `Bb2`, or a chord like `A3+C4+E4`) starts on that step, `-` holds
-// the notes before it one more step, `.` is a rest. `sound` is a factory preset.
+// the notes before it one more step, `.` is a rest. A `~` after a note (`C3~`)
+// slides it into the next one: the two overlap, so a sound with legato glide
+// (Acid Bass, Deep Sub, …) glides between them. `sound` is a factory preset.
 //
 // A beat is one 16-step drum pattern, one string per track: `x` hit, `X` accented
-// hit, `.` rest. Tracks left out are silent.
+// hit, `o` soft hit (half velocity), `?` hit half the time, `2` `3` `4` that many
+// hits in the step (a ratchet roll), `.` rest. Tracks left out are silent.
 
 export interface BeatSpec {
   genre: string
@@ -61,7 +64,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Shrine Horn Line',
     score: 'D5 - . D5 . C5 A4 - . . G4 - A4 - . . | F4 - G4 - A4 . . C5 - . A4 - G4 - . .',
-    sound: 'Supersaw Lead'
+    sound: 'Brass'
   },
   {
     genre: 'Afrobeat',
@@ -87,10 +90,10 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Yanos Log Slide',
     score: [
-      'G2 . . G2 . . G2 A2 Bb2 . . D3 - . G2 .',
-      'C3 . . C3 . . C3 Bb2 A2 . . G2 - . D2 .'
+      'G3 . . G3 . . G3~ A3~ Bb3 . . D4 - . G3 .',
+      'C4 . . C4 . . C4~ Bb3~ A3 . . G3 - . D3 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Deep Sub'
   },
   {
     genre: 'Amapiano',
@@ -119,7 +122,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Marimba Shaker Arp',
     score: 'A4 . . E4 . . C5 . . A4 . . G4 . E4 . | F4 . . C5 . . A4 . . F4 . . E4 . G4 .',
-    sound: 'Pluck'
+    sound: 'Bell'
   },
 
   // Ambient
@@ -152,7 +155,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C#3+G#3+B3+E4 - - - - - - - - - - - - - - -',
       '- - - - - - - - - - - - . . . .'
     ].join(' | '),
-    sound: 'Warm Pad'
+    sound: 'Pulse Pad'
   },
   {
     genre: 'Ambient',
@@ -164,14 +167,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C5 - - - - - - - B4 - - - G4 - - -',
       'A4 - - - - - - - - - - - . . . .'
     ].join(' | '),
-    sound: 'Warm Pad'
+    sound: 'Flute'
   },
   {
     genre: 'Ambient',
     instrument: 'Arp',
     name: 'Glass Bell Arp',
     score: 'A4 . . . E5 . . . C#5 . . . B4 . . . | F#4 . . . E5 . . . C#5 . . . A4 . . .',
-    sound: 'Pluck'
+    sound: 'Bell'
   },
 
   // Breakbeat
@@ -179,15 +182,15 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Breakbeat',
     instrument: 'Bass',
     name: 'Nu Skool Reese',
-    score: 'E2 - - - - - . E2 - - G2 - - - A2 - | E2 - - - - - . E2 - - D3 - B2 - G2 -',
+    score: 'E2 - - - - - . E2 - - G2~ - - - A2 - | E2 - - - - - . E2 - - D3~ - B2~ - G2 -',
     sound: 'Reese Bass'
   },
   {
     genre: 'Breakbeat',
     instrument: 'Bass',
     name: 'Florida Breaks Bass',
-    score: 'A2 - . A2 . . A3 . . A2 . C3 . D3 E3 . | F2 - . F2 . . F3 . G2 - . G2 . . G3 .',
-    sound: 'Pluck'
+    score: 'A3 - . A3 . . A4 . . A3 . C4 . D4~ E4 . | F3 - . F3 . . F4 . G3 - . G3 . . G4 .',
+    sound: 'Acid Bass'
   },
   {
     genre: 'Breakbeat',
@@ -197,14 +200,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C4+Eb4+G4+Bb4 . . C4+Eb4+G4+Bb4 . . . . . . C4+Eb4+G4+Bb4 . . . . .',
       'Ab3+C4+Eb4+G4 . . Ab3+C4+Eb4+G4 . . . . . . Bb3+D4+F4+Ab4 - . . . .'
     ].join(' | '),
-    sound: 'Organ'
+    sound: 'Hoover'
   },
   {
     genre: 'Breakbeat',
     instrument: 'Lead',
     name: 'Big Beat Siren',
     score: 'F#4 - . F#4 A4 - . B4 - . C#5 - B4 - A4 - | F#4 - - - - - . . E4 - - - F#4 - . .',
-    sound: 'Supersaw Lead'
+    sound: 'Hoover'
   },
   {
     genre: 'Breakbeat',
@@ -295,7 +298,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       '. . F4+A4+C5 - . . F4+A4+C5 - . . F4+A4+C5 - . . E4+G4+C5 -',
       '. . D4+F4+A4 - . . D4+F4+A4 - . . G4+B4+D5 - . . G4+B4+D5 -'
     ].join(' | '),
-    sound: 'Supersaw Lead'
+    sound: 'Strings'
   },
   {
     genre: 'Disco',
@@ -312,7 +315,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Philly String Rise',
     score: 'G4 A4 B4 D5 E5 F#5 G5 - - - . . D5 - - - | E5 - D5 - B4 - - - A4 - G4 - - - - -',
-    sound: 'Supersaw Lead'
+    sound: 'Strings'
   },
 
   // Drill
@@ -320,14 +323,14 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Drill',
     instrument: 'Bass',
     name: 'Drill Glide 808',
-    score: 'F#3 - - - - - F#3 - - - A3 - - G#3 - - | F#3 - - - - - E3 - - - D3 - - - C#3 -',
+    score: 'F#3 - - - - - F#3~ - - - A3~ - - G#3 - - | F#3 - - - - - E3~ - - - D3~ - - - C#3 -',
     sound: 'Deep Sub'
   },
   {
     genre: 'Drill',
     instrument: 'Bass',
     name: 'Brixton 808 Bounce',
-    score: 'C3 - - - - - C4 - - - Bb3 - . G3 - - | Ab3 - - - - - - - G3 - - - F3 - Eb3 -',
+    score: 'C3 - - - - - C4~ - - - Bb3 - . G3 - - | Ab3 - - - - - - - G3~ - - - F3~ - Eb3 -',
     sound: 'Deep Sub'
   },
   {
@@ -340,14 +343,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3+C4+Eb4 - - - - - - - - - - - - - - -',
       'F#3+A3+D4 - - - - - - - - - - - - - - -'
     ].join(' | '),
-    sound: 'Warm Pad'
+    sound: 'Strings'
   },
   {
     genre: 'Drill',
     instrument: 'Lead',
     name: 'Drill Bell Melody',
     score: 'B4 . . G4 . . E4 . D#4 . . E4 . . F#4 . | G4 - - . . . F#4 . E4 . D#4 . B3 - - .',
-    sound: 'Pluck'
+    sound: 'Bell'
   },
   {
     genre: 'Drill',
@@ -357,7 +360,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Bb3 . Db4 . F4 . Db4 . Bb3 . Db4 . Gb4 . F4 .',
       'Bb3 . Db4 . F4 . Db4 . A3 . C4 . F4 . Eb4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
 
   // Drum & Bass
@@ -365,14 +368,14 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Drum & Bass',
     instrument: 'Bass',
     name: 'Reese Roller',
-    score: 'C3 - - - - - - - - - - - Eb3 - - - | Bb2 - - - - - - - - - - - G2 - - -',
+    score: 'C3 - - - - - - - - - - - Eb3~ - - - | Bb2 - - - - - - - - - - - G2 - - -',
     sound: 'Reese Bass'
   },
   {
     genre: 'Drum & Bass',
     instrument: 'Bass',
     name: 'Jungle Reese',
-    score: 'F2 - - - - - - - F2 - Ab2 - - - C3 - | Db3 - - - - - - - C3 - - - Ab2 - G2 -',
+    score: 'F2 - - - - - - - F2 - Ab2~ - - - C3 - | Db3 - - - - - - - C3~ - - - Ab2~ - G2 -',
     sound: 'Reese Bass'
   },
   {
@@ -392,7 +395,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Rave Hoover Lead',
     score: 'G4 - - - - - - - F4 - G4 - Bb4 - - - | A4 - - - - - - - F4 - - - D4 - - -',
-    sound: 'Supersaw Lead'
+    sound: 'Hoover'
   },
   {
     genre: 'Drum & Bass',
@@ -444,7 +447,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Riddim Square Lead',
     score: 'G4 . G4 . Bb4 . . G4 . . D5 . C5 . Bb4 . | A4 - - - . . F4 . G4 - - - . . . .',
-    sound: 'Chiptune'
+    sound: 'Square Lead'
   },
 
   // Electro
@@ -479,8 +482,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Electro',
     instrument: 'Lead',
     name: 'Breakdance Lead',
-    score: 'D5 . . D5 . . F5 . D5 . C5 . A4 - - . | D5 . . D5 . . F5 . G5 . F5 . E5 - C5 .',
-    sound: 'Chiptune'
+    score: 'D5 . . D5 . . F5 . D5 . C5~ - A4 - - . | D5 . . D5 . . F5 . G5 . F5 . E5~ - C5 .',
+    sound: 'Square Lead'
   },
   {
     genre: 'Electro',
@@ -490,7 +493,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C3 C4 G3 C4 Eb4 C4 G3 C4 C3 C4 G3 C4 Bb3 C4 G3 C4',
       'Ab3 C4 Eb4 C4 G4 C4 Eb4 C4 Bb3 D4 F4 D4 G4 D4 F4 D4'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Square Lead'
   },
 
   // Funk
@@ -506,10 +509,10 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Bootsy Octave Bass',
     score: [
-      'G2 . G3 . . G2 Bb2 . C3 . . G2 . F2 F#2 .',
-      'G2 . G3 . . G2 Bb2 . C3 . C#3 D3 . F3 D3 .'
+      'G3 . G4 . . G3 Bb3 . C4 . . G3 . F3~ F#3 .',
+      'G3 . G4 . . G3 Bb3 . C4 . C#4~ D4 . F4 D4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Acid Bass'
   },
   {
     genre: 'Funk',
@@ -529,7 +532,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Bb4 . . Bb4 . . C5 - . . Db5 . C5 . Bb4 .',
       'G4 - - - . . . . F4 . Ab4 . Bb4 - . .'
     ].join(' | '),
-    sound: 'Supersaw Lead'
+    sound: 'Brass'
   },
   {
     genre: 'Funk',
@@ -555,7 +558,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Eb4+G4+Bb4 - - - - - . . . . D4+F4+Bb4 - - - . .',
       'C4+Eb4+G4 - - - - - - - - - - - . . . .'
     ].join(' | '),
-    sound: 'Organ'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Hip-hop',
@@ -565,14 +568,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Ab3+C4+Eb4+G4 - - - - - - - - - . . Ab3+C4+Eb4+G4 - . .',
       'Ab3+Db4+F4+C4 - - - - - - - - - . . G3+Bb3+Db4+F4 - - -'
     ].join(' | '),
-    sound: 'Organ'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Hip-hop',
     instrument: 'Lead',
     name: 'Golden Era Hook',
     score: 'A4 - - - C5 - - . E5 - D5 - C5 - A4 - | G4 - - - - - A4 - - - - - . . . .',
-    sound: 'Supersaw Lead'
+    sound: 'Flute'
   },
   {
     genre: 'Hip-hop',
@@ -590,8 +593,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'House',
     instrument: 'Bass',
     name: 'Offbeat Bass',
-    score: '. . A2 - . . A2 - . . A2 - . . A2 - | . . A2 - . . A2 - . . G2 - . . C3 -',
-    sound: 'Pluck'
+    score: '. . A3 - . . A3 - . . A3 - . . A3 - | . . A3 - . . A3 - . . G3~ - - - C4 -',
+    sound: 'Acid Bass'
   },
   {
     genre: 'House',
@@ -651,7 +654,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C4+E4 . G4 C4+E4 . G4 . C4+E4 . G4 C4+E4 . G4 . F4 .',
       'G3+B3 . D4 G3+B3 . D4 . G3+B3 . D4 G3+B3 . F4 . E4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Latin',
@@ -670,7 +673,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Mambo Horn Line',
     score: 'A4 - . . . . C5 - . . . . F5 - - . | . . . . E5 - . . D5 - . . C5 - Bb4 A4',
-    sound: 'Supersaw Lead'
+    sound: 'Brass'
   },
 
   // Lo-fi
@@ -703,14 +706,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3+Bb3+D4+F4 - - - - - . . . . G3+Bb3+D4+F4 - - - . .',
       'Eb3+G3+Bb3+D4 - - - - - - - - - - - - - . .'
     ].join(' | '),
-    sound: 'Organ'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Lo-fi',
     instrument: 'Lead',
     name: 'Sleepy Kalimba',
     score: 'A4 . C5 . . . A4 G4 . . F4 . . . . . | D4 . F4 . G4 . . A4 - - - . . . . .',
-    sound: 'Pluck'
+    sound: 'Bell'
   },
   {
     genre: 'Lo-fi',
@@ -720,7 +723,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'D3 . A3 . C4 . E4 . F4 . E4 . C4 . A3 .',
       'G3 . Bb3 . D4 . F4 . A4 . F4 . D4 . Bb3 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
 
   // Pop
@@ -729,12 +732,12 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Chorus Pump Bass',
     score: [
-      'G2 - - G2 - - G2 - G2 - - G2 - - G2 -',
-      'D2 - - D2 - - D2 - D2 - - D2 - - D2 -',
-      'E2 - - E2 - - E2 - E2 - - E2 - - E2 -',
-      'C2 - - C2 - - C2 - C2 - - C2 - - C2 -'
+      'G3 - - G3 - - G3 - G3 - - G3 - - G3 -',
+      'D3 - - D3 - - D3 - D3 - - D3 - - D3 -',
+      'E3 - - E3 - - E3 - E3 - - E3 - - E3 -',
+      'C3 - - C3 - - C3 - C3 - - C3 - - C3 -'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Deep Sub'
   },
   {
     genre: 'Pop',
@@ -746,7 +749,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'A3+C4+E4 - A3+C4+E4 - A3+C4+E4 - A3+C4+E4 - A3+C4+E4 - A3+C4+E4 - A3+C4+E4 - A3+C4+E4 -',
       'F3+A3+C4 - F3+A3+C4 - F3+A3+C4 - F3+A3+C4 - F3+A3+C4 - F3+A3+C4 - F3+A3+C4 - F3+A3+C4 -'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Pop',
@@ -765,7 +768,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Radio Topline',
     score: 'D5 - . D5 - . C5 - Bb4 - . . F4 - . . | G4 - . G4 - . F4 - D5 - - - C5 - Bb4 -',
-    sound: 'Supersaw Lead'
+    sound: 'Vibrato Lead'
   },
   {
     genre: 'Pop',
@@ -813,7 +816,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Lead',
     name: 'Melodica Dub',
     score: 'E4 - - - G4 - A4 - B4 - - - . . . . | D5 - B4 - A4 - G4 - E4 - - - - - . .',
-    sound: 'Supersaw Lead'
+    sound: 'Flute'
   },
   {
     genre: 'Reggae',
@@ -853,14 +856,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'A3+D4+F#4 - - A3+D4+F#4 . . A3+D4+F#4 . A3+D4+F#4 - - A3+D4+F#4 . . A3+D4+F#4 .',
       'A3+C#4+E4 - - A3+C#4+E4 . . A3+C#4+E4 . A3+C#4+E4 - - A3+C#4+E4 . . A3+C#4+E4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
   {
     genre: 'Reggaeton',
     instrument: 'Lead',
     name: 'Reggaeton Synth Hook',
-    score: 'C#5 . . E5 . . C#5 . B4 . . G#4 . . B4 . | C#5 . . E5 . . F#5 . E5 - - - . . . .',
-    sound: 'Supersaw Lead'
+    score: 'C#5 . . E5 . . C#5 . B4 . . G#4 . . B4 . | C#5 . . E5 . . F#5~ - E5 - - - . . . .',
+    sound: 'Vibrato Lead'
   },
   {
     genre: 'Reggaeton',
@@ -919,8 +922,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Rock',
     instrument: 'Lead',
     name: 'Blues Rock Lick',
-    score: 'A4 - C5 - D5 - Eb5 E5 - - G5 - E5 - D5 - | C5 - A4 - - - G4 - A4 - - - - - . .',
-    sound: 'Supersaw Lead'
+    score: 'A4 - C5 - D5 - Eb5~ E5 - - G5 - E5 - D5 - | C5 - A4 - - - G4~ - A4 - - - - - . .',
+    sound: 'Vibrato Lead'
   },
 
   // Synthwave
@@ -944,14 +947,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3+C4+E4 - - - - - - - - - - - - - - -',
       'G3+B3+D4 - - - - - - - - - - - - - - -'
     ].join(' | '),
-    sound: 'Warm Pad'
+    sound: 'Pulse Pad'
   },
   {
     genre: 'Synthwave',
     instrument: 'Lead',
     name: 'Synth Brass',
     score: 'E4 - - - . . G4 - A4 - - - - - . . | C5 - - - B4 - - - G4 - - - A4 - - -',
-    sound: 'Supersaw Lead'
+    sound: 'Brass'
   },
   {
     genre: 'Synthwave',
@@ -978,8 +981,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Techno',
     instrument: 'Bass',
     name: 'Acid Line',
-    score: 'C3 C3 C4 C3 . C3 Eb3 C3 C3 . Bb2 C3 G3 C3 C4 .',
-    sound: 'Pluck'
+    score: 'C4 C4 C5~ C4 . C4 Eb4 C4 C4 . Bb3~ C4 G4 C4~ C5 .',
+    sound: 'Acid Bass'
   },
   {
     genre: 'Techno',
@@ -1003,14 +1006,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       '. . D4+F4+A4+C5 - . . D4+F4+A4+C5 . . . D4+F4+A4+C5 - . . D4+F4+A4+C5 .',
       '. . Bb3+D4+F4+A4 - . . Bb3+D4+F4+A4 . . . Bb3+D4+F4+A4 - . . Bb3+D4+F4+A4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Brass'
   },
   {
     genre: 'Techno',
     instrument: 'Arp',
     name: 'Warehouse Sequence',
-    score: 'A3 . C4 A3 . E4 A3 . C4 A3 . E4 A3 . G4 .',
-    sound: 'Pluck'
+    score: 'A4 . C5~ A4 . E5 A4 . C5 A4 . E5 A4~ - G5 .',
+    sound: 'Acid Bass'
   },
 
   // Trance
@@ -1036,7 +1039,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'C4+E4+G4 - - - - - - - - - - - - - - -',
       'G3+B3+D4 - - - - - - - - - - - - - - -'
     ].join(' | '),
-    sound: 'Warm Pad'
+    sound: 'Pulse Pad'
   },
   {
     genre: 'Trance',
@@ -1071,14 +1074,14 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Trap',
     instrument: 'Bass',
     name: 'Sub Pulse',
-    score: 'C3 - - . . . C3 - . . C3 - Eb3 - . .',
+    score: 'C3 - - . . . C3 - . . C3~ - Eb3 - . .',
     sound: 'Deep Sub'
   },
   {
     genre: 'Trap',
     instrument: 'Bass',
     name: '808 Slide',
-    score: 'F3 - - - - - - - - - . . F3 - Ab3 - | C4 - - - - - - . Bb3 - - - G3 - - -',
+    score: 'F3 - - - - - - - - - . . F3~ - Ab3~ - | C4 - - - - - - . Bb3~ - - - G3 - - -',
     sound: 'Deep Sub'
   },
   {
@@ -1099,14 +1102,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'F4 . Ab4 . C5 . Ab4 . G4 . . . Eb4 . F4 .',
       'F4 . Ab4 . C5 . Db5 . C5 . . . Ab4 . G4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Bell'
   },
   {
     genre: 'Trap',
     instrument: 'Arp',
     name: 'Eerie Trap Arp',
     score: 'G3 Bb3 D4 G3 Bb3 D4 G3 Bb3 D4 G3 Bb3 D4 F4 D4 Bb3 A3',
-    sound: 'Pluck'
+    sound: 'Bell'
   },
 
   // UK Garage
@@ -1121,7 +1124,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'UK Garage',
     instrument: 'Bass',
     name: 'Speed Garage Reese',
-    score: 'E2 - . E2 . . E3 - . . E2 - . G2 A2 . | E2 - . E2 . . E3 - . . D3 - . B2 G2 .',
+    score: 'E2 - . E2 . . E3 - . . E2 - . G2~ A2 . | E2 - . E2 . . E3 - . . D3 - . B2~ G2 .',
     sound: 'Reese Bass'
   },
   {
@@ -1142,14 +1145,14 @@ export const LOOP_SPECS: LoopSpec[] = [
       'A3+C4+E4+G4 - . A3+C4+E4+G4 . . A3+C4+E4+G4 - . . A3+C4+E4+G4 . . A3+C4+E4+G4 - .',
       'F3+A3+C4+E4 - . F3+A3+C4+E4 . . F3+A3+C4+E4 - . . F3+A3+C4+E4 . . F3+A3+C4+E4 - .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Electric Piano'
   },
   {
     genre: 'UK Garage',
     instrument: 'Lead',
     name: 'Garage Vocal Chop',
-    score: 'C5 . . Eb5 . . G4 . . . Bb4 - . C5 . . | C5 . . Eb5 . . F5 - . Eb5 . . Bb4 - - .',
-    sound: 'Pluck'
+    score: 'C5 . . Eb5 . . G4 . . . Bb4 - . C5 . . | C5 . . Eb5 . . F5~ - - Eb5 . . Bb4 - - .',
+    sound: 'Vibrato Lead'
   }
 ]
 
@@ -1200,7 +1203,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Amapiano',
     name: 'Piano Shaker Drive',
     tracks: {
-      chat: 'xxXxxxXxxxXxxxXx',
+      chat: 'xoXoxoXoxoXoxoXo',
       kick: 'x...x...x...x...',
       snare: '.......x......x.',
       tom: '...x..x.......x.'
@@ -1251,9 +1254,9 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Breakbeat',
     name: 'Amen-ish Break',
     tracks: {
-      chat: 'x.x.x.x.x.x.x.x.',
+      chat: 'x.x.x.x.x.x.x?x.',
       kick: 'x.x.......xx....',
-      snare: '....X..x.x....X.'
+      snare: '....X..o.x.o..X.'
     }
   },
   {
@@ -1270,10 +1273,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Breakbeat',
     name: 'Nu Skool Break',
     tracks: {
-      chat: 'x.xxx.x.x.xxx...',
+      chat: 'x.?xx.x.x.?xx...',
       kick: 'x.....xx..x.....',
       ohat: '..............x.',
-      snare: '....X.....x.X...'
+      snare: '....X.....o.X...'
     }
   },
 
@@ -1302,7 +1305,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       kick: 'x.......x.......',
-      snare: '....x.......xxxx'
+      snare: '....x.......x234'
     }
   },
 
@@ -1343,7 +1346,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Drill',
     name: 'Drill Slide',
     tracks: {
-      chat: 'x..x..x.x..x.x..',
+      chat: 'x..x..x.x..3.x..',
       kick: 'X.....x...x..x..',
       snare: '........X.....x.'
     }
@@ -1352,16 +1355,16 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Drill',
     name: 'Drill Triplet Hats',
     tracks: {
-      chat: 'x..x..x.xxx..x..',
+      chat: 'x..x..x.x3x..x..',
       kick: 'X.........X..x..',
-      snare: '........X......x'
+      snare: '........X..o...x'
     }
   },
   {
     genre: 'Drill',
     name: 'NY Drill Stomp',
     tracks: {
-      chat: 'x.x..x.xx.x..x.x',
+      chat: 'x.x..x.xx.x..3.x',
       clap: '........X.......',
       kick: 'X..x......x..x..',
       snare: '...........x..x.'
@@ -1382,10 +1385,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Drum & Bass',
     name: 'Liquid Roll',
     tracks: {
-      chat: 'x.xxx.x.x.xxx.x.',
+      chat: 'x.oxx.x.x.oxx.x.',
       kick: 'X.........x.....',
       ohat: '..............x.',
-      snare: '....X.......X...'
+      snare: '....X..o....X...'
     }
   },
   {
@@ -1394,7 +1397,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       kick: 'x.x.......x.....',
-      snare: '....X.x..x..X..x'
+      snare: '....X.o..x..X..2'
     }
   },
 
@@ -1422,7 +1425,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Dubstep',
     name: 'Riddim Stomp',
     tracks: {
-      chat: 'x.xxx.x.x.xxx.xx',
+      chat: 'x.xxx.x.x.xxx.x3',
       clap: '........x.......',
       kick: 'X......x..X.....',
       snare: '........X.......'
@@ -1477,7 +1480,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       kick: 'x.x...x...x..x..',
-      snare: '....X..x.x..X...'
+      snare: '....X..o.o..X..o'
     }
   },
   {
@@ -1487,7 +1490,7 @@ export const BEAT_SPECS: BeatSpec[] = [
       chat: 'x.x.x.x.x.x.x.x.',
       kick: 'X.x.......x.x...',
       ohat: '.......x........',
-      snare: '....X..x.x..X..x'
+      snare: '....X..o.x..X..o'
     }
   },
 
@@ -1496,9 +1499,9 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Hip-hop',
     name: 'Boom Bap',
     tracks: {
-      chat: 'x.x.x.x.x.x.x.x.',
+      chat: 'x.x.x.o.x.x.x.o.',
       kick: 'x.....x...x.....',
-      snare: '....X.......X...'
+      snare: '....X.......X..o'
     }
   },
   {
@@ -1526,7 +1529,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'House',
     name: 'Four on the Floor',
     tracks: {
-      chat: 'x.x.x.x.x.x.x.x.',
+      chat: 'x?x.x?x.x?x.x?x.',
       clap: '....x.......x...',
       kick: 'X...x...X...x...',
       ohat: '..x...x...x...x.'
@@ -1536,7 +1539,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'House',
     name: 'Deep House Shuffle',
     tracks: {
-      chat: 'x.xxx.xxx.xxx.xx',
+      chat: 'x.oxx.oxx.oxx.ox',
       clap: '....x.......x...',
       kick: 'x...x...x...x...',
       ohat: '..x...........x.'
@@ -1546,11 +1549,11 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'House',
     name: 'Jackin Groove',
     tracks: {
-      chat: 'xx.xxx.xxx.xxx.x',
+      chat: 'xo.xxo.xxo.xxo.x',
       clap: '....X.......X...',
       kick: 'x...x...x...x..x',
       ohat: '..x...x...x...x.',
-      snare: '.......x......x.'
+      snare: '.......?......x.'
     }
   },
 
@@ -1590,8 +1593,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Lo-fi',
     name: 'Dusty Loop',
     tracks: {
-      chat: 'x.x.x.x.x.x.x.x.',
-      kick: 'x.......x.x.....',
+      chat: 'x.o.x.o.x.o.x.o.',
+      kick: 'x.......x.x....?',
       snare: '....x.......x...'
     }
   },
@@ -1599,9 +1602,9 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Lo-fi',
     name: 'Lazy Sunday Bap',
     tracks: {
-      chat: 'x.x.x.x.x.xxx.x.',
+      chat: 'x.o.x.o.x.oxx.o.',
       kick: 'x......x..x.....',
-      snare: '....x.......x...'
+      snare: '....x..o....x...'
     }
   },
   {
@@ -1637,10 +1640,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Pop',
     name: 'Dance Pop Drive',
     tracks: {
-      chat: 'xxxxxxxxxxxxxxxx',
+      chat: 'xoxoxoxoxoxoxoxo',
       clap: '....X.......X...',
       kick: 'X...x...X...x...',
-      snare: '..............xx'
+      snare: '..............x2'
     }
   },
 
@@ -1771,7 +1774,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Techno',
     name: 'Techno Driver',
     tracks: {
-      chat: 'xxxxxxxxxxxxxxxx',
+      chat: 'xoxox?xoxoxox?xo',
       clap: '....x.......x...',
       kick: 'X...x...X...x...',
       ohat: '..x...x...x...x.'
@@ -1783,8 +1786,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: '..x...x...x...x.',
       kick: 'x...x...x...x...',
-      snare: '.......x.......x',
-      tom: '......x.......x.'
+      snare: '.......o.......x',
+      tom: '......x...?...x.'
     }
   },
   {
@@ -1806,7 +1809,7 @@ export const BEAT_SPECS: BeatSpec[] = [
       clap: '....x.......x...',
       kick: 'X...x...X...x...',
       ohat: '..x...x...x...x.',
-      snare: '............xxxx'
+      snare: '............xx22'
     }
   },
   {
@@ -1825,7 +1828,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       kick: 'X...X...X...X...',
       ohat: '..x...x...x...x.',
-      snare: 'x.x.x.x.xxxxXXXX'
+      snare: 'o.o.o.o.xxxxXXXX'
     }
   },
 
@@ -1834,7 +1837,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Trap',
     name: 'Trap Hats',
     tracks: {
-      chat: 'xxxxxxxxxxxxxxxx',
+      chat: 'xoxoxox3xoxoxo4x',
       clap: '........X.......',
       kick: 'X......x..x.....'
     }
@@ -1843,7 +1846,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Trap',
     name: 'Trap Bounce',
     tracks: {
-      chat: 'x.x.x.x.xxxxx.x.',
+      chat: 'x.x.x.x.x3x3x.x.',
       clap: '........X.......',
       kick: 'X.....x...x..x..',
       ohat: '..............x.'
@@ -1853,7 +1856,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Trap',
     name: 'Trap Rattle',
     tracks: {
-      chat: 'x.x.xxx.x.x.xxxx',
+      chat: 'x.x.x3x.x.x.3x4x',
       clap: '........X.......',
       kick: 'X.....x...X..x..',
       ohat: '..............x.'
@@ -1865,7 +1868,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'UK Garage',
     name: 'Garage Skip',
     tracks: {
-      chat: '..x...x.x.x...x.',
+      chat: '..x..?x.x.x..?x.',
       kick: 'x......x..x.....',
       ohat: '..............x.',
       snare: '....x.......x...'
@@ -1875,7 +1878,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'UK Garage',
     name: 'Two-Step Shuffle',
     tracks: {
-      chat: '..x..xx...x..xx.',
+      chat: '..x..ox...x..ox.',
       kick: 'X.........x.....',
       snare: '....X.......X...'
     }

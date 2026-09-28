@@ -191,6 +191,8 @@ declare global {
   interface WindowEventMap {
     'beatbox:report': CustomEvent<undefined>
     'beatbox:scene': CustomEvent<Scene>
+    // Play song (song bar): the Arranger plays the arrangement from the start.
+    'beatbox:song': CustomEvent<TransportDetail>
     'beatbox:state': CustomEvent<StateDetail>
     'beatbox:transport': CustomEvent<TransportDetail>
   }

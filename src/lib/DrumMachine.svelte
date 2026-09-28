@@ -112,7 +112,7 @@
     engine.setVolume(volume)
     engine.setSwing(swing)
     engine.setKit(store.drums.kit, store.drums.voices)
-    // Global Play all / Stop all (song bar) and its state reports.
+    // Song-bar Play (with no arrangement) / Stop, and its state reports.
     const onTransport = (e: CustomEvent<TransportDetail>) => {
       if (e.detail.play !== playing) toggle()
     }
