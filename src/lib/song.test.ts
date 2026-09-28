@@ -239,3 +239,17 @@ test('effects load with defaults filled in, save only what was set, and a drag u
   expect(store.toSongDoc().effects).toStrictEqual({ delay_time: '1/4' })
   expect(new SongStore(song).toSongDoc().effects).toBe(null)
 })
+
+test('a read-only store refuses every edit and reports no change', () => {
+  const onchange = vi.fn()
+  const store = new SongStore(song, onchange, { readOnly: true })
+  store.setParam('filter_cutoff', 900)
+  store.setStep(0, 'kick', 1, { on: true })
+  store.setLoop(loop(5))
+  store.addSection()
+  store.setEffects({ synth_reverb: 0.5 })
+
+  expect(store.toSongDoc()).toStrictEqual(new SongStore(song).toSongDoc())
+  expect(store.canUndo).toBe(false)
+  expect(onchange).not.toHaveBeenCalled()
+})

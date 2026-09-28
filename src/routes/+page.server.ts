@@ -13,6 +13,7 @@ export const load = (async ({ locals, url }) => {
     key: crypto.randomUUID(),
     notice: url.searchParams.has('missing') ? 'Song not found' : null,
     presets: user ? await listPresets(user.id) : [],
+    shared: null,
     signedIn: user !== null,
     song: null,
     songs: user ? await listSongs(user.id) : []

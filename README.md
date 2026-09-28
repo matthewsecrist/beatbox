@@ -34,8 +34,27 @@ the browser while you sign in and comes back, still unsaved, once you're signed
 in (even if the link opens in another tab of the same browser). Sign-in is by magic link (Better
 Auth): enter your email and follow the link you're sent; it works once, for five
 minutes. Everything you save (songs, with their loops and arrangement, and synth presets)
-belongs to your account, and nobody else can see or change it. Song and preset
-names only need to be unique among your own. **Sign out** is in the header.
+belongs to your account, and nobody else can see or change it unless you share a song
+(below). Song and preset names only need to be unique among your own. **My songs** and
+**Sign out** are in the header.
+
+**My songs and sharing** (**My songs** in the header, or **All my songs and sharing…**
+in **Open ▾**): every song you've saved, newest change first, with its views and likes.
+**Share** gives a song a link (`/s/<id>`, with an unguessable id) that anyone can open,
+signed in or not; **Copy link** copies it, and **Shared** narrows the list to the songs
+with a live link. **Stop sharing** makes the link stop working; sharing again makes a
+new one, and the song keeps its views and likes. Shared songs are only reachable
+through their link: there's no public list of them.
+
+- A shared song opens listen-only: **Play song**, each section's ▶, the drums' Play,
+  its loop pads and the keyboard all play, and every setting can be seen (with its ⓘ),
+  but nothing can be changed, recorded or saved.
+- A **view** is someone other than the owner opening the link, counted once per person
+  per song per day (by account, or a random cookie for signed-out visitors).
+- **Likes** need an account: one per person per song, and pressing it again takes it
+  back. You can't like your own song. Signing in from **Sign in to like it** comes back
+  to the song.
+- Opening your own song's link shows it as others see it, with an **Edit it** link.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
 a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope and 16 voices. The
@@ -230,12 +249,13 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/server/db/schema.ts`                                                  | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
 | `src/lib/server/auth.ts`                                                       | Better Auth setup: magic links, and a new user's username                                                           |
-| `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/`, `/login` and the examples are open to signed-out visitors                       |
+| `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/`, `/login`, the examples and share links are open to signed-out visitors          |
 | `src/lib/server/usernames.ts`                                                  | Generated usernames                                                                                                 |
 | `src/lib/server/examples/`, `src/routes/examples/[slug]/`                      | Example songs anyone can open (Midnight Arcade), and their page                                                     |
 | `src/routes/login/`, `src/routes/logout/`                                      | Sign-in page and sign-out                                                                                           |
 | `src/lib/server/validation.ts`                                                 | Shape and limits for presets and song parts: drums, loops, sections                                                 |
 | `src/lib/server/music.ts`                                                      | Reading and saving a user's presets and songs                                                                       |
+| `src/lib/server/sharing.ts`, `src/routes/s/[shareId]/`, `src/routes/songs/`    | Share links, views and likes; a shared song's listen-only page; the My songs dashboard                              |
 | `src/routes/api/`                                                              | JSON endpoints the page saves and loads through                                                                     |
 | `src/routes/+page.server.ts`, `src/routes/songs/[id]/`                         | The page for a new song and for a saved one                                                                         |
 | `src/lib/types.ts`                                                             | Shared shapes: synth params, drums, loops, sections, window events                                                  |

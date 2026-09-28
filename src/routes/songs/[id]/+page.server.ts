@@ -15,6 +15,7 @@ export const load = (async ({ locals, params }) => {
     key: song.id,
     notice: null,
     presets: await listPresets(user.id),
+    shared: null,
     signedIn: true,
     song,
     songs: await listSongs(user.id)

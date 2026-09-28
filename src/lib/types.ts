@@ -225,6 +225,9 @@ export interface WorkspaceData {
   key: string
   notice: null | string
   presets: PresetSummary[]
+  // Someone's shared song, opened from its public link: it plays, but nothing
+  // about it can be changed (`song` and `example` are then null).
+  shared: null | { name: string; song: SongDoc }
   // Signed out, the instruments all work but nothing can be saved, and only the
   // examples can be opened.
   signedIn: boolean

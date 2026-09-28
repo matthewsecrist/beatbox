@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 import type { Drums, Effects, Loop, Performance, Section, SynthParams } from '../../types.js'
 
@@ -121,11 +121,44 @@ export const songs = sqliteTable(
     name: text('name').notNull(),
     // null means "defaults" for synth, performance and drums.
     performance: text('performance', { mode: 'json' }).$type<Partial<Performance>>(),
+    // Set while the song is shared: the unguessable id in its public link
+    // (/s/<shareId>). Turning sharing off clears it, so the old link stops working;
+    // sharing again makes a new one.
+    shareId: text('share_id').unique(),
     synth: text('synth', { mode: 'json' }).$type<Partial<SynthParams>>(),
     userId: userId(),
     ...timestamps
   },
   (t) => [uniqueIndex('songs_user_id_name_unique').on(t.userId, t.name)]
+)
+
+const songId = () =>
+  text('song_id')
+    .notNull()
+    .references(() => songs.id, { onDelete: 'cascade' })
+
+// A signed-in user's like on a song: one each, and taking it back deletes it.
+export const songLikes = sqliteTable(
+  'song_likes',
+  {
+    insertedAt: timestamps.insertedAt,
+    songId: songId(),
+    userId: userId()
+  },
+  (t) => [primaryKey({ columns: [t.songId, t.userId] })]
+)
+
+// Someone other than the owner opening a shared song, at most once per visitor
+// per song per UTC day. `viewer` is "user:<id>", or "browser:<id>" (a random id
+// in a cookie) for signed-out visitors.
+export const songViews = sqliteTable(
+  'song_views',
+  {
+    day: text('day').notNull(), // YYYY-MM-DD, UTC
+    songId: songId(),
+    viewer: text('viewer').notNull()
+  },
+  (t) => [primaryKey({ columns: [t.songId, t.viewer, t.day] })]
 )
 
 export type Preset = typeof presets.$inferSelect

@@ -93,6 +93,8 @@ export class SongStore {
   loops: (Loop | null)[] = $state.raw(Array.from({ length: PAD_COUNT }, () => null))
   // Chord and arpeggiator settings, every one filled in.
   performance: Performance = $state.raw({ ...DEFAULT_PERFORMANCE })
+  // A shared song opened by someone else: it plays, but every edit is refused.
+  readonly readOnly: boolean
   synth: Partial<SynthParams> = $state.raw({})
 
   private readonly arrangementArray: Y.Array<Y.Map<unknown>>
@@ -105,8 +107,14 @@ export class SongStore {
   private readonly synthMap: Y.Map<unknown>
   private readonly undoManager: Y.UndoManager
 
-  // `onchange` fires after every edit, undo and redo (not on load).
-  constructor(song: null | SongDoc = null, onchange: () => void = () => undefined) {
+  // `onchange` fires after every edit, undo and redo (not on load). A `readOnly`
+  // store ignores every change method, so nothing can alter the song.
+  constructor(
+    song: null | SongDoc = null,
+    onchange: () => void = () => undefined,
+    { readOnly = false }: { readOnly?: boolean } = {}
+  ) {
+    this.readOnly = readOnly
     this.synthMap = this.doc.getMap('synth')
     this.performanceMap = this.doc.getMap('performance')
     this.effectsMap = this.doc.getMap('effects')
@@ -356,6 +364,7 @@ export class SongStore {
 
   // One undoable change. `discrete` edits never merge with the ones around them.
   private edit(fn: () => void, discrete = false): void {
+    if (this.readOnly) return
     if (discrete) this.undoManager.stopCapturing()
     this.doc.transact(fn)
     if (discrete) this.undoManager.stopCapturing()

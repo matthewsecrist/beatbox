@@ -16,6 +16,7 @@ export const load = (async ({ locals, params }) => {
     key: crypto.randomUUID(),
     notice: null,
     presets: user ? await listPresets(user.id) : [],
+    shared: null,
     signedIn: user !== null,
     song: null,
     songs: user ? await listSongs(user.id) : []
