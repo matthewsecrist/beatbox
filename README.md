@@ -40,8 +40,9 @@ names only need to be unique among your own. **Sign out** is in the header.
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
 a resonant low-pass filter with an LFO for wobbles, an ADSR envelope and 16
 voices. Play it with the on-screen keyboard or your computer keyboard. It comes
-with factory presets (Dubstep Wobble, Reese Bass, Supersaw Lead, …), and you can
-save your own.
+with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
+save your own. The oscillator, filter and envelope controls sit under **Sound
+settings**, collapsed until you open it.
 
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
 grid, with four patterns (**A–D**). Copy/Paste lets you build variations, and
@@ -56,7 +57,7 @@ the tempo for the whole song.
   values; **Accent** makes it louder. Outside Hits, clicking an off step turns
   it on. A step keeps its settings when switched off. Quieter steps look dimmer,
   a chance below 100% shows a dashed outline, accents a red dot.
-- **Kit** picks a synthesized kit: Classic, 808 or 909. Each voice has its own
+- **Kit** picks a synthesized kit: Classic, 606, 808, 909, Lo-fi or Trap. Each voice has its own
   **Tune** (±12 semitones) and **Decay** sliders at the end of its row; picking
   a kit resets them.
 

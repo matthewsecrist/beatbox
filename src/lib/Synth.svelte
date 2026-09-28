@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Pencil } from '@lucide/svelte'
+  import { ChevronDown, Pencil } from '@lucide/svelte'
   import { onMount, type Snippet, untrack } from 'svelte'
   import { SvelteMap, SvelteSet } from 'svelte/reactivity'
 
@@ -577,12 +577,19 @@
     <span id="preset-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
   </div>
 
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2">
-    {@render panel('Osc 1', osc1)}
-    {@render panel('Osc 2', osc2)}
-    {@render panel('Filter', filter)}
-    {@render panel('Envelope', envelope)}
-  </div>
+  <details id="synth-settings" class="group">
+    <summary
+      class="flex cursor-pointer list-none items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-amber-400"
+    >
+      Sound settings <ChevronDown class="size-4 transition group-open:rotate-180" />
+    </summary>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2">
+      {@render panel('Osc 1', osc1)}
+      {@render panel('Osc 2', osc2)}
+      {@render panel('Filter', filter)}
+      {@render panel('Envelope', envelope)}
+    </div>
+  </details>
 
   <div
     class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"

@@ -15,8 +15,11 @@ export const TRACKS: { id: TrackId; label: string }[] = [
 
 export const KITS: { id: KitId; label: string }[] = [
   { id: 'classic', label: 'Classic' },
+  { id: '606', label: '606' },
   { id: '808', label: '808' },
-  { id: '909', label: '909' }
+  { id: '909', label: '909' },
+  { id: 'lofi', label: 'Lo-fi' },
+  { id: 'trap', label: 'Trap' }
 ]
 
 export const STEPS = 16
@@ -185,6 +188,23 @@ export function createDrums({
 
   // Everything is synthesized; the kits only differ in how.
   const SOUNDS: Record<KitId, Record<TrackId, (h: Hit) => void>> = {
+    '606': {
+      chat: (h) => {
+        hiss(h, 'highpass', 10000, 0.03, 0.15)
+        metal(h, 8500, 0.035, 0.1)
+      },
+      clap: (h) => clap(h, 1600, [0, 0.008, 0.016], 0.12, 0.6),
+      kick: (h) => tone(h, 160, 55, 0.04, 0.22, 1),
+      ohat: (h) => {
+        hiss(h, 'highpass', 10000, 0.2, 0.12)
+        metal(h, 8500, 0.25, 0.08)
+      },
+      snare: (h) => {
+        tone(h, 240, 220, 0.02, 0.08, 0.3, 'triangle')
+        hiss(h, 'highpass', 2500, 0.14, 0.55)
+      },
+      tom: (h) => tone(h, 220, 160, 0.1, 0.25, 0.7)
+    },
     '808': {
       chat: (h) => metal(h, 7500, 0.06, 0.12),
       clap: (h) => clap(h, 1100, [0, 0.011, 0.022, 0.033], 0.3, 0.7),
@@ -230,6 +250,36 @@ export function createDrums({
         tone(h, 220, 160, 0.05, 0.1, 0.4, 'triangle')
       },
       tom: (h) => tone(h, 140, 80, 0.2, 0.35, 0.8)
+    },
+    // Dull and dusty: band-limited noise, soft transients.
+    lofi: {
+      chat: (h) => hiss(h, 'bandpass', 5000, 0.04, 0.3),
+      clap: (h) => clap(h, 900, [0, 0.012, 0.024], 0.15, 0.5),
+      kick: (h) => {
+        tone(h, 120, 45, 0.1, 0.35, 1)
+        hiss(h, 'lowpass', 400, 0.03, 0.25)
+      },
+      ohat: (h) => hiss(h, 'bandpass', 5000, 0.25, 0.22),
+      snare: (h) => {
+        tone(h, 190, 160, 0.04, 0.12, 0.35, 'triangle')
+        hiss(h, 'bandpass', 1800, 0.16, 0.5)
+      },
+      tom: (h) => tone(h, 110, 75, 0.2, 0.4, 0.8, 'triangle')
+    },
+    // Long 808 boom, crisp hats for ratchet rolls.
+    trap: {
+      chat: (h) => metal(h, 10000, 0.03, 0.12),
+      clap: (h) => clap(h, 1200, [0, 0.009, 0.018, 0.027], 0.35, 0.8),
+      kick: (h) => {
+        tone(h, 90, 40, 0.15, 1.6, 1)
+        hiss(h, 'lowpass', 4000, 0.01, 0.3)
+      },
+      ohat: (h) => metal(h, 10000, 0.35, 0.1),
+      snare: (h) => {
+        tone(h, 230, 190, 0.02, 0.1, 0.4, 'triangle')
+        hiss(h, 'highpass', 1500, 0.14, 0.8)
+      },
+      tom: (h) => tone(h, 160, 60, 0.35, 0.6, 0.8)
     }
   }
 

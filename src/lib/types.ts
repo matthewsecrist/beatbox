@@ -28,7 +28,7 @@ export interface DrumStep {
 }
 
 // Synthesized drum kits; each voice is built from oscillators and noise.
-export type KitId = '808' | '909' | 'classic'
+export type KitId = '606' | '808' | '909' | 'classic' | 'lofi' | 'trap'
 
 // One recorded loop pad.
 export interface Loop {
