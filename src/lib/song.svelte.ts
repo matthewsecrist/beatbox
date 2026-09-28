@@ -4,6 +4,7 @@ import type {
   DrumPattern,
   Drums,
   DrumStep,
+  Effects,
   KitId,
   LfoTarget,
   Loop,
@@ -17,6 +18,7 @@ import type {
 } from './types.js'
 
 import { STEPS, TRACKS } from './drums/engine.js'
+import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
 import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 
@@ -28,6 +30,7 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 // The document's top-level types:
 //   synth        Y.Map      param -> number | wave (missing = default)
 //   performance  Y.Map      arp, arp_rate, chord (missing = default)
+//   effects      Y.Map      delay/reverb settings and send levels (missing = default)
 //   drums        Y.Map      bpm, volume, swing, kit, voices (track -> VoiceTweak, plain JSON)
 //   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
@@ -84,6 +87,8 @@ export class SongStore {
     voices: NO_TWEAKS(),
     volume: 0
   })
+  // Delay and reverb settings and each instrument's sends, every one filled in.
+  effects: Effects = $state.raw({ ...DEFAULT_EFFECTS })
   // Loops by slot (null = empty pad).
   loops: (Loop | null)[] = $state.raw(Array.from({ length: PAD_COUNT }, () => null))
   // Chord and arpeggiator settings, every one filled in.
@@ -93,6 +98,7 @@ export class SongStore {
   private readonly arrangementArray: Y.Array<Y.Map<unknown>>
   private readonly doc = new Y.Doc()
   private readonly drumsMap: Y.Map<unknown>
+  private readonly effectsMap: Y.Map<unknown>
   private readonly loopsMap: Y.Map<Loop>
   private readonly patternsArray: Y.Array<Y.Map<DrumStep[]>>
   private readonly performanceMap: Y.Map<unknown>
@@ -103,6 +109,7 @@ export class SongStore {
   constructor(song: null | SongDoc = null, onchange: () => void = () => undefined) {
     this.synthMap = this.doc.getMap('synth')
     this.performanceMap = this.doc.getMap('performance')
+    this.effectsMap = this.doc.getMap('effects')
     this.drumsMap = this.doc.getMap('drums')
     this.patternsArray = this.doc.getArray('patterns')
     this.loopsMap = this.doc.getMap('loops')
@@ -114,6 +121,7 @@ export class SongStore {
       [
         this.synthMap,
         this.performanceMap,
+        this.effectsMap,
         this.drumsMap,
         this.patternsArray,
         this.loopsMap,
@@ -130,6 +138,7 @@ export class SongStore {
 
     this.synthMap.observe(() => this.readSynth())
     this.performanceMap.observe(() => this.readPerformance())
+    this.effectsMap.observe(() => this.readEffects())
     this.drumsMap.observe(() => this.readDrums())
     this.patternsArray.observeDeep(() => this.readDrums())
     this.loopsMap.observe((e) => this.readLoops([...e.keysChanged].map(String)))
@@ -140,6 +149,7 @@ export class SongStore {
 
     this.readSynth()
     this.readPerformance()
+    this.readEffects()
     this.readDrums()
     this.readLoops([...this.loopsMap.keys()])
     this.readArrangement()
@@ -195,6 +205,7 @@ export class SongStore {
     this.doc.transact(() => {
       this.synthMap.clear()
       this.performanceMap.clear()
+      this.effectsMap.clear()
       this.drumsMap.clear()
       this.patternsArray.delete(0, this.patternsArray.length)
       this.loopsMap.clear()
@@ -210,6 +221,13 @@ export class SongStore {
   setDrums(patch: Partial<Pick<Drums, 'bpm' | 'swing' | 'volume'>>): void {
     this.edit(() => {
       for (const [key, value] of Object.entries(patch)) this.drumsMap.set(key, value)
+    })
+  }
+
+  // Delay/reverb settings and send levels; a slider drag is one undo step.
+  setEffects(patch: Partial<Effects>): void {
+    this.edit(() => {
+      for (const [key, value] of Object.entries(patch)) this.effectsMap.set(key, value)
     })
   }
 
@@ -290,6 +308,7 @@ export class SongStore {
   toSongDoc(): SongDoc {
     const synth = this.synthMap.toJSON() as Partial<SynthParams>
     const performance = this.performanceMap.toJSON() as Partial<Performance>
+    const effects = this.effectsMap.toJSON() as Partial<Effects>
     return {
       arrangement: this.arrangement.map(({ bars, drums, name, pads, pattern }) => ({
         bars,
@@ -312,6 +331,7 @@ export class SongStore {
           )
         )
       },
+      effects: Object.keys(effects).length ? effects : null,
       loops: this.loops.filter((l): l is Loop => l !== null),
       performance: Object.keys(performance).length ? performance : null,
       synth: Object.keys(synth).length ? synth : null
@@ -358,6 +378,10 @@ export class SongStore {
     }
   }
 
+  private readEffects() {
+    this.effects = { ...DEFAULT_EFFECTS, ...this.effectsMap.toJSON() }
+  }
+
   // Keeps unchanged loops as the same objects, so players only rebuild what changed.
   private readLoops(changed: string[]) {
     const next = [...this.loops]
@@ -382,6 +406,7 @@ export class SongStore {
     for (const [key, value] of Object.entries(song?.performance ?? {})) {
       this.performanceMap.set(key, value)
     }
+    for (const [key, value] of Object.entries(song?.effects ?? {})) this.effectsMap.set(key, value)
     this.writeDrums(song?.drums ?? null)
     for (const loop of song?.loops ?? []) this.loopsMap.set(String(loop.slot), loop)
     this.arrangementArray.push((song?.arrangement ?? []).map(sectionMap))

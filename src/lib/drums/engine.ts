@@ -68,6 +68,8 @@ export function createDrums({
   onPattern = noop,
   onStep,
   onStop = noop,
+  // Where the drums play into (an effects channel); the speakers by default.
+  output,
   random = Math.random,
   transport = sharedTransport
 }: {
@@ -76,6 +78,7 @@ export function createDrums({
   onPattern?: (tag: number | undefined) => void
   onStep: (step: number) => void
   onStop?: () => void
+  output?: () => AudioNode
   random?: () => number
   transport?: Pick<Transport, 'acquire' | 'nextBar' | 'release' | 'timeAt'>
 }): Drums {
@@ -102,7 +105,7 @@ export function createDrums({
       const ctx = getCtx()
       const master = ctx.createGain()
       master.gain.value = volume
-      master.connect(ctx.destination)
+      master.connect(output?.() ?? ctx.destination)
       const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
       const data = noise.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1

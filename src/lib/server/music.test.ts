@@ -93,6 +93,7 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
   const song = await music.createSong(me, {
     arrangement: [{ bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }],
     drums: drums(140),
+    effects: { delay_time: '1/8d', drums_reverb: 0.2, evil: 'x' },
     loops: [{ ...loop, params: { evil: 'x', osc1_wave: 'sine' } }],
     name: 'Jam',
     performance: { arp: 'updown', arp_rate: '1/8t', chord: 'min7' },
@@ -104,6 +105,7 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
   expect(saved.drums?.bpm).toBe(140)
   expect(saved.loops[0]?.params).toStrictEqual({ osc1_wave: 'sine' })
   expect(saved.performance).toStrictEqual({ arp: 'updown', arp_rate: '1/8t', chord: 'min7' })
+  expect(saved.effects).toStrictEqual({ delay_time: '1/8d', drums_reverb: 0.2 })
   expect(saved.arrangement).toStrictEqual([
     { bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }
   ])
@@ -118,7 +120,11 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { drums: { ...drums(120), swing: 90 } },
     { drums: drums(999) },
     { performance: { chord: 'blues' } },
-    { performance: { arp_rate: '1/3' } }
+    { performance: { arp_rate: '1/3' } },
+    { effects: { delay_feedback: 1 } },
+    { effects: { synth_reverb: 2 } },
+    { effects: { reverb_size: 20 } },
+    { effects: { delay_time: '1/3' } }
   ]
   for (const attrs of invalid) {
     await expect(

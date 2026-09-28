@@ -5,6 +5,7 @@
   import type { DrumPattern, DrumStep, Scene, StateDetail, TransportDetail } from './types.js'
 
   import { createDrums, type Drums, KITS, STEPS, TRACKS } from './drums/engine.js'
+  import { effects } from './effects.js'
   import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
   import { transport } from './transport.js'
 
@@ -103,7 +104,8 @@
       onStop: () => {
         playing = false
         playingPattern = -1
-      }
+      },
+      output: () => effects.channel('drums')
     })
     drums = engine
     // `drums` isn't reactive, so don't rely on the effects below to pick up the loaded song.

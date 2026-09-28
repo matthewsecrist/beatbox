@@ -10,6 +10,9 @@ export type ArpRate = '1/4' | '1/8' | '1/8t' | '1/16' | '1/16t' | '1/32'
 export type ChordShape =
   '5' | '7' | 'aug' | 'dim' | 'maj7' | 'maj' | 'min7' | 'min' | 'off' | 'sus2' | 'sus4'
 
+// Tempo-synced delay time ('d' = dotted, 't' = triplet).
+export type DelayTime = '1/2' | '1/4' | '1/4d' | '1/8' | '1/8d' | '1/8t' | '1/16'
+
 // One drum pattern: 16 steps per track.
 export type DrumPattern = Record<TrackId, DrumStep[]>
 
@@ -35,6 +38,20 @@ export interface DrumStep {
   ratchet: number
   // 0-1
   velocity: number
+}
+
+// Shared send effects: a tempo-synced delay and a reverb, each fed by a send
+// level per instrument and returned at `*_mix`. Sends and mixes are 0-1.
+export interface Effects {
+  delay_feedback: number // 0-0.9
+  delay_mix: number
+  delay_time: DelayTime
+  drums_delay: number
+  drums_reverb: number
+  reverb_mix: number
+  reverb_size: number // decay in seconds, 0.3-6
+  synth_delay: number
+  synth_reverb: number
 }
 
 // Synthesized drum kits; each voice is built from oscillators and noise.
@@ -99,10 +116,11 @@ export interface Section {
   pattern: number
 }
 
-// What a song stores besides its name. null synth/drums mean defaults.
+// What a song stores besides its name. null synth/drums/effects mean defaults.
 export interface SongDoc {
   arrangement: Section[]
   drums: Drums | null
+  effects: null | Partial<Effects>
   loops: Loop[]
   performance: null | Partial<Performance>
   synth: null | Partial<SynthParams>

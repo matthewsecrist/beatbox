@@ -98,6 +98,14 @@ it starts an empty one-bar loop to draw in).
 - Edits are heard straight away, even while the pad plays, and are saved with
   the song.
 
+**Effects**: a delay and a reverb shared by the synth (loop pads included) and
+the drums. **Sends** set how much of each instrument goes to each effect (all
+off in a new song), and **Mix** how loud each effect comes back. The delay's
+**Time** is a note value (1/16 to 1/2, with dotted and triplet ones) that follows
+the song tempo, with **Feedback** for how many repeats; each repeat comes back a
+little darker. The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
+Browser previews play through the same effects.
+
 **Arrangement**: a list of sections, each with a length in bars, a drum pattern
 (or none) and toggles for each pad. **Play song** plays the sections in order,
 and every change lands on the section boundary.
@@ -117,14 +125,14 @@ it again, close the browser or press Stop all to stop. To add more, add to
 drum; the file explains the notation, and a bad note or bar length fails the tests.
 
 **Songs**: the song bar at the top saves everything together: synth, chord and
-arp settings, drums, loops and arrangement. **Save** stores the song (a blank name becomes
+arp settings, drums, effects, loops and arrangement. **Save** stores the song (a blank name becomes
 "Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one or
 an example; both ask first if you have unsaved changes. An example opens as a new,
 unsaved song: change it as you like, and **Save** makes your own copy. **Play all / Stop all** starts or
 stops the drums and every recorded pad.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
-cover every edit to the song: synth settings and presets, chord and arp, drum steps, kit, tuning,
+cover every edit to the song: synth settings and presets, chord and arp, drum steps, kit, tuning, effects,
 tempo, swing and level, recording or clearing a pad, piano-roll edits and the arrangement. A
 slider drag or a burst of typing is one step. The history lasts until you open
 another song; the song name keeps the browser's own text undo.
@@ -224,6 +232,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                          |
 | `src/lib/DrumMachine.svelte`                                                   | Step sequencer and tempo                                                                                            |
 | `src/lib/Arranger.svelte`                                                      | Arrangement panel                                                                                                   |
+| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Effects panel, and the shared delay/reverb bus every instrument plays into                                          |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                    |
 | `src/lib/transport.ts`                                                         | Tempo, beat grid and metronome shared by every instrument                                                           |
 | `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                             |

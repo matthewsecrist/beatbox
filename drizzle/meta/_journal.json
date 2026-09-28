@@ -29,6 +29,13 @@
       "when": 1790603860742,
       "tag": "0003_song_performance",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790607087760,
+      "tag": "0004_song_effects",
+      "breakpoints": true
     }
   ]
 }

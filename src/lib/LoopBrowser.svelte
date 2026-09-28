@@ -9,6 +9,7 @@
   import type { StateDetail, TransportDetail } from './types.js'
 
   import { createDrums } from './drums/engine.js'
+  import { effects } from './effects.js'
   import {
     barsLabel,
     beatPattern,
@@ -100,7 +101,12 @@
 
   function startPreview(item: LibraryItem): () => void {
     if (item.type === 'Beat') {
-      const drums = (previewDrums ??= createDrums({ id: 'preview-drums', onStep: () => undefined }))
+      // Previews play through the song's effects, so they sound as they will in it.
+      const drums = (previewDrums ??= createDrums({
+        id: 'preview-drums',
+        onStep: () => undefined,
+        output: () => effects.channel('drums')
+      }))
       drums.setKit(store.drums.kit, store.drums.voices)
       drums.setSwing(store.drums.swing)
       drums.setVolume(store.drums.volume)
@@ -108,7 +114,11 @@
       drums.start(() => steps)
       return () => drums.stop()
     }
-    previewSynth ??= createSynth({ volume: store.synth.volume ?? DEFAULT_PARAMS.volume })
+    previewSynth ??= createSynth(
+      { volume: store.synth.volume ?? DEFAULT_PARAMS.volume },
+      undefined,
+      () => effects.channel('synth')
+    )
     const player = createPlayer(
       previewSynth,
       'preview:',
