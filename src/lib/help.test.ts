@@ -13,7 +13,8 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ...['osc', 'filter', 'envelope', 'lfo', 'glide', 'delay', 'reverb', 'sends'].map(
       (panel) => 'panel_' + panel
     ),
-    // Drum step edit buttons
+    // Drum machine controls and step edit buttons
+    ...['tempo', 'drums_level', 'swing', 'kit'],
     ...['step_hits', 'step_velocity', 'step_accent', 'step_probability', 'step_ratchet']
   ]
   expect(keys.filter((key) => !help(key))).toStrictEqual([])

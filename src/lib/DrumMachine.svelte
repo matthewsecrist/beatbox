@@ -179,10 +179,10 @@
 </script>
 
 <div
-  class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  class="@container space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
 >
-  <div class="flex flex-wrap items-center gap-3">
-    <h2 class="mr-auto text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Drums</h2>
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Drums</h2>
     <button
       id="drums-play"
       type="button"
@@ -197,12 +197,17 @@
     >
       {playing ? 'Stop' : 'Play'}
     </button>
+  </div>
+
+  <!-- One row when the panel has room, else two; sliders stretch to fill. -->
+  <div id="drum-controls" class="grid grid-cols-1 gap-x-5 gap-y-3 @sm:grid-cols-2 @2xl:grid-cols-4">
     <label
       class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
       for="drums-bpm"
-      title="Song tempo — loops follow it too"
     >
-      Tempo
+      <span class="flex items-center gap-1"
+        >Tempo<Info label="Tempo" text={help('tempo') ?? ''} /></span
+      >
       <input
         id="drums-bpm"
         type="range"
@@ -211,7 +216,7 @@
         step="1"
         value={bpm}
         oninput={(e) => store.setDrums({ bpm: Number(e.currentTarget.value) })}
-        class="w-28 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
       />
       <span class="w-8 font-mono text-amber-300 tabular-nums">{bpm}</span>
     </label>
@@ -219,7 +224,9 @@
       class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
       for="drums-volume"
     >
-      Level
+      <span class="flex items-center gap-1"
+        >Level<Info label="drum level" text={help('drums_level') ?? ''} /></span
+      >
       <input
         id="drums-volume"
         type="range"
@@ -228,15 +235,16 @@
         step="0.01"
         value={volume}
         oninput={(e) => store.setDrums({ volume: Number(e.currentTarget.value) })}
-        class="w-24 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
       />
     </label>
     <label
       class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
       for="drums-swing"
-      title="Delays every second 16th: 50% is straight, 66% a triplet shuffle"
     >
-      Swing
+      <span class="flex items-center gap-1"
+        >Swing<Info label="Swing" text={help('swing') ?? ''} /></span
+      >
       <input
         id="drums-swing"
         type="range"
@@ -245,16 +253,15 @@
         step="1"
         value={swing}
         oninput={(e) => store.setDrums({ swing: Number(e.currentTarget.value) })}
-        class="w-24 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
       />
       <span class="w-8 font-mono text-amber-300 tabular-nums">{swing}%</span>
     </label>
     <label
       class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
       for="drums-kit"
-      title="Synthesized kits; choosing one resets tune and decay"
     >
-      Kit
+      <span class="flex items-center gap-1">Kit<Info label="Kit" text={help('kit') ?? ''} /></span>
       <select
         id="drums-kit"
         value={store.drums.kit}
@@ -262,7 +269,7 @@
           const kit = KITS.find((k) => k.id === e.currentTarget.value)
           if (kit) store.setKit(kit.id)
         }}
-        class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm normal-case text-zinc-200"
+        class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm normal-case text-zinc-200"
       >
         {#each KITS as kit (kit.id)}
           <option value={kit.id}>{kit.label}</option>
@@ -333,7 +340,7 @@
 
   <div
     id="drum-edit-mode"
-    class="flex w-fit gap-1 rounded-lg bg-zinc-900 p-1"
+    class="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-zinc-900 p-1"
     role="group"
     aria-label="Step edit"
   >

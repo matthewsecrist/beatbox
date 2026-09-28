@@ -24,6 +24,7 @@ export const HELP = {
     'How far apart the echoes are, in note lengths: 1/16 is quick and close together, 1/2 is slow and far apart. Dotted times land a bit off the beat for a bouncy, galloping echo.',
   drums_delay:
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
+  drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',
   filter_attack:
@@ -42,6 +43,7 @@ export const HELP = {
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:
     'Legato only slides when you press the next key while still holding the last one, so you choose when it slides. Always slides into every note.',
+  kit: 'Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit resets the Tune and Decay knobs on each drum.',
   lfo_depth:
     'How big the wobble is. Off means nothing moves; turn it up for a bigger wave. What the number means depends on what it moves.',
   lfo_rate: 'How fast the wobble goes. Low is a slow wave, like breathing; high is a fast flutter.',
@@ -88,8 +90,12 @@ export const HELP = {
     'How hard each drum is hit: click a lit square to go from 100% (loud) to 75, 50 and 25% (soft). Quiet "ghost" hits between the loud ones make a beat feel groovy and human. Softer squares look dimmer.',
   sustain:
     'How loud a note stays while you keep holding the key. At 0% it fades out even if you hold on, like a piano or a bell.',
+  swing:
+    'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
   synth_reverb: 'How much of the synth (and the loop pads) goes into the room sound (the reverb).',
+  tempo:
+    'How fast the whole song goes, in beats per minute (BPM): about 80 is a slow nod, 120 a dance, 170 a sprint. The drums, loops and arpeggiator all follow it.',
   volume: 'How loud the synth is overall, loops included.'
 } as const
 
