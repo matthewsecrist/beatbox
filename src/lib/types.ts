@@ -54,6 +54,10 @@ export interface Effects {
   synth_reverb: number
 }
 
+// When the synth glides: into every note, or only into one played while the
+// last is still held.
+export type GlideMode = 'always' | 'legato'
+
 // Synthesized drum kits; each voice is built from oscillators and noise.
 export type KitId = '606' | '808' | '909' | 'classic' | 'lofi' | 'trap'
 
@@ -143,6 +147,9 @@ export interface SynthParams {
   filter_release: number
   filter_resonance: number
   filter_sustain: number
+  // Seconds to slide from the last note's pitch; 0 = off.
+  glide: number
+  glide_mode: GlideMode
   // Two LFOs, each with its own rate and target. Depth units follow the
   // target: octaves (filter), cents (pitch), 0-1 (amp).
   lfo1_depth: number

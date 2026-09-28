@@ -15,6 +15,7 @@ interface FakeNode {
 
 interface FakeParam {
   cancelScheduledValues: Mock<AudioParam['cancelScheduledValues']>
+  exponentialRampToValueAtTime: Mock<AudioParam['exponentialRampToValueAtTime']>
   linearRampToValueAtTime: Mock<AudioParam['linearRampToValueAtTime']>
   name: string
   setTargetAtTime: Mock<AudioParam['setTargetAtTime']>
@@ -27,6 +28,7 @@ function fakeAudio() {
   const nodes: FakeNode[] = []
   const param = (name: string): FakeParam => ({
     cancelScheduledValues: vi.fn(),
+    exponentialRampToValueAtTime: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
     name,
     setTargetAtTime: vi.fn(),
@@ -162,4 +164,63 @@ test('with no envelope amount the cutoff is left alone', () => {
   const detune = nodes.find((n) => n.kind === 'filter')?.detune
   expect(detune?.setValueAtTime).not.toHaveBeenCalled()
   expect(detune?.linearRampToValueAtTime).not.toHaveBeenCalled()
+})
+
+// Voice `n`'s first oscillator (each voice makes osc1, osc2 and two LFOs).
+const osc1Of = (nodes: FakeNode[], n: number): FakeNode | undefined =>
+  nodes.filter((node) => node.kind === 'osc')[n * 4]
+
+// Where voice `n` glides [from Hz, to Hz, over seconds], or null if it doesn't.
+function glideOf(nodes: FakeNode[], n: number): null | number[] {
+  const f = osc1Of(nodes, n)?.frequency
+  const [from, t0] = f?.setValueAtTime.mock.calls[0] ?? []
+  const [to, t1] = f?.exponentialRampToValueAtTime.mock.calls[0] ?? []
+  if (from === undefined || to === undefined || t0 === undefined || t1 === undefined) return null
+  return [Math.round(from), Math.round(to), +(t1 - t0).toFixed(3)]
+}
+
+test('legato glide slides into a note played while the last is held, not after it', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ glide: 0.1 }, () => ctx)
+  synth.noteOn(60)
+  clock.currentTime = 0.5
+  synth.noteOn(67) // 60 still held
+  synth.noteOff(60)
+  synth.noteOff(67)
+  clock.currentTime = 1
+  synth.noteOn(72) // nothing held
+
+  expect(glideOf(nodes, 0)).toBe(null) // the first note has nothing to glide from
+  expect(glideOf(nodes, 1)).toStrictEqual([262, 392, 0.1]) // C4 -> G4 over 100 ms
+  expect(glideOf(nodes, 2)).toBe(null)
+  expect(osc1Of(nodes, 2)?.frequency.value).toBe(523.2511306011972)
+})
+
+test("'always' glides from the last note even after it was let go", () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ glide: 0.2, glide_mode: 'always' }, () => ctx)
+  synth.noteOn(60)
+  synth.noteOff(60)
+  clock.currentTime = 1
+  synth.noteOn(72)
+
+  expect(glideOf(nodes, 1)).toStrictEqual([262, 523, 0.2])
+})
+
+test('a chord does not glide within itself; each source glides on its own; 0 is off', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ glide: 0.1, glide_mode: 'always' }, () => ctx)
+  for (const midi of [60, 64, 67]) synth.noteOn(midi)
+  clock.currentTime = 0.5
+  synth.noteOn(62, undefined, 'pad0:62') // a loop pad: not after the keyboard's chord
+  synth.noteOn(69) // the keyboard: from the chord's last note
+
+  expect([0, 1, 2, 3].map((n) => glideOf(nodes, n))).toStrictEqual([null, null, null, null])
+  expect(glideOf(nodes, 4)).toStrictEqual([392, 440, 0.1])
+
+  const off = fakeAudio()
+  const plain = createSynth({ glide: 0 }, () => off.ctx)
+  plain.noteOn(60)
+  plain.noteOn(67)
+  expect(glideOf(off.nodes, 1)).toBe(null)
 })
