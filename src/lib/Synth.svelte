@@ -24,6 +24,8 @@
   } from './types.js'
 
   import { effects } from './effects.js'
+  import { help } from './help.js'
+  import Info from './Info.svelte'
   import PianoRoll from './PianoRoll.svelte'
   import { PAD_COUNT } from './song.svelte.js'
   import { chordNotes, createArp } from './synth/arp.js'
@@ -543,7 +545,7 @@
     <span
       class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
     >
-      <span>{label}</span>
+      <span class="flex items-center gap-1">{label}{@render info(key, label)}</span>
       <span class="font-mono text-amber-300 tabular-nums normal-case">{format(params[key])}</span>
     </span>
     <input
@@ -559,9 +561,22 @@
   </label>
 {/snippet}
 
+{#snippet info(key: string, label: string)}
+  {@const text = help(key)}
+  {#if text}<Info {label} {text} />{/if}
+{/snippet}
+
+<!-- A caption with its ⓘ, for controls that aren't sliders (button groups). -->
+{#snippet caption(key: string, label: string)}
+  <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+    >{label}{@render info(key, label)}</span
+  >
+{/snippet}
+
 {#snippet waveSelect(key: 'osc1_wave' | 'osc2_wave')}
+  {@render caption(key, 'Wave')}
   <div
-    class="grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    class="-mt-2 grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1"
     role="group"
     aria-label="Waveform"
   >
@@ -583,11 +598,15 @@
   </div>
 {/snippet}
 
-{#snippet panel(title: string, body: Snippet)}
+{#snippet panel(title: string, body: Snippet, name: string)}
   <section
     class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-inner shadow-black/40"
   >
-    <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">{title}</h2>
+    <h2
+      class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-amber-400"
+    >
+      {title}{@render info('panel_' + name, title)}
+    </h2>
     {@render body()}
   </section>
 {/snippet}
@@ -607,7 +626,7 @@
     <span
       class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
     >
-      <span>Cutoff</span>
+      <span class="flex items-center gap-1">Cutoff{@render info('filter_cutoff', 'Cutoff')}</span>
       <span class="font-mono text-amber-300 tabular-nums normal-case"
         >{fmtHz(params.filter_cutoff)}</span
       >
@@ -634,9 +653,10 @@
 
 {#snippet lfo(n: 1 | 2)}
   {@const target = params[`lfo${n}_target`]}
+  {@render caption(`lfo${n}_target`, 'Moves')}
   <div
     id={`synth-lfo${n}_target`}
-    class="grid grid-cols-3 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    class="-mt-2 grid grid-cols-3 gap-1 rounded-lg bg-zinc-950/60 p-1"
     role="group"
     aria-label="LFO {n} target"
   >
@@ -678,9 +698,10 @@
 {/snippet}
 
 {#snippet glide()}
+  {@render caption('glide_mode', 'When')}
   <div
     id="synth-glide_mode"
-    class="grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    class="-mt-2 grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
     role="group"
     aria-label="When to glide"
   >
@@ -766,13 +787,13 @@
       Sound settings <ChevronDown class="size-4 transition group-open:rotate-180" />
     </summary>
     <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
-      {@render panel('Osc 1', osc1)}
-      {@render panel('Osc 2', osc2)}
-      {@render panel('Filter', filter)}
-      {@render panel('Envelope', envelope)}
-      {@render panel('LFO 1', lfo1)}
-      {@render panel('LFO 2', lfo2)}
-      {@render panel('Glide', glide)}
+      {@render panel('Osc 1', osc1, 'osc')}
+      {@render panel('Osc 2', osc2, 'osc')}
+      {@render panel('Filter', filter, 'filter')}
+      {@render panel('Envelope', envelope, 'envelope')}
+      {@render panel('LFO 1', lfo1, 'lfo')}
+      {@render panel('LFO 2', lfo2, 'lfo')}
+      {@render panel('Glide', glide, 'glide')}
     </div>
   </details>
 
@@ -811,7 +832,7 @@
     class="flex flex-wrap items-end gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
   >
     <label class="space-y-1" for="chord-select">
-      <span class="block text-xs uppercase tracking-wider text-zinc-400">Chord</span>
+      {@render caption('chord', 'Chord')}
       <select
         id="chord-select"
         value={performance.chord}
@@ -824,7 +845,7 @@
       </select>
     </label>
     <div class="space-y-1">
-      <span class="block text-xs uppercase tracking-wider text-zinc-400">Arp</span>
+      {@render caption('arp', 'Arp')}
       <div
         id="arp-mode"
         class="grid grid-cols-5 gap-1 rounded-lg bg-zinc-950/60 p-1"
@@ -849,7 +870,7 @@
       </div>
     </div>
     <label class="space-y-1" for="arp-rate">
-      <span class="block text-xs uppercase tracking-wider text-zinc-400">Rate</span>
+      {@render caption('arp_rate', 'Rate')}
       <select
         id="arp-rate"
         value={performance.arp_rate}
