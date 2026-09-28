@@ -114,7 +114,8 @@ Browser previews play through the same effects.
 
 **Arrangement**: a list of sections, each with a length in bars, a drum pattern
 (or none) and toggles for each pad. **Play song** plays the sections in order,
-and every change lands on the section boundary.
+and every change lands on the section boundary. The ▶ at the start of a section
+plays just that one, through to its end, and then stops.
 
 **Loop Browser** (**Loops** in the song bar): 120 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from

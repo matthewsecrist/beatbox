@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Play, Square } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
   import type { ArrangementSection, SongStore } from './song.svelte.js'
@@ -14,8 +15,14 @@
   const MAX_BARS = 64
   const DRUM_PATTERNS = ['A', 'B', 'C', 'D']
   const sections = $derived(store.arrangement)
-  let position: null | Position = $state(null) // while the song plays
+  let position: null | Position = $state(null) // while the song (or a section) plays
+  // The section playing on its own (its ▶), by id; null while the whole song plays.
+  let solo: null | string = $state(null)
   let timer: ReturnType<typeof setInterval> | undefined
+  // Id of the section playing now, to highlight it.
+  const playingId = $derived.by(() =>
+    position ? (solo ?? sections[position.index]?.id ?? null) : null
+  )
 
   const totalBars = $derived(sections.reduce((n, s) => n + s.bars, 0))
 
@@ -35,11 +42,17 @@
   function finished() {
     clearInterval(timer)
     position = null
+    solo = null
   }
 
-  function play() {
+  // Plays the whole arrangement, or just the section with id `only` (through to
+  // its end, then everything stops).
+  function play(only: null | string = null) {
     say('beatbox:transport', { play: false }) // start from a clean slate
-    position = arranger.start(sections)
+    const list = only ? sections.filter((s) => s.id === only) : sections
+    if (!list.length) return
+    solo = only
+    position = arranger.start(list)
     timer = setInterval(() => (position = arranger.tick() ?? position), 25)
   }
 
@@ -132,7 +145,8 @@
 
   <ol id="sections" class="space-y-2">
     {#each sections as section, i (section.id)}
-      {@const current = position?.index === i}
+      {@const current = playingId === section.id}
+      {@const alone = current && solo === section.id}
       <li
         id={'section-' + i}
         class={[
@@ -140,9 +154,26 @@
           current ? 'border-amber-400/70 bg-amber-400/10' : 'border-zinc-800 bg-zinc-900/80'
         ]}
       >
+        <button
+          id={'section-play-' + i}
+          type="button"
+          aria-pressed={alone}
+          aria-label={alone ? `Stop section ${i + 1}` : `Play section ${i + 1} on its own`}
+          title={alone ? 'Stop' : 'Play just this section'}
+          onclick={() => (alone ? say('beatbox:transport', { play: false }) : play(section.id))}
+          class={[
+            iconBtn,
+            'hover:text-emerald-400',
+            alone && 'bg-zinc-100 text-zinc-900 hover:bg-white hover:text-zinc-900'
+          ]}
+        >
+          {#if alone}<Square class="size-3.5 fill-current" />{:else}<Play
+              class="size-3.5 fill-current"
+            />{/if}
+        </button>
         <span
           class={[
-            'w-6 text-center font-mono text-xs',
+            'w-5 text-center font-mono text-xs',
             current ? 'text-amber-300' : 'text-zinc-500'
           ]}>{i + 1}</span
         >
