@@ -144,6 +144,15 @@ declare global {
   }
 }
 
+// A built-in example song, open to everyone. Opening one starts an unsaved song;
+// saving it makes the user's own copy.
+export type Example = ExampleSummary & SongDoc
+
+export interface ExampleSummary {
+  name: string
+  slug: string
+}
+
 export type LoadPresetReply = { error: string } | { name: string; params: Partial<SynthParams> }
 // A saved song as the page receives it.
 export type SavedSong = PresetSummary & SongDoc
@@ -156,10 +165,14 @@ export type SaveSongReply = { error: string } | { song: PresetSummary; songs: Pr
 
 // What both song pages load.
 export interface WorkspaceData {
+  // The example this page opened, if any (`song` is then null).
+  example: Example | null
+  examples: ExampleSummary[]
   key: string
   notice: null | string
   presets: PresetSummary[]
-  // Signed out, the instruments all work but nothing can be saved or opened.
+  // Signed out, the instruments all work but nothing can be saved, and only the
+  // examples can be opened.
   signedIn: boolean
   song: null | SavedSong
   songs: PresetSummary[]

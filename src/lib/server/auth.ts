@@ -10,12 +10,10 @@ import { sveltekitCookies } from 'better-auth/svelte-kit'
 import { db } from './db/index.js'
 import { accounts, sessions, users, verifications } from './db/schema.js'
 import { sendMagicLink } from './email.js'
-import { giveStarterSongs } from './starter_songs/index.js'
 import { generateUsername } from './usernames.js'
 
 // Sign-in is by magic link only: the user enters their email and follows the link
-// they're sent. The first sign-in creates the user, with a generated username and
-// their own copies of the starter songs.
+// they're sent. The first sign-in creates the user, with a generated username.
 //
 // Environment (see .env.example): BETTER_AUTH_SECRET signs sessions and is required
 // in production; BETTER_AUTH_URL is the site's public URL, used in the links sent
@@ -52,12 +50,6 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (user) => {
-          // A missing starter song shouldn't stop the user signing in.
-          await giveStarterSongs(user.id).catch((e: unknown) => {
-            console.error(`Couldn't give ${user.id} the starter songs`, e)
-          })
-        },
         before: async (user) => {
           const username = await generateUsername()
           return { data: { ...user, name: user.name || username, username } }

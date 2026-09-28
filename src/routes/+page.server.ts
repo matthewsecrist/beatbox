@@ -1,3 +1,4 @@
+import { listExamples } from '$lib/server/examples/index.js'
 import { listPresets, listSongs } from '$lib/server/music.js'
 
 import type { PageServerLoad } from './$types'
@@ -7,6 +8,8 @@ import type { PageServerLoad } from './$types'
 export const load = (async ({ locals, url }) => {
   const user = locals.user
   return {
+    example: null,
+    examples: listExamples(),
     key: crypto.randomUUID(),
     notice: url.searchParams.has('missing') ? 'Song not found' : null,
     presets: user ? await listPresets(user.id) : [],

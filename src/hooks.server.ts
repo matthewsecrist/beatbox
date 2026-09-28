@@ -3,12 +3,17 @@ import type { Handle } from '@sveltejs/kit'
 import { building } from '$app/environment'
 import { resolve } from '$app/paths'
 import { auth } from '$lib/server/auth.js'
+import { EXAMPLES } from '$lib/server/examples/index.js'
 import { json, redirect } from '@sveltejs/kit'
 import { isAuthPath, svelteKitHandler } from 'better-auth/svelte-kit'
 
 // Pages anyone can see, signed in or not. A signed-out visitor can play with a new
-// song on the home page, but saving and opening songs needs an account.
-const PUBLIC_PAGES = new Set<string>([resolve('/'), resolve('/login')])
+// song on the home page or an example, but saving and opening songs needs an account.
+const PUBLIC_PAGES = new Set<string>([
+  resolve('/'),
+  resolve('/login'),
+  ...EXAMPLES.map(({ slug }) => resolve('/examples/[slug]', { slug }))
+])
 
 export const handle: Handle = async ({ event, resolve: resolveEvent }) => {
   // Better Auth's own endpoints (/api/auth/*), such as the magic link itself.

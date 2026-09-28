@@ -1,4 +1,5 @@
 import { requireUser } from '$lib/server/auth.js'
+import { listExamples } from '$lib/server/examples/index.js'
 import { getSong, listPresets, listSongs } from '$lib/server/music.js'
 import { redirect } from '@sveltejs/kit'
 
@@ -9,6 +10,8 @@ export const load = (async ({ locals, params }) => {
   const song = await getSong(user.id, params.id)
   if (!song) redirect(303, '/?missing')
   return {
+    example: null,
+    examples: listExamples(),
     key: song.id,
     notice: null,
     presets: await listPresets(user.id),
