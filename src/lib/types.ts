@@ -98,11 +98,14 @@ export interface SynthParams {
   decay: number
   filter_cutoff: number
   filter_resonance: number
-  // Units follow lfo_target: octaves (filter), cents (pitch), 0-1 (amp).
-  lfo_depth: number
-  lfo_rate: number
-  // Absent in songs and presets saved before targets: 'filter'.
-  lfo_target: LfoTarget
+  // Two LFOs, each with its own rate and target. Depth units follow the
+  // target: octaves (filter), cents (pitch), 0-1 (amp).
+  lfo1_depth: number
+  lfo1_rate: number
+  lfo1_target: LfoTarget
+  lfo2_depth: number
+  lfo2_rate: number
+  lfo2_target: LfoTarget
   osc1_detune: number
   osc1_level: number
   osc1_octave: number

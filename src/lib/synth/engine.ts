@@ -7,9 +7,12 @@ export const DEFAULT_PARAMS: SynthParams = {
   decay: 0.3,
   filter_cutoff: 2400,
   filter_resonance: 4,
-  lfo_depth: 0, // units follow the target (LFO_DEPTH_MAX)
-  lfo_rate: 4,
-  lfo_target: 'filter',
+  lfo1_depth: 0, // units follow the target (LFO_DEPTH_MAX)
+  lfo1_rate: 4,
+  lfo1_target: 'filter',
+  lfo2_depth: 0,
+  lfo2_rate: 5,
+  lfo2_target: 'pitch',
   osc1_detune: 0,
   osc1_level: 0.6,
   osc1_octave: 0,
@@ -26,15 +29,28 @@ export const DEFAULT_PARAMS: SynthParams = {
 // Deepest LFO per target: octaves of cutoff, cents of pitch, share of the level.
 export const LFO_DEPTH_MAX: Record<LfoTarget, number> = { amp: 1, filter: 4, pitch: 100 }
 
-// How far the LFO swings its target's AudioParam: filter and pitch in cents;
-// amp around a level of 1 - depth / 2, so full depth dips to silence.
-const lfoSwing = (p: SynthParams): number =>
-  p.lfo_target === 'filter'
-    ? p.lfo_depth * 1200
-    : p.lfo_target === 'pitch'
-      ? p.lfo_depth
-      : p.lfo_depth / 2
-const tremLevel = (p: SynthParams): number => (p.lfo_target === 'amp' ? 1 - p.lfo_depth / 2 : 1)
+const LFOS = [1, 2] as const
+
+const lfoParams = (p: SynthParams, n: 1 | 2) => ({
+  depth: p[`lfo${n}_depth`],
+  rate: p[`lfo${n}_rate`],
+  target: p[`lfo${n}_target`]
+})
+
+// How far an LFO swings its target's AudioParam: filter and pitch in cents; amp
+// down from full level, so full depth dips to silence.
+function lfoSwing(p: SynthParams, n: 1 | 2): number {
+  const { depth, target } = lfoParams(p, n)
+  return target === 'filter' ? depth * 1200 : target === 'pitch' ? depth : depth / 2
+}
+
+// Resting level of the tremolo stage: amp LFOs swing around it, and their
+// dips add up (clamped at silence).
+function tremLevel(p: SynthParams): number {
+  let dip = 0
+  for (const n of LFOS) if (lfoParams(p, n).target === 'amp') dip += lfoSwing(p, n)
+  return Math.max(0, 1 - dip)
+}
 
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
@@ -60,9 +76,7 @@ interface Voice {
   g1: GainNode
   g2: GainNode
   key: VoiceKey
-  lfo: OscillatorNode
-  lfoDepth: GainNode
-  lfoTarget: LfoTarget
+  lfos: VoiceLfo[]
   midi: number
   osc1: OscillatorNode
   osc2: OscillatorNode
@@ -73,6 +87,15 @@ interface Voice {
   t0: number
   // Tremolo stage after the envelope; the LFO drives its gain when targeting amp.
   trem: GainNode
+}
+
+// One of a voice's LFOs: the oscillator, the gain setting its depth, and where
+// that gain is connected.
+interface VoiceLfo {
+  depth: GainNode
+  n: 1 | 2
+  osc: OscillatorNode
+  target: LfoTarget
 }
 
 const freq = (midi: number, octave: number): number => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
@@ -132,15 +155,15 @@ export function createSynth(
     return HEADROOM * v.sustain
   }
 
-  // Points the voice's LFO at `target`.
-  function routeLfo(v: Voice, target: LfoTarget) {
-    v.lfoDepth.disconnect()
-    v.lfoTarget = target
-    if (target === 'filter') v.lfoDepth.connect(v.filter.detune)
-    else if (target === 'amp') v.lfoDepth.connect(v.trem.gain)
+  // Points one of the voice's LFOs at `target`.
+  function routeLfo(v: Voice, lfo: VoiceLfo, target: LfoTarget) {
+    lfo.depth.disconnect()
+    lfo.target = target
+    if (target === 'filter') lfo.depth.connect(v.filter.detune)
+    else if (target === 'amp') lfo.depth.connect(v.trem.gain)
     else {
-      v.lfoDepth.connect(v.osc1.detune)
-      v.lfoDepth.connect(v.osc2.detune)
+      lfo.depth.connect(v.osc1.detune)
+      lfo.depth.connect(v.osc2.detune)
     }
   }
 
@@ -181,9 +204,15 @@ export function createSynth(
     const g2 = ctx.createGain()
     const filter = ctx.createBiquadFilter()
     const amp = ctx.createGain()
-    // Per-voice LFO so each note's wobble starts from the same phase.
-    const lfo = ctx.createOscillator()
-    const lfoDepth = ctx.createGain()
+    // Per-voice LFOs so each note's wobble starts from the same phase.
+    const lfos = LFOS.map((n): VoiceLfo => {
+      const osc = ctx.createOscillator()
+      const depth = ctx.createGain()
+      osc.frequency.value = lfoParams(p, n).rate
+      depth.gain.value = lfoSwing(p, n)
+      osc.connect(depth)
+      return { depth, n, osc, target: lfoParams(p, n).target }
+    })
     const trem = ctx.createGain()
 
     applyOsc(t, osc1, g1, 1, midi, false, p)
@@ -195,17 +224,14 @@ export function createSynth(
     osc1.connect(g1).connect(filter)
     osc2.connect(g2).connect(filter)
     filter.connect(amp).connect(trem).connect(master)
-    lfo.frequency.value = p.lfo_rate
-    lfoDepth.gain.value = lfoSwing(p)
     trem.gain.value = tremLevel(p)
-    lfo.connect(lfoDepth)
 
     const { attack, decay, sustain } = p
     amp.gain.setValueAtTime(0, t)
     amp.gain.linearRampToValueAtTime(HEADROOM, t + attack)
     amp.gain.linearRampToValueAtTime(HEADROOM * sustain, t + attack + decay)
 
-    const srcs = [osc1, osc2, lfo]
+    const srcs = [osc1, osc2, ...lfos.map((l) => l.osc)]
     const v: Voice = {
       amp,
       attack,
@@ -214,9 +240,7 @@ export function createSynth(
       g1,
       g2,
       key,
-      lfo,
-      lfoDepth,
-      lfoTarget: p.lfo_target,
+      lfos,
       midi,
       osc1,
       osc2,
@@ -227,10 +251,12 @@ export function createSynth(
       t0: t,
       trem
     }
-    routeLfo(v, p.lfo_target)
+    for (const lfo of lfos) routeLfo(v, lfo, lfo.target)
     osc1.onended = () => {
       alive.delete(v)
-      ;[...srcs, g1, g2, filter, amp, trem, lfoDepth].forEach((n) => n.disconnect())
+      ;[...srcs, g1, g2, filter, amp, trem, ...lfos.map((l) => l.depth)].forEach((n) =>
+        n.disconnect()
+      )
     }
     for (const s of srcs) s.start(t)
 
@@ -271,9 +297,12 @@ export function createSynth(
       if (v.own) continue
       v.filter.frequency.setTargetAtTime(params.filter_cutoff, t, 0.01)
       v.filter.Q.setTargetAtTime(params.filter_resonance, t, 0.01)
-      v.lfo.frequency.setTargetAtTime(params.lfo_rate, t, 0.01)
-      if (v.lfoTarget !== params.lfo_target) routeLfo(v, params.lfo_target)
-      v.lfoDepth.gain.setTargetAtTime(lfoSwing(params), t, 0.01)
+      for (const lfo of v.lfos) {
+        const { rate, target } = lfoParams(params, lfo.n)
+        if (lfo.target !== target) routeLfo(v, lfo, target)
+        lfo.osc.frequency.setTargetAtTime(rate, t, 0.01)
+        lfo.depth.gain.setTargetAtTime(lfoSwing(params, lfo.n), t, 0.01)
+      }
       v.trem.gain.setTargetAtTime(tremLevel(params), t, 0.01)
       applyOsc(t, v.osc1, v.g1, 1, v.midi, true)
       applyOsc(t, v.osc2, v.g2, 2, v.midi, true)

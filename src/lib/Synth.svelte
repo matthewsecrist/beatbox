@@ -116,11 +116,7 @@
   }
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
-  const LFO_TARGETS: { label: string; target: LfoTarget }[] = [
-    { label: 'filter', target: 'filter' },
-    { label: 'pitch', target: 'pitch' },
-    { label: 'amp', target: 'amp' }
-  ]
+  const LFO_TARGETS: LfoTarget[] = ['filter', 'pitch', 'amp']
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
   const KEY_MAP = 'awsedftgyhujkolp;'
 
@@ -422,6 +418,13 @@
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
   const fmtTremolo = (v: number) => (v === 0 ? 'off' : fmtPct(v))
+  // Depth slider per LFO target: octaves of cutoff, cents of pitch, share of level.
+  const LFO_DEPTH_STEP: Record<LfoTarget, number> = { amp: 0.01, filter: 0.05, pitch: 1 }
+  const LFO_DEPTH_FORMAT: Record<LfoTarget, (v: number) => string> = {
+    amp: fmtTremolo,
+    filter: fmtOct,
+    pitch: fmtVibrato
+  }
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40'
@@ -521,37 +524,45 @@
     />
   </label>
   {@render slider('filter_resonance', 'Resonance', 0, 20, 0.1, fmtNum)}
+{/snippet}
+
+{#snippet lfo(n: 1 | 2)}
+  {@const target = params[`lfo${n}_target`]}
   <div
-    id="synth-lfo_target"
+    id={`synth-lfo${n}_target`}
     class="grid grid-cols-3 gap-1 rounded-lg bg-zinc-950/60 p-1"
     role="group"
-    aria-label="LFO target"
+    aria-label="LFO {n} target"
   >
-    {#each LFO_TARGETS as { label, target } (target)}
+    {#each LFO_TARGETS as option (option)}
       <button
         type="button"
-        aria-pressed={params.lfo_target === target}
-        onclick={() => store.setLfoTarget(target)}
+        aria-pressed={target === option}
+        onclick={() => store.setLfoTarget(n, option)}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
-          params.lfo_target === target
+          target === option
             ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
             : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
         ]}
       >
-        {label}
+        {option}
       </button>
     {/each}
   </div>
-  {@render slider('lfo_rate', 'LFO rate', 0.1, 20, 0.1, fmtRate)}
-  {#if params.lfo_target === 'pitch'}
-    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.pitch, 1, fmtVibrato)}
-  {:else if params.lfo_target === 'amp'}
-    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.amp, 0.01, fmtTremolo)}
-  {:else}
-    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.filter, 0.05, fmtOct)}
-  {/if}
+  {@render slider(`lfo${n}_rate`, 'Rate', 0.1, 20, 0.1, fmtRate)}
+  {@render slider(
+    `lfo${n}_depth`,
+    'Depth',
+    0,
+    LFO_DEPTH_MAX[target],
+    LFO_DEPTH_STEP[target],
+    LFO_DEPTH_FORMAT[target]
+  )}
 {/snippet}
+
+{#snippet lfo1()}{@render lfo(1)}{/snippet}
+{#snippet lfo2()}{@render lfo(2)}{/snippet}
 
 {#snippet envelope()}
   {@render slider('attack', 'Attack', 0.001, 2, 0.001, fmtSec)}
@@ -619,11 +630,13 @@
     >
       Sound settings <ChevronDown class="size-4 transition group-open:rotate-180" />
     </summary>
-    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2">
+    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
       {@render panel('Osc 1', osc1)}
       {@render panel('Osc 2', osc2)}
       {@render panel('Filter', filter)}
       {@render panel('Envelope', envelope)}
+      {@render panel('LFO 1', lfo1)}
+      {@render panel('LFO 2', lfo2)}
     </div>
   </details>
 

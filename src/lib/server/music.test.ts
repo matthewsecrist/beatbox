@@ -69,12 +69,12 @@ test('blank preset names and mistyped params are rejected', async () => {
     music.savePreset(me, { name: 'Bad', params: { osc1_wave: 'noise' } })
   ).rejects.toThrow(InvalidError)
   await expect(
-    music.savePreset(me, { name: 'Bad', params: { lfo_target: 'volume' } })
+    music.savePreset(me, { name: 'Bad', params: { lfo2_target: 'volume' } })
   ).rejects.toThrow(InvalidError)
 })
 
-test('presets keep their LFO target', async () => {
-  const params = { lfo_depth: 20, lfo_target: 'pitch' }
+test('presets keep both LFOs', async () => {
+  const params = { lfo1_depth: 20, lfo1_target: 'pitch', lfo2_rate: 0.5, lfo2_target: 'filter' }
   const saved = await music.savePreset(me, { name: 'Vibrato', params })
 
   expect((await music.getPreset(me, saved.id))?.params).toStrictEqual(params)

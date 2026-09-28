@@ -188,17 +188,16 @@ test('replace swaps in a whole song, with no history and no change reported', ()
   expect(store.canUndo).toBe(false)
 })
 
-test('changing the LFO target rescales its depth, as one undo step', () => {
-  const store = new SongStore({ ...song, synth: { lfo_depth: 1 } })
+test('changing an LFO target rescales its depth, as one undo step', () => {
+  const store = new SongStore({ ...song, synth: { lfo1_depth: 1, lfo2_depth: 10 } })
 
-  store.setLfoTarget('pitch')
-  expect(store.synth).toStrictEqual({ lfo_depth: 25, lfo_target: 'pitch' })
-  store.setLfoTarget('amp')
-  expect(store.synth).toStrictEqual({ lfo_depth: 0.25, lfo_target: 'amp' })
+  store.setLfoTarget(1, 'pitch')
+  expect(store.synth).toStrictEqual({ lfo1_depth: 25, lfo1_target: 'pitch', lfo2_depth: 10 })
+  store.setLfoTarget(2, 'amp') // from pitch (its default): 10 of 100 cents
+  expect(store.synth).toMatchObject({ lfo2_depth: 0.1, lfo2_target: 'amp' })
 
   store.undo()
-  expect(store.synth).toStrictEqual({ lfo_depth: 25, lfo_target: 'pitch' })
+  expect(store.synth).toStrictEqual({ lfo1_depth: 25, lfo1_target: 'pitch', lfo2_depth: 10 })
   store.undo()
-  expect(store.synth).toStrictEqual({ lfo_depth: 1 })
-  expect(store.toSongDoc().synth).toStrictEqual({ lfo_depth: 1 })
+  expect(store.toSongDoc().synth).toStrictEqual({ lfo1_depth: 1, lfo2_depth: 10 })
 })

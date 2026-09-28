@@ -6,7 +6,7 @@ import { createTransport } from '../transport.js'
 import { createSynth } from './engine.js'
 import { createPlayer, createRecorder } from './looper.js'
 
-const OSCS_PER_VOICE = 3 // osc1, osc2, filter LFO; osc1 of voice n is oscs[n * 3]
+const OSCS_PER_VOICE = 4 // osc1, osc2, two LFOs; osc1 of voice n is oscs[n * 4]
 
 interface FakeNode {
   disconnected?: boolean
