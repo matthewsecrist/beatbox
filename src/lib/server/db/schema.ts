@@ -1,6 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-import type { Drums, Loop, Section, SynthParams } from '../../types.js'
+import type { Drums, Loop, Performance, Section, SynthParams } from '../../types.js'
 
 const id = () =>
   text('id')
@@ -105,7 +105,8 @@ export const presets = sqliteTable(
   (t) => [uniqueIndex('presets_user_id_name_unique').on(t.userId, t.name)]
 )
 
-// A saved session: synth settings, drum machine, loop pads and arrangement.
+// A saved session: synth settings, chord/arp settings, drum machine, loop pads
+// and arrangement.
 // The song parts are JSON; their shape is checked in `$lib/server/validation.ts`.
 export const songs = sqliteTable(
   'songs',
@@ -116,7 +117,8 @@ export const songs = sqliteTable(
     id: id(),
     loops: text('loops', { mode: 'json' }).$type<Loop[]>().notNull().default([]),
     name: text('name').notNull(),
-    // null means "defaults" for synth and drums.
+    // null means "defaults" for synth, performance and drums.
+    performance: text('performance', { mode: 'json' }).$type<Partial<Performance>>(),
     synth: text('synth', { mode: 'json' }).$type<Partial<SynthParams>>(),
     userId: userId(),
     ...timestamps

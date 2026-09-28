@@ -47,6 +47,16 @@ with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
 save your own. The oscillator, filter, envelope and LFO controls sit under **Sound
 settings**, collapsed until you open it.
 
+**Chord and Arp** (the bar under the octave controls): **Chord** makes one key
+play a chord built up from it (major, minor, 7th, major/minor 7th, sus2, sus4,
+diminished, augmented or power). **Arp** plays the notes you hold (chords
+included) one at a time: **Up**, **Down**, **Up-Down** or **Random**, a **Rate**
+apart (1/4 to 1/32, with triplets), locked to the song tempo. The first key starts
+the pattern on the next step (at once if nothing is playing), and letting go of
+every key stops it. Recording a loop keeps the notes that played, so a loop
+doesn't need the arp or chord to sound the same. Both settings are saved with the
+song (not with presets, which leave them alone).
+
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
 grid, with four patterns (**A–D**). Copy/Paste lets you build variations, and
 Randomize, Clear and Reset act on the pattern you're editing. Switching patterns
@@ -103,15 +113,15 @@ it again, close the browser or press Stop all to stop. To add more, add to
 16-step-per-bar score (`A3+C4+E4 - - . G3 …`) and beats as one `x..x` string per
 drum; the file explains the notation, and a bad note or bar length fails the tests.
 
-**Songs**: the song bar at the top saves everything together: synth, drums,
-loops and arrangement. **Save** stores the song (a blank name becomes
+**Songs**: the song bar at the top saves everything together: synth, chord and
+arp settings, drums, loops and arrangement. **Save** stores the song (a blank name becomes
 "Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one or
 an example; both ask first if you have unsaved changes. An example opens as a new,
 unsaved song: change it as you like, and **Save** makes your own copy. **Play all / Stop all** starts or
 stops the drums and every recorded pad.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
-cover every edit to the song: synth settings and presets, drum steps, kit, tuning,
+cover every edit to the song: synth settings and presets, chord and arp, drum steps, kit, tuning,
 tempo, swing and level, recording or clearing a pad, piano-roll edits and the arrangement. A
 slider drag or a burst of typing is one step. The history lasts until you open
 another song; the song name keeps the browser's own text undo.
@@ -214,7 +224,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                    |
 | `src/lib/transport.ts`                                                         | Tempo, beat grid and metronome shared by every instrument                                                           |
 | `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                             |
-| `src/lib/synth/`                                                               | Synth engine, loop recorder/player, piano-roll note conversion, factory presets                                     |
+| `src/lib/synth/`                                                               | Synth engine, loop recorder/player, arpeggiator and chords, piano-roll note conversion, factory presets             |
 | `src/lib/drums/engine.ts`                                                      | Drum sounds and sequencer                                                                                           |
 | `src/lib/arranger.ts`                                                          | Plays the arrangement section by section                                                                            |
 

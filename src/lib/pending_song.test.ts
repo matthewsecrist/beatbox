@@ -40,6 +40,7 @@ const song: SongDoc = {
   arrangement: [{ bars: 4, drums: true, name: 'Intro', pads: [0], pattern: 0 }],
   drums: { bpm: 128, patterns: [{ kick: [true] }], volume: 0.7 },
   loops: [],
+  performance: { arp: 'up' },
   synth: { filter_cutoff: 800 }
 }
 

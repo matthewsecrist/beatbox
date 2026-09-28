@@ -29,7 +29,7 @@ export type PlayerLoop = Pick<Loop, 'bpm' | 'events' | 'length' | 'params'>
 
 export interface Recorder {
   finish(): null | Take
-  note(midi: number, on: boolean): void
+  note(midi: number, on: boolean, at?: number): void
   start(held?: number[], fromBeat?: number): void
   readonly startBeat: number
 }
@@ -200,8 +200,11 @@ export function createRecorder(
           : rounded
       const kept: BeatEvent[] = []
       const held = new Set<number>()
-      for (const e of events) {
+      // Timed notes arrive once they've started, possibly after later presses.
+      for (const e of events.toSorted((a, b) => a.beat - b.beat)) {
         if (e.beat >= beats) continue
+        // A timed note that began before the take has no start to end.
+        if (!e.on && !held.has(e.midi)) continue
         kept.push(e)
         if (e.on) held.add(e.midi)
         else held.delete(e.midi)
@@ -215,8 +218,11 @@ export function createRecorder(
         length: sec(beats)
       }
     },
-    note(midi: number, on: boolean): void {
-      events.push({ beat: Math.max(0, transport.beatAt(transport.now()) - startBeat), midi, on })
+    // A key press or release now; with `at` (audio time), a note that played
+    // exactly then (the arpeggiator's), dropped if it came before the take.
+    note(midi: number, on: boolean, at?: number): void {
+      const beat = transport.beatAt(at ?? transport.now()) - startBeat
+      if (at === undefined || beat >= 0) events.push({ beat: Math.max(0, beat), midi, on })
     },
     start(held: number[] = [], fromBeat = transport.nextBar()): void {
       startBeat = fromBeat

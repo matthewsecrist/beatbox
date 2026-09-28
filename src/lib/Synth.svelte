@@ -1,12 +1,16 @@
 <script lang="ts">
   import { ChevronDown, Pencil } from '@lucide/svelte'
   import { onMount, type Snippet, untrack } from 'svelte'
-  import { SvelteMap, SvelteSet } from 'svelte/reactivity'
+  import { SvelteMap } from 'svelte/reactivity'
 
   import type { SongStore } from './song.svelte.js'
+  import type { Arp } from './synth/arp.js'
   import type { Synth } from './synth/engine.js'
   import type { Player } from './synth/looper.js'
   import type {
+    ArpMode,
+    ArpRate,
+    ChordShape,
     LfoTarget,
     LoadPresetReply,
     Loop,
@@ -20,6 +24,7 @@
 
   import PianoRoll from './PianoRoll.svelte'
   import { PAD_COUNT } from './song.svelte.js'
+  import { chordNotes, createArp } from './synth/arp.js'
   import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
@@ -48,13 +53,20 @@
   }[keyof SynthParams]
 
   const params: SynthParams = $derived({ ...DEFAULT_PARAMS, ...store.synth })
+  const performance = $derived(store.performance)
   let presetName = $state('')
   let selectedId = $state('')
   let status = $state('')
   let baseOctave = $state(4)
-  const active = new SvelteSet<number>()
+  // Keys down (keyboard midi -> the notes it plays, one per chord note), and how
+  // many keys hold each note: a note shared by two chords sounds until both let go.
+  const pressed = new SvelteMap<number, number[]>()
+  const held = new SvelteMap<number, number>()
   const heldKeys = new SvelteMap<string, number>()
   let synth: null | Synth = null
+  // With the arpeggiator on (`arpOn`), held notes go to it instead of the synth.
+  let arp: Arp | null = null
+  let arpOn = false
   let statusTimer: ReturnType<typeof setTimeout> | undefined
 
   // Loop pads: each slot holds a recorded loop (with the synth params it was
@@ -117,6 +129,34 @@
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
   const LFO_TARGETS: LfoTarget[] = ['filter', 'pitch', 'amp']
+  const CHORD_OPTIONS: [ChordShape, string][] = [
+    ['off', 'Off'],
+    ['maj', 'Major'],
+    ['min', 'Minor'],
+    ['7', '7th'],
+    ['maj7', 'Major 7th'],
+    ['min7', 'Minor 7th'],
+    ['sus2', 'Sus2'],
+    ['sus4', 'Sus4'],
+    ['dim', 'Diminished'],
+    ['aug', 'Augmented'],
+    ['5', 'Power (5th)']
+  ]
+  const ARP_OPTIONS: [ArpMode, string][] = [
+    ['off', 'Off'],
+    ['up', 'Up'],
+    ['down', 'Down'],
+    ['updown', 'Up-Down'],
+    ['random', 'Random']
+  ]
+  const RATE_OPTIONS: [ArpRate, string][] = [
+    ['1/4', '1/4'],
+    ['1/8', '1/8'],
+    ['1/8t', '1/8T'],
+    ['1/16', '1/16'],
+    ['1/16t', '1/16T'],
+    ['1/32', '1/32']
+  ]
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
   const KEY_MAP = 'awsedftgyhujkolp;'
 
@@ -136,6 +176,7 @@
 
   function finishRecording() {
     const slot = recording
+    arp?.tick() // hands the recorder any arpeggiated note that has just started
     recording = -1
     transport.metronome(null)
     const take = recorder.finish()
@@ -173,11 +214,17 @@
     })
   }
 
+  // A key goes down: it holds its note, or the chord built on it.
   function press(midi: number) {
-    if (!synth) return
-    active.add(midi)
-    synth.noteOn(midi)
-    if (recording >= 0) recorder.note(midi, true)
+    if (!synth || pressed.has(midi)) return
+    const notes = chordNotes(midi, performance.chord)
+    pressed.set(midi, notes)
+    const started = notes.filter((note) => {
+      const count = held.get(note) ?? 0
+      held.set(note, count + 1)
+      return count === 0
+    })
+    sound(started, true)
   }
 
   // Piano roll: edits one pad's loop. `rollKey` changes when a different pad is
@@ -222,10 +269,31 @@
   }
 
   function release(midi: number) {
-    if (!active.has(midi)) return
-    active.delete(midi)
-    synth?.noteOff(midi)
-    if (recording >= 0) recorder.note(midi, false)
+    const notes = pressed.get(midi)
+    if (!notes) return
+    pressed.delete(midi)
+    const stopped = notes.filter((note) => {
+      const count = (held.get(note) ?? 1) - 1
+      if (count > 0) held.set(note, count)
+      else held.delete(note)
+      return count === 0
+    })
+    sound(stopped, false)
+  }
+
+  // Held notes start or stop: straight on the synth (and into a recording), or
+  // in and out of the arpeggiator, which records the notes it plays itself.
+  function sound(notes: number[], on: boolean) {
+    if (arpOn) {
+      if (on) arp?.hold(notes)
+      else arp?.release(notes)
+      return
+    }
+    for (const note of notes) {
+      if (on) synth?.noteOn(note)
+      else synth?.noteOff(note)
+      if (recording >= 0) recorder.note(note, on)
+    }
   }
 
   function startPad(slot: number) {
@@ -241,7 +309,7 @@
     if (recording >= 0) finishRecording()
     const counting = !transport.running
     transport.acquire('rec')
-    recorder.start([...active], counting ? BEATS_PER_BAR : transport.nextBar())
+    recorder.start(arpOn ? [] : [...held.keys()], counting ? BEATS_PER_BAR : transport.nextBar())
     transport.metronome(0)
     // Master volume stays a global control, so a loop doesn't pin its own level.
     const sound: Partial<SynthParams> = $state.snapshot(params)
@@ -307,7 +375,9 @@
 
   function onBlur() {
     synth?.allNotesOff()
-    active.clear()
+    arp?.releaseAll()
+    pressed.clear()
+    held.clear()
     heldKeys.clear()
   }
 
@@ -335,8 +405,15 @@
   onMount(() => {
     const created = createSynth($state.snapshot(params))
     synth = created
+    const createdArp = createArp(created, transport, (midi, on, at) => {
+      if (recording >= 0) recorder.note(midi, on, at)
+    })
+    arp = createdArp
+    // The song may open with the arp on; the effect below keeps it in step after this.
+    if (performance.arp !== 'off') createdArp.set(performance.arp, performance.arp_rate)
     syncPlayers()
     loopTimer = setInterval(() => {
+      createdArp.tick()
       // The UI follows the players: a pad stopped by a section boundary plays on until it.
       players.forEach((p, slot) => {
         if (!p?.playing) return
@@ -366,12 +443,25 @@
         transport.metronome(null)
         transport.release('rec')
       }
+      createdArp.releaseAll()
       created.close()
     }
   })
 
   // The sound follows the store: edits, presets, undo and redo.
   $effect(() => synth?.setParams($state.snapshot(params)))
+
+  // So does the arpeggiator. Switching it on or off lets go of every held key
+  // first, so no note hangs on the path it's leaving.
+  $effect(() => {
+    const { arp: mode, arp_rate } = performance
+    untrack(() => {
+      if (mode !== 'off') arp?.set(mode, arp_rate)
+      if (arpOn === (mode !== 'off')) return
+      for (const midi of [...pressed.keys()]) release(midi)
+      arpOn = mode !== 'off'
+    })
+  })
 
   // Loops changed in the store (undo, redo): rebuild the affected players, and
   // close the piano roll if its loop is gone.
@@ -428,6 +518,8 @@
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40'
+  const select =
+    'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none disabled:pointer-events-none disabled:opacity-40'
 </script>
 
 {#snippet slider(
@@ -670,6 +762,65 @@
     </div>
   </div>
 
+  <div
+    id="synth-play"
+    class="flex flex-wrap items-end gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
+  >
+    <label class="space-y-1" for="chord-select">
+      <span class="block text-xs uppercase tracking-wider text-zinc-400">Chord</span>
+      <select
+        id="chord-select"
+        value={performance.chord}
+        onchange={(e) => store.setPerformance({ chord: e.currentTarget.value as ChordShape })}
+        class={select}
+      >
+        {#each CHORD_OPTIONS as [value, label] (value)}
+          <option {value}>{label}</option>
+        {/each}
+      </select>
+    </label>
+    <div class="space-y-1">
+      <span class="block text-xs uppercase tracking-wider text-zinc-400">Arp</span>
+      <div
+        id="arp-mode"
+        class="grid grid-cols-5 gap-1 rounded-lg bg-zinc-950/60 p-1"
+        role="group"
+        aria-label="Arpeggiator"
+      >
+        {#each ARP_OPTIONS as [value, label] (value)}
+          <button
+            type="button"
+            aria-pressed={performance.arp === value}
+            onclick={() => store.setPerformance({ arp: value })}
+            class={[
+              'rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
+              performance.arp === value
+                ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+                : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+            ]}
+          >
+            {label}
+          </button>
+        {/each}
+      </div>
+    </div>
+    <label class="space-y-1" for="arp-rate">
+      <span class="block text-xs uppercase tracking-wider text-zinc-400">Rate</span>
+      <select
+        id="arp-rate"
+        value={performance.arp_rate}
+        disabled={performance.arp === 'off'}
+        onchange={(e) => store.setPerformance({ arp_rate: e.currentTarget.value as ArpRate })}
+        class={select}
+      >
+        {#each RATE_OPTIONS as [value, label] (value)}
+          <option {value}>{label}</option>
+        {/each}
+      </select>
+    </label>
+    <p class="text-xs text-zinc-500">Hold keys to arpeggiate them in time with the song</p>
+  </div>
+
   <section id="loop-pads" class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
     <div class="flex items-baseline justify-between">
       <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Loops</h2>
@@ -787,8 +938,8 @@
           key.black
             ? 'absolute top-0 z-10 h-[60%] rounded-b-md border border-black shadow-lg shadow-black/60'
             : 'relative h-full flex-1 rounded-b-lg border border-zinc-400 first:rounded-bl-lg',
-          key.black && (active.has(key.midi) ? 'bg-amber-500' : 'bg-zinc-900 hover:bg-zinc-700'),
-          !key.black && (active.has(key.midi) ? 'bg-amber-300' : 'bg-zinc-100 hover:bg-white')
+          key.black && (held.has(key.midi) ? 'bg-amber-500' : 'bg-zinc-900 hover:bg-zinc-700'),
+          !key.black && (held.has(key.midi) ? 'bg-amber-300' : 'bg-zinc-100 hover:bg-white')
         ]}
       >
         {#if !key.black && key.midi % 12 === 0}

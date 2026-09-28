@@ -1,5 +1,15 @@
 // Shapes shared by the instruments, the page and the server.
 
+// Arpeggiator pattern over the held notes; 'off' plays them as they're held.
+export type ArpMode = 'down' | 'off' | 'random' | 'up' | 'updown'
+
+// Arpeggiator step: a note value locked to the song tempo ('t' = triplet).
+export type ArpRate = '1/4' | '1/8' | '1/8t' | '1/16' | '1/16t' | '1/32'
+
+// Chord one key plays, built up from that key; 'off' plays the key alone.
+export type ChordShape =
+  '5' | '7' | 'aug' | 'dim' | 'maj7' | 'maj' | 'min7' | 'min' | 'off' | 'sus2' | 'sus4'
+
 // One drum pattern: 16 steps per track.
 export type DrumPattern = Record<TrackId, DrumStep[]>
 
@@ -53,6 +63,15 @@ export interface LoopEvent {
   t: number
 }
 
+// How the synth keyboard turns keys into notes: a chord per key, and the
+// arpeggiator. Saved with the song, not in presets or loops (a loop keeps the
+// notes they produced).
+export interface Performance {
+  arp: ArpMode
+  arp_rate: ArpRate
+  chord: ChordShape
+}
+
 export interface PresetSummary {
   id: string
   name: string
@@ -85,6 +104,7 @@ export interface SongDoc {
   arrangement: Section[]
   drums: Drums | null
   loops: Loop[]
+  performance: null | Partial<Performance>
   synth: null | Partial<SynthParams>
 }
 
