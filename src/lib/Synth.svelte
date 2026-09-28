@@ -211,7 +211,7 @@
     })
   }
 
-  // Global Play all / Stop all (song bar): start every filled pad, or stop them all.
+  // Song-bar Play (with no arrangement: every filled pad) / Stop (them all).
   function onTransport(e: CustomEvent<TransportDetail>) {
     players.forEach((p, slot) => {
       if (!p) return

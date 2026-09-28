@@ -48,10 +48,14 @@
     finished()
   }
 
-  // Stop song and the global Stop all both send this: it stops the instruments and,
+  // Stop song and the global Stop both send this: it stops the instruments and,
   // via this handler, the song.
   const onTransport = (e: CustomEvent<TransportDetail>) => {
     if (!e.detail.play && position) stop()
+  }
+  // Play song in the song bar.
+  const onSong = (e: CustomEvent<TransportDetail>) => {
+    if (e.detail.play && !position && sections.length) play()
   }
   const report = (on: boolean) => say('beatbox:state', { playing: on, source: 'song' })
   const onReport = () => report(!!position)
@@ -59,9 +63,11 @@
 
   onMount(() => {
     window.addEventListener('beatbox:transport', onTransport)
+    window.addEventListener('beatbox:song', onSong)
     window.addEventListener('beatbox:report', onReport)
     return () => {
       window.removeEventListener('beatbox:transport', onTransport)
+      window.removeEventListener('beatbox:song', onSong)
       window.removeEventListener('beatbox:report', onReport)
       stop()
       report(false)

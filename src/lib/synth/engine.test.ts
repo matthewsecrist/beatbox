@@ -213,7 +213,7 @@ test('a chord does not glide within itself; each source glides on its own; 0 is 
   for (const midi of [60, 64, 67]) synth.noteOn(midi)
   clock.currentTime = 0.5
   synth.noteOn(62, undefined, 'pad0:62') // a loop pad: not after the keyboard's chord
-  synth.noteOn(69) // the keyboard: from the chord's last note
+  synth.noteOn(69) // the keyboard: from the chord's nearest note, G4
 
   expect([0, 1, 2, 3].map((n) => glideOf(nodes, n))).toStrictEqual([null, null, null, null])
   expect(glideOf(nodes, 4)).toStrictEqual([392, 440, 0.1])
@@ -223,4 +223,16 @@ test('a chord does not glide within itself; each source glides on its own; 0 is 
   plain.noteOn(60)
   plain.noteOn(67)
   expect(glideOf(off.nodes, 1)).toBe(null)
+})
+
+test('a chord glides voice by voice, each note from the nearest note of the last chord', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ glide: 0.1, glide_mode: 'always' }, () => ctx)
+  for (const midi of [60, 64, 67]) synth.noteOn(midi) // C major
+  clock.currentTime = 0.5
+  for (const midi of [60, 65, 69]) synth.noteOn(midi) // F major over C
+
+  expect(glideOf(nodes, 3)).toBe(null) // C stays put
+  expect(glideOf(nodes, 4)).toStrictEqual([330, 349, 0.1]) // E -> F
+  expect(glideOf(nodes, 5)).toStrictEqual([392, 440, 0.1]) // G -> A
 })

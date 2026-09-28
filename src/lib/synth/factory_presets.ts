@@ -275,8 +275,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       filter_release: 0.3,
       filter_resonance: 2,
       filter_sustain: 0,
-      // The rave hoover swoops into every note.
-      glide: 0.15,
+      // The rave hoover swoops into every note (chords voice by voice).
+      glide: 0.1,
       glide_mode: 'always',
       lfo1_depth: 0.6,
       lfo1_rate: 0.5,
@@ -284,11 +284,12 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
-      osc1_detune: -35,
+      // Wide but in tune: the saws beat against each other without going sour.
+      osc1_detune: -12,
       osc1_level: 0.6,
       osc1_octave: 0,
       osc1_wave: 'sawtooth',
-      osc2_detune: 30,
+      osc2_detune: 12,
       osc2_level: 0.6,
       osc2_octave: -1,
       osc2_wave: 'sawtooth',

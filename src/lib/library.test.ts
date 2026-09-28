@@ -1,10 +1,10 @@
 import { expect, test } from 'vitest'
 
-import type { LibraryItem } from './library.js'
+import type { LibraryBeat, LibraryItem } from './library.js'
 
 import { beatPattern, filterLibrary, LIBRARY, libraryLoop, parseScore } from './library.js'
 import { songSchema } from './server/validation.js'
-import { SongStore } from './song.svelte.js'
+import { SongStore, STEP } from './song.svelte.js'
 import { BEATS_PER_BAR } from './transport.js'
 
 test('every library loop and beat can be saved in a song, under its own name', () => {
@@ -44,6 +44,17 @@ test('a score reads chords, rests and holds across bar lines', () => {
   expect(() => parseScore(`H4 ${rest} .`)).toThrow('Bad note “H4”')
 })
 
+test('a slide overlaps the next note by half a step, but not a repeat of its own pitch', () => {
+  const rest = Array<string>(12).fill('.').join(' ')
+  expect(parseScore(`C3~ - D3~ D3 ${rest}`).notes).toStrictEqual([
+    [48, 0, 0.625], // two steps plus half a step into D3
+    [50, 0.5, 0.25], // a slide into its own pitch just repeats
+    [50, 0.75, 0.25]
+  ])
+  // A slide into a rest doesn't overlap anything.
+  expect(parseScore(`C3~ . D3 . ${rest}`).notes[0]).toStrictEqual([48, 0, 0.25])
+})
+
 test('a library loop lasts its bars at the song tempo, with every note inside', () => {
   const item = LIBRARY.find((l) => l.type === 'Loop' && l.bars === 4)
   expect(item?.type).toBe('Loop')
@@ -53,15 +64,26 @@ test('a library loop lasts its bars at the song tempo, with every note inside', 
   expect(loop.events.every((e) => e.t <= loop.length)).toBe(true)
 })
 
-test('beat strings become on and accented steps', () => {
-  const item = LIBRARY.find((b) => b.name === 'Half-time Drop')
-  expect(item?.type).toBe('Beat')
-  if (item?.type !== 'Beat') return
-  const pattern = beatPattern(item)
-  expect(pattern.kick[0]).toMatchObject({ accent: true, on: true })
-  expect(pattern.kick[10]).toMatchObject({ accent: false, on: true })
-  expect(pattern.kick[1]?.on).toBe(false)
-  expect(pattern.tom.some((s) => s.on)).toBe(false)
+test('beat marks become accented, soft, chance and ratchet steps; bad marks fail', () => {
+  const beat = (kick: string): LibraryBeat => ({
+    bars: 1,
+    genre: 'Test',
+    instrument: 'Drums',
+    name: 'Test',
+    tracks: { kick },
+    type: 'Beat'
+  })
+  const [hit, accent, soft, chance, roll, rest] = beatPattern(beat('xXo?3...........')).kick
+  expect(hit).toStrictEqual({ ...STEP, on: true })
+  expect(accent).toStrictEqual({ ...STEP, accent: true, on: true })
+  expect(soft).toStrictEqual({ ...STEP, on: true, velocity: 0.5 })
+  expect(chance).toStrictEqual({ ...STEP, on: true, probability: 0.5 })
+  expect(roll).toStrictEqual({ ...STEP, on: true, ratchet: 3 })
+  expect(rest).toStrictEqual(STEP)
+  expect(beatPattern(beat('x'.repeat(16))).tom.some((s) => s.on)).toBe(false)
+
+  expect(() => beatPattern(beat('x..y............'))).toThrow('unknown beat mark “y”')
+  expect(() => beatPattern(beat('x...'))).toThrow("isn't 16 steps")
 })
 
 test('filters: any label within a facet, every facet and search word together', () => {

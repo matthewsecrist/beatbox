@@ -19,7 +19,7 @@ npm run dev
 ```
 
 Open [localhost:5173](http://localhost:5173): everything plays without an account.
-To hear what it can do, pick **Midnight Arcade** under **Examples** in **Open ▾**
+To hear what it can do, pick one of the [example songs](#example-songs) under **Examples** in **Open ▾**
 and press **Play song**. To save, press **Sign in to save** and enter your email.
 Unless `RESEND_API_KEY` is set, the sign-in link isn't emailed but printed in the
 `npm run dev` output; open it to sign in. Your first sign-in creates your account,
@@ -125,7 +125,7 @@ the list, different filters narrow it. **+** puts a loop on a pad (the first emp
 one, or the one picked under **Add to**; it follows the song tempo) or writes a
 beat into the picked drum pattern; either is one undo step. ▶ previews an item in
 time with anything already playing (beats with the song's kit and swing); press
-it again, close the browser or press Stop all to stop. To add more, add to
+it again, close the browser or press Stop to stop. To add more, add to
 `LOOP_SPECS` or `BEAT_SPECS` in `src/lib/library_items.ts`: loops are written as a
 16-step-per-bar score (`A3+C4+E4 - - . G3 …`) and beats as one `x..x` string per
 drum; the file explains the notation, and a bad note or bar length fails the tests.
@@ -134,8 +134,9 @@ drum; the file explains the notation, and a bad note or bar length fails the tes
 arp settings, drums, effects, loops and arrangement. **Save** stores the song (a blank name becomes
 "Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one or
 an example; both ask first if you have unsaved changes. An example opens as a new,
-unsaved song: change it as you like, and **Save** makes your own copy. **Play all / Stop all** starts or
-stops the drums and every recorded pad.
+unsaved song: change it as you like, and **Save** makes your own copy. **Play song**
+plays the arrangement from the start; with no sections yet, it starts the drums and
+every recorded pad instead. **Stop** stops whatever is playing.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
 cover every edit to the song: synth settings and presets, chord and arp, drum steps, kit, tuning, effects,
@@ -255,14 +256,26 @@ How the pieces talk:
   stores it (the database doesn't store Yjs data).
 - Opening a song remounts the page with a fresh store (and history) for it.
 - Instruments coordinate in the browser through window events:
-  `beatbox:transport` for Play all / Stop all, `beatbox:scene` for arrangement
+  `beatbox:transport` for starting everything and Stop, `beatbox:song` for Play song, `beatbox:scene` for arrangement
   sections, and `beatbox:state` for what's currently playing.
 
 ### Example songs
 
+Each example shows off a different corner of the app, and each sets up the
+keyboard (**Chord** and **Arp**) to play along:
+
+| Example                   | Style                         | Shows off                                                                                                                              |
+| ------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls, dotted-8th delay |
+| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, a gated Pulse Pad, 909 with swing, chance and roll fills                      |
+| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s, ratcheted and chance hi-hats, a tuned trap kit, Bell and Flute melodies in reverb                                        |
+| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords, heavy swing on the Lo-fi kit, ghost snares, gliding flute and vibrato lead                              |
+| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, breakdowns                                        |
+
 The songs in `src/lib/server/examples/` are served from code, not the database:
 anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes
 the user's own copy. To add one, export it from the app to that folder as JSON
-(with the keys `name`, `synth`, `drums`, `loops` and `arrangement`) and add it to
-`SOURCES` in `index.ts` under its slug. They're checked with the same schema as a
-saved song, so a bad one fails the tests.
+(with the keys `name`, `synth`, `performance`, `effects`, `drums`, `loops` and
+`arrangement`) and add it to `SOURCES` in `index.ts` under its slug. They're checked
+with the same schema as a saved song, so a bad one fails the tests, and so does a
+section that plays a pad with no loop or a pattern the song doesn't have.

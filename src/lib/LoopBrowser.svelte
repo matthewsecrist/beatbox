@@ -88,7 +88,7 @@
 
   // Preview: plays an item on its own synth or drum engine, on the shared transport,
   // so it joins in time with anything already playing. Beats use the song's kit,
-  // swing and level. One at a time; reported as `beatbox:state` so Stop all stops it.
+  // swing and level. One at a time; reported as `beatbox:state` so Stop stops it.
   let previewing: null | string = $state(null) // name of the item playing
   let stopCurrent: () => void = () => undefined
   let previewSynth: null | Synth = null

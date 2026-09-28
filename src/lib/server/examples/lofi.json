@@ -1,0 +1,2059 @@
+{
+  "arrangement": [
+    {
+      "bars": 4,
+      "drums": false,
+      "name": "Needle drop",
+      "pads": [0, 5],
+      "pattern": 2
+    },
+    {
+      "bars": 4,
+      "drums": true,
+      "name": "Head nod",
+      "pads": [0, 1, 5],
+      "pattern": 2
+    },
+    {
+      "bars": 7,
+      "drums": true,
+      "name": "Flute theme",
+      "pads": [0, 1, 2],
+      "pattern": 0
+    },
+    {
+      "bars": 1,
+      "drums": true,
+      "name": "Fill",
+      "pads": [0, 1, 2],
+      "pattern": 3
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Flute theme + vibes",
+      "pads": [0, 1, 2, 5],
+      "pattern": 1
+    },
+    {
+      "bars": 7,
+      "drums": true,
+      "name": "Singing lead",
+      "pads": [0, 1, 3],
+      "pattern": 0
+    },
+    {
+      "bars": 1,
+      "drums": true,
+      "name": "Fill",
+      "pads": [0, 1, 3],
+      "pattern": 3
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Singing lead II",
+      "pads": [0, 1, 3],
+      "pattern": 1
+    },
+    {
+      "bars": 4,
+      "drums": false,
+      "name": "Rain on the window",
+      "pads": [4, 5],
+      "pattern": 2
+    },
+    {
+      "bars": 3,
+      "drums": true,
+      "name": "Coming back",
+      "pads": [1, 4, 5],
+      "pattern": 2
+    },
+    {
+      "bars": 1,
+      "drums": true,
+      "name": "Fill",
+      "pads": [1, 4, 5],
+      "pattern": 3
+    },
+    {
+      "bars": 8,
+      "drums": true,
+      "name": "Last theme",
+      "pads": [0, 1, 2, 5],
+      "pattern": 1
+    },
+    {
+      "bars": 4,
+      "drums": true,
+      "name": "Tape slows",
+      "pads": [0, 5],
+      "pattern": 2
+    },
+    {
+      "bars": 4,
+      "drums": false,
+      "name": "Fade to tape",
+      "pads": [4],
+      "pattern": 2
+    }
+  ],
+  "drums": {
+    "bpm": 82,
+    "kit": "lofi",
+    "patterns": [
+      {
+        "chat": [
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ]
+      },
+      {
+        "chat": [
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ],
+        "clap": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ],
+        "ohat": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "chat": [
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 0.5,
+            "ratchet": 1,
+            "velocity": 1
+          }
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      {
+        "chat": [
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          }
+        ],
+        "tom": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
+    "swing": 64,
+    "voices": {
+      "chat": {
+        "decay": 0.7
+      },
+      "kick": {
+        "decay": 1.3,
+        "tune": -2
+      },
+      "snare": {
+        "decay": 0.9,
+        "tune": -1
+      },
+      "tom": {
+        "tune": -3
+      }
+    },
+    "volume": 0.75
+  },
+  "effects": {
+    "delay_feedback": 0.35,
+    "delay_mix": 0.4,
+    "delay_time": "1/4",
+    "drums_delay": 0,
+    "drums_reverb": 0.12,
+    "reverb_mix": 0.5,
+    "reverb_size": 3.5,
+    "synth_delay": 0.15,
+    "synth_reverb": 0.3
+  },
+  "loops": [
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 58,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 58,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 58,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 58,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 5.488
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.488
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 5.488
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 5.488
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 8.415
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 8.415
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 8.415
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 8.415
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 10.976
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.002,
+        "decay": 1.2,
+        "filter_attack": 0.001,
+        "filter_cutoff": 1300,
+        "filter_decay": 0.8,
+        "filter_env_amount": 1.2,
+        "filter_release": 0.4,
+        "filter_resonance": 1,
+        "filter_sustain": 0.2,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0.35,
+        "lfo1_rate": 4.5,
+        "lfo1_target": "amp",
+        "lfo2_depth": 6,
+        "lfo2_rate": 0.5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": 0,
+        "osc1_wave": "sine",
+        "osc2_detune": 3,
+        "osc2_level": 0.25,
+        "osc2_octave": 1,
+        "osc2_wave": "triangle",
+        "release": 0.5,
+        "sustain": 0.2
+      },
+      "slot": 0
+    },
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 43,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 43,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 2.195
+        },
+        {
+          "midi": 46,
+          "on": true,
+          "t": 2.195
+        },
+        {
+          "midi": 46,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 2.561
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 3.018
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 5.122
+        },
+        {
+          "midi": 43,
+          "on": true,
+          "t": 5.122
+        },
+        {
+          "midi": 43,
+          "on": false,
+          "t": 5.488
+        },
+        {
+          "midi": 40,
+          "on": true,
+          "t": 5.488
+        },
+        {
+          "midi": 41,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 40,
+          "on": false,
+          "t": 5.945
+        },
+        {
+          "midi": 41,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 41,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 41,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 8.049
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 8.415
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 8.415
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 8.78
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 50,
+          "on": true,
+          "t": 10.61
+        },
+        {
+          "midi": 50,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 48,
+          "on": true,
+          "t": 10.976
+        },
+        {
+          "midi": 48,
+          "on": false,
+          "t": 11.341
+        },
+        {
+          "midi": 45,
+          "on": true,
+          "t": 11.341
+        },
+        {
+          "midi": 45,
+          "on": false,
+          "t": 11.707
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.005,
+        "decay": 0.3,
+        "filter_attack": 0.005,
+        "filter_cutoff": 800,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 1,
+        "filter_sustain": 0,
+        "glide": 0.08,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_rate": 4,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.9,
+        "osc1_octave": -1,
+        "osc1_wave": "sine",
+        "osc2_detune": 0,
+        "osc2_level": 0.3,
+        "osc2_octave": 0,
+        "osc2_wave": "triangle",
+        "release": 0.15,
+        "sustain": 0.9
+      },
+      "slot": 1
+    },
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 69,
+          "on": true,
+          "t": 0.366
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 0.732
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 0.732
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 1.098
+        },
+        {
+          "midi": 77,
+          "on": true,
+          "t": 1.463
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 1.555
+        },
+        {
+          "midi": 77,
+          "on": false,
+          "t": 2.561
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 3.659
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 3.659
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 4.024
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 4.116
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 4.756
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 6.22
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 6.585
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 6.585
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 6.951
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 6.951
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 8.049
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 8.415
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 8.506
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 8.78
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 10.61
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.08,
+        "decay": 0.2,
+        "filter_attack": 0.005,
+        "filter_cutoff": 2500,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 0,
+        "filter_sustain": 0,
+        "glide": 0.05,
+        "glide_mode": "legato",
+        "lfo1_depth": 0.08,
+        "lfo1_rate": 5,
+        "lfo1_target": "filter",
+        "lfo2_depth": 12,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": 0,
+        "osc1_wave": "triangle",
+        "osc2_detune": 0,
+        "osc2_level": 0.2,
+        "osc2_octave": 1,
+        "osc2_wave": "sine",
+        "release": 0.15,
+        "sustain": 0.9
+      },
+      "slot": 2
+    },
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 70,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 0.732
+        },
+        {
+          "midi": 70,
+          "on": false,
+          "t": 0.823
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 1.098
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 1.098
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 1.463
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 2.195
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 2.287
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 3.659
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 3.659
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 4.024
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 4.024
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 4.39
+        },
+        {
+          "midi": 70,
+          "on": true,
+          "t": 4.39
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 5.122
+        },
+        {
+          "midi": 70,
+          "on": false,
+          "t": 5.213
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 6.585
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 6.951
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 7.317
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 7.409
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 7.683
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 8.78
+        },
+        {
+          "midi": 77,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 9.512
+        },
+        {
+          "midi": 77,
+          "on": false,
+          "t": 9.604
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 9.878
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 10.61
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 10.61
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 10.976
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 11.707
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.02,
+        "decay": 0.2,
+        "filter_attack": 0.005,
+        "filter_cutoff": 1400,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 6,
+        "filter_sustain": 0,
+        "glide": 0.08,
+        "glide_mode": "legato",
+        "lfo1_depth": 1.2,
+        "lfo1_rate": 0.25,
+        "lfo1_target": "filter",
+        "lfo2_depth": 20,
+        "lfo2_rate": 5.5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.6,
+        "osc1_octave": 0,
+        "osc1_wave": "triangle",
+        "osc2_detune": 5,
+        "osc2_level": 0.4,
+        "osc2_octave": 1,
+        "osc2_wave": "sawtooth",
+        "release": 0.3,
+        "sustain": 0.8
+      },
+      "slot": 3
+    },
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 58,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 2.195
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 2.195
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 2.195
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 2.195
+        },
+        {
+          "midi": 58,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 58,
+          "on": false,
+          "t": 5.122
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 5.122
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 5.122
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 5.122
+        },
+        {
+          "midi": 57,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 57,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 8.049
+        },
+        {
+          "midi": 60,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 60,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 10.976
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 10.976
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.002,
+        "decay": 2,
+        "filter_attack": 0.001,
+        "filter_cutoff": 1100,
+        "filter_decay": 0.8,
+        "filter_env_amount": 1.2,
+        "filter_release": 0.4,
+        "filter_resonance": 1,
+        "filter_sustain": 0.2,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0.55,
+        "lfo1_rate": 3,
+        "lfo1_target": "amp",
+        "lfo2_depth": 8,
+        "lfo2_rate": 0.4,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": 0,
+        "osc1_wave": "sine",
+        "osc2_detune": 3,
+        "osc2_level": 0.25,
+        "osc2_octave": 1,
+        "osc2_wave": "triangle",
+        "release": 1,
+        "sustain": 0.45
+      },
+      "slot": 4
+    },
+    {
+      "bpm": 82,
+      "events": [
+        {
+          "midi": 67,
+          "on": true,
+          "t": 0
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 0.183
+        },
+        {
+          "midi": 70,
+          "on": true,
+          "t": 0.366
+        },
+        {
+          "midi": 70,
+          "on": false,
+          "t": 0.549
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 0.732
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 0.915
+        },
+        {
+          "midi": 81,
+          "on": true,
+          "t": 1.098
+        },
+        {
+          "midi": 81,
+          "on": false,
+          "t": 1.28
+        },
+        {
+          "midi": 77,
+          "on": true,
+          "t": 1.829
+        },
+        {
+          "midi": 77,
+          "on": false,
+          "t": 2.012
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 2.195
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 2.378
+        },
+        {
+          "midi": 64,
+          "on": true,
+          "t": 2.927
+        },
+        {
+          "midi": 64,
+          "on": false,
+          "t": 3.11
+        },
+        {
+          "midi": 67,
+          "on": true,
+          "t": 3.293
+        },
+        {
+          "midi": 67,
+          "on": false,
+          "t": 3.476
+        },
+        {
+          "midi": 70,
+          "on": true,
+          "t": 3.659
+        },
+        {
+          "midi": 70,
+          "on": false,
+          "t": 3.841
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 4.024
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 4.207
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 4.756
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 4.939
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 5.122
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 5.305
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 5.854
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 6.037
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 6.22
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 6.402
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 6.585
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 6.768
+        },
+        {
+          "midi": 79,
+          "on": true,
+          "t": 6.951
+        },
+        {
+          "midi": 79,
+          "on": false,
+          "t": 7.134
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 7.683
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 7.866
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 8.049
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 8.232
+        },
+        {
+          "midi": 62,
+          "on": true,
+          "t": 8.78
+        },
+        {
+          "midi": 62,
+          "on": false,
+          "t": 8.963
+        },
+        {
+          "midi": 65,
+          "on": true,
+          "t": 9.146
+        },
+        {
+          "midi": 65,
+          "on": false,
+          "t": 9.329
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 9.512
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 9.695
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 9.878
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 10.061
+        },
+        {
+          "midi": 72,
+          "on": true,
+          "t": 10.61
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 10.793
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 10.976
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 11.159
+        }
+      ],
+      "length": 11.707,
+      "params": {
+        "attack": 0.001,
+        "decay": 1.4,
+        "filter_attack": 0.005,
+        "filter_cutoff": 4000,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 0,
+        "filter_sustain": 0,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0.4,
+        "lfo1_rate": 5.5,
+        "lfo1_target": "amp",
+        "lfo2_depth": 0,
+        "lfo2_rate": 5,
+        "lfo2_target": "pitch",
+        "osc1_detune": 0,
+        "osc1_level": 0.6,
+        "osc1_octave": 0,
+        "osc1_wave": "sine",
+        "osc2_detune": 0,
+        "osc2_level": 0.15,
+        "osc2_octave": 2,
+        "osc2_wave": "sine",
+        "release": 1.2,
+        "sustain": 0
+      },
+      "slot": 5
+    }
+  ],
+  "name": "Rain on the Tape Deck",
+  "performance": {
+    "arp": "off",
+    "arp_rate": "1/8",
+    "chord": "maj7"
+  },
+  "synth": {
+    "attack": 0.002,
+    "decay": 1.2,
+    "filter_attack": 0.001,
+    "filter_cutoff": 1300,
+    "filter_decay": 0.8,
+    "filter_env_amount": 1.2,
+    "filter_release": 0.4,
+    "filter_resonance": 1,
+    "filter_sustain": 0.2,
+    "glide": 0,
+    "glide_mode": "legato",
+    "lfo1_depth": 0.35,
+    "lfo1_rate": 4.5,
+    "lfo1_target": "amp",
+    "lfo2_depth": 6,
+    "lfo2_rate": 0.5,
+    "lfo2_target": "pitch",
+    "osc1_detune": 0,
+    "osc1_level": 0.7,
+    "osc1_octave": 0,
+    "osc1_wave": "sine",
+    "osc2_detune": 3,
+    "osc2_level": 0.25,
+    "osc2_octave": 1,
+    "osc2_wave": "triangle",
+    "release": 0.5,
+    "sustain": 0.2,
+    "volume": 0.7
+  }
+}

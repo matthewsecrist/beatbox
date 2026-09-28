@@ -67,13 +67,15 @@ const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
 const CHORD = 0.005 // s: notes starting this close together are one chord
 
-// The last note a source played: where the next one glides from, and when it
-// was let go (Infinity while held).
+// The notes a source last started together (one note, or a chord): where the
+// next ones glide from, and when they were let go (Infinity while held).
 interface LastNote {
-  // Where this note itself glided from; a chord's later notes reuse it.
-  from: number | undefined
+  // Notes started together, in order.
+  chord: number[]
+  // The previous chord, which this one glides from (empty: no glide).
+  from: number[]
+  // The chord's last-started note; letting it go sets `off`.
   key: VoiceKey
-  midi: number
   off: number
   t0: number
 }
@@ -193,19 +195,27 @@ export function createSynth(
     gain.gain.value = l
   }
 
-  // Which note a new one glides from, and remembers it as the source's last
-  // note. Notes starting together (a chord) share one decision, so they don't
-  // slide between each other.
+  // Which note a new one glides from, remembering it with the source's last
+  // notes. Notes starting together (a chord) glide from the previous chord, each
+  // from the nearest of its notes, so the voices move instead of all sliding in
+  // from one pitch; they never slide between each other.
   function glideFrom(key: VoiceKey, midi: number, t: number, p: SynthParams): number | undefined {
     const src = source(key)
     const last = lastNotes.get(src)
-    const from =
-      last && t - last.t0 < CHORD
-        ? last.from
-        : last && (p.glide_mode === 'always' || last.off > t)
-          ? last.midi
-          : undefined
-    lastNotes.set(src, { from, key, midi, off: Infinity, t0: t })
+    let group: LastNote
+    if (last && t - last.t0 < CHORD) {
+      group = last
+      group.chord.push(midi)
+      group.key = key
+    } else {
+      const glides = !!last && (p.glide_mode === 'always' || last.off > t)
+      group = { chord: [midi], from: glides ? last.chord : [], key, off: Infinity, t0: t }
+      lastNotes.set(src, group)
+    }
+    let from: number | undefined
+    for (const n of group.from) {
+      if (from === undefined || Math.abs(n - midi) < Math.abs(from - midi)) from = n
+    }
     return p.glide > 0 && from !== midi ? from : undefined
   }
 
