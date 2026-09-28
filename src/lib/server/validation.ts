@@ -10,6 +10,7 @@ const params = z.object({
   filter_resonance: z.number().exactOptional(),
   lfo_depth: z.number().exactOptional(),
   lfo_rate: z.number().exactOptional(),
+  lfo_target: z.enum(['amp', 'filter', 'pitch']).exactOptional(),
   osc1_detune: z.number().exactOptional(),
   osc1_level: z.number().exactOptional(),
   osc1_octave: z.number().exactOptional(),

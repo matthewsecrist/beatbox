@@ -7,6 +7,7 @@
   import type { Synth } from './synth/engine.js'
   import type { Player } from './synth/looper.js'
   import type {
+    LfoTarget,
     LoadPresetReply,
     Loop,
     PresetSummary,
@@ -19,7 +20,7 @@
 
   import PianoRoll from './PianoRoll.svelte'
   import { PAD_COUNT } from './song.svelte.js'
-  import { createSynth, DEFAULT_PARAMS } from './synth/engine.js'
+  import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
   import { BEATS_PER_BAR, transport } from './transport.js'
@@ -115,6 +116,11 @@
   }
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
+  const LFO_TARGETS: { label: string; target: LfoTarget }[] = [
+    { label: 'filter', target: 'filter' },
+    { label: 'pitch', target: 'pitch' },
+    { label: 'amp', target: 'amp' }
+  ]
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
   const KEY_MAP = 'awsedftgyhujkolp;'
 
@@ -414,6 +420,8 @@
   const fmtNum = (v: number) => Number(v).toFixed(1)
   const fmtRate = (v: number) => Number(v).toFixed(1) + ' Hz'
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
+  const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
+  const fmtTremolo = (v: number) => (v === 0 ? 'off' : fmtPct(v))
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40'
@@ -513,8 +521,36 @@
     />
   </label>
   {@render slider('filter_resonance', 'Resonance', 0, 20, 0.1, fmtNum)}
+  <div
+    id="synth-lfo_target"
+    class="grid grid-cols-3 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="LFO target"
+  >
+    {#each LFO_TARGETS as { label, target } (target)}
+      <button
+        type="button"
+        aria-pressed={params.lfo_target === target}
+        onclick={() => store.setLfoTarget(target)}
+        class={[
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
+          params.lfo_target === target
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+        ]}
+      >
+        {label}
+      </button>
+    {/each}
+  </div>
   {@render slider('lfo_rate', 'LFO rate', 0.1, 20, 0.1, fmtRate)}
-  {@render slider('lfo_depth', 'LFO depth', 0, 4, 0.05, fmtOct)}
+  {#if params.lfo_target === 'pitch'}
+    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.pitch, 1, fmtVibrato)}
+  {:else if params.lfo_target === 'amp'}
+    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.amp, 0.01, fmtTremolo)}
+  {:else}
+    {@render slider('lfo_depth', 'LFO depth', 0, LFO_DEPTH_MAX.filter, 0.05, fmtOct)}
+  {/if}
 {/snippet}
 
 {#snippet envelope()}

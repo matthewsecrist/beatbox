@@ -1,4 +1,4 @@
-import type { SynthParams } from '../types.js'
+import type { LfoTarget, SynthParams } from '../types.js'
 
 import { getContext } from '../audio.js'
 
@@ -7,8 +7,9 @@ export const DEFAULT_PARAMS: SynthParams = {
   decay: 0.3,
   filter_cutoff: 2400,
   filter_resonance: 4,
-  lfo_depth: 0, // LFO sweeps the filter cutoff; depth in octaves
+  lfo_depth: 0, // units follow the target (LFO_DEPTH_MAX)
   lfo_rate: 4,
+  lfo_target: 'filter',
   osc1_detune: 0,
   osc1_level: 0.6,
   osc1_octave: 0,
@@ -21,6 +22,19 @@ export const DEFAULT_PARAMS: SynthParams = {
   sustain: 0.6,
   volume: 0.7
 }
+
+// Deepest LFO per target: octaves of cutoff, cents of pitch, share of the level.
+export const LFO_DEPTH_MAX: Record<LfoTarget, number> = { amp: 1, filter: 4, pitch: 100 }
+
+// How far the LFO swings its target's AudioParam: filter and pitch in cents;
+// amp around a level of 1 - depth / 2, so full depth dips to silence.
+const lfoSwing = (p: SynthParams): number =>
+  p.lfo_target === 'filter'
+    ? p.lfo_depth * 1200
+    : p.lfo_target === 'pitch'
+      ? p.lfo_depth
+      : p.lfo_depth / 2
+const tremLevel = (p: SynthParams): number => (p.lfo_target === 'amp' ? 1 - p.lfo_depth / 2 : 1)
 
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
@@ -48,6 +62,7 @@ interface Voice {
   key: VoiceKey
   lfo: OscillatorNode
   lfoDepth: GainNode
+  lfoTarget: LfoTarget
   midi: number
   osc1: OscillatorNode
   osc2: OscillatorNode
@@ -56,6 +71,8 @@ interface Voice {
   srcs: OscillatorNode[]
   sustain: number
   t0: number
+  // Tremolo stage after the envelope; the LFO drives its gain when targeting amp.
+  trem: GainNode
 }
 
 const freq = (midi: number, octave: number): number => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
@@ -115,6 +132,18 @@ export function createSynth(
     return HEADROOM * v.sustain
   }
 
+  // Points the voice's LFO at `target`.
+  function routeLfo(v: Voice, target: LfoTarget) {
+    v.lfoDepth.disconnect()
+    v.lfoTarget = target
+    if (target === 'filter') v.lfoDepth.connect(v.filter.detune)
+    else if (target === 'amp') v.lfoDepth.connect(v.trem.gain)
+    else {
+      v.lfoDepth.connect(v.osc1.detune)
+      v.lfoDepth.connect(v.osc2.detune)
+    }
+  }
+
   // `time` defaults to the voice's own release (its params may differ from the live ones).
   function release(key: VoiceKey, time: number | undefined, at: number) {
     const v = voices.get(key)
@@ -155,6 +184,7 @@ export function createSynth(
     // Per-voice LFO so each note's wobble starts from the same phase.
     const lfo = ctx.createOscillator()
     const lfoDepth = ctx.createGain()
+    const trem = ctx.createGain()
 
     applyOsc(t, osc1, g1, 1, midi, false, p)
     applyOsc(t, osc2, g2, 2, midi, false, p)
@@ -164,10 +194,11 @@ export function createSynth(
 
     osc1.connect(g1).connect(filter)
     osc2.connect(g2).connect(filter)
-    filter.connect(amp).connect(master)
+    filter.connect(amp).connect(trem).connect(master)
     lfo.frequency.value = p.lfo_rate
-    lfoDepth.gain.value = p.lfo_depth * 1200
-    lfo.connect(lfoDepth).connect(filter.detune) // cents: 1200 per octave
+    lfoDepth.gain.value = lfoSwing(p)
+    trem.gain.value = tremLevel(p)
+    lfo.connect(lfoDepth)
 
     const { attack, decay, sustain } = p
     amp.gain.setValueAtTime(0, t)
@@ -185,6 +216,7 @@ export function createSynth(
       key,
       lfo,
       lfoDepth,
+      lfoTarget: p.lfo_target,
       midi,
       osc1,
       osc2,
@@ -192,11 +224,13 @@ export function createSynth(
       release: p.release,
       srcs,
       sustain,
-      t0: t
+      t0: t,
+      trem
     }
+    routeLfo(v, p.lfo_target)
     osc1.onended = () => {
       alive.delete(v)
-      ;[...srcs, g1, g2, filter, amp, lfoDepth].forEach((n) => n.disconnect())
+      ;[...srcs, g1, g2, filter, amp, trem, lfoDepth].forEach((n) => n.disconnect())
     }
     for (const s of srcs) s.start(t)
 
@@ -238,7 +272,9 @@ export function createSynth(
       v.filter.frequency.setTargetAtTime(params.filter_cutoff, t, 0.01)
       v.filter.Q.setTargetAtTime(params.filter_resonance, t, 0.01)
       v.lfo.frequency.setTargetAtTime(params.lfo_rate, t, 0.01)
-      v.lfoDepth.gain.setTargetAtTime(params.lfo_depth * 1200, t, 0.01)
+      if (v.lfoTarget !== params.lfo_target) routeLfo(v, params.lfo_target)
+      v.lfoDepth.gain.setTargetAtTime(lfoSwing(params), t, 0.01)
+      v.trem.gain.setTargetAtTime(tremLevel(params), t, 0.01)
       applyOsc(t, v.osc1, v.g1, 1, v.midi, true)
       applyOsc(t, v.osc2, v.g2, 2, v.midi, true)
     }

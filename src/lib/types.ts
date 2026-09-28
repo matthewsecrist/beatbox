@@ -30,6 +30,10 @@ export interface DrumStep {
 // Synthesized drum kits; each voice is built from oscillators and noise.
 export type KitId = '606' | '808' | '909' | 'classic' | 'lofi' | 'trap'
 
+// What the synth's LFO modulates: filter cutoff (wobble), pitch (vibrato) or
+// level (tremolo).
+export type LfoTarget = 'amp' | 'filter' | 'pitch'
+
 // One recorded loop pad.
 export interface Loop {
   // Tempo it was recorded at; null/absent for loops recorded before tempo sync.
@@ -94,8 +98,11 @@ export interface SynthParams {
   decay: number
   filter_cutoff: number
   filter_resonance: number
+  // Units follow lfo_target: octaves (filter), cents (pitch), 0-1 (amp).
   lfo_depth: number
   lfo_rate: number
+  // Absent in songs and presets saved before targets: 'filter'.
+  lfo_target: LfoTarget
   osc1_detune: number
   osc1_level: number
   osc1_octave: number
