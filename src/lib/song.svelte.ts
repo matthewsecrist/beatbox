@@ -7,6 +7,7 @@ import type {
   KitId,
   LfoTarget,
   Loop,
+  Performance,
   SavedStep,
   Section,
   SongDoc,
@@ -16,6 +17,7 @@ import type {
 } from './types.js'
 
 import { STEPS, TRACKS } from './drums/engine.js'
+import { DEFAULT_PERFORMANCE } from './synth/arp.js'
 import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 
 // The open song as a Yjs document. The instruments read the reactive mirrors
@@ -25,6 +27,7 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 //
 // The document's top-level types:
 //   synth        Y.Map      param -> number | wave (missing = default)
+//   performance  Y.Map      arp, arp_rate, chord (missing = default)
 //   drums        Y.Map      bpm, volume, swing, kit, voices (track -> VoiceTweak, plain JSON)
 //   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
@@ -83,6 +86,8 @@ export class SongStore {
   })
   // Loops by slot (null = empty pad).
   loops: (Loop | null)[] = $state.raw(Array.from({ length: PAD_COUNT }, () => null))
+  // Chord and arpeggiator settings, every one filled in.
+  performance: Performance = $state.raw({ ...DEFAULT_PERFORMANCE })
   synth: Partial<SynthParams> = $state.raw({})
 
   private readonly arrangementArray: Y.Array<Y.Map<unknown>>
@@ -90,12 +95,14 @@ export class SongStore {
   private readonly drumsMap: Y.Map<unknown>
   private readonly loopsMap: Y.Map<Loop>
   private readonly patternsArray: Y.Array<Y.Map<DrumStep[]>>
+  private readonly performanceMap: Y.Map<unknown>
   private readonly synthMap: Y.Map<unknown>
   private readonly undoManager: Y.UndoManager
 
   // `onchange` fires after every edit, undo and redo (not on load).
   constructor(song: null | SongDoc = null, onchange: () => void = () => undefined) {
     this.synthMap = this.doc.getMap('synth')
+    this.performanceMap = this.doc.getMap('performance')
     this.drumsMap = this.doc.getMap('drums')
     this.patternsArray = this.doc.getArray('patterns')
     this.loopsMap = this.doc.getMap('loops')
@@ -104,7 +111,14 @@ export class SongStore {
     this.doc.transact(() => this.write(song), LOAD)
 
     this.undoManager = new Y.UndoManager(
-      [this.synthMap, this.drumsMap, this.patternsArray, this.loopsMap, this.arrangementArray],
+      [
+        this.synthMap,
+        this.performanceMap,
+        this.drumsMap,
+        this.patternsArray,
+        this.loopsMap,
+        this.arrangementArray
+      ],
       { captureTimeout: CAPTURE_MS }
     )
     const syncHistory = () => {
@@ -115,6 +129,7 @@ export class SongStore {
     this.undoManager.on('stack-item-popped', syncHistory)
 
     this.synthMap.observe(() => this.readSynth())
+    this.performanceMap.observe(() => this.readPerformance())
     this.drumsMap.observe(() => this.readDrums())
     this.patternsArray.observeDeep(() => this.readDrums())
     this.loopsMap.observe((e) => this.readLoops([...e.keysChanged].map(String)))
@@ -124,6 +139,7 @@ export class SongStore {
     })
 
     this.readSynth()
+    this.readPerformance()
     this.readDrums()
     this.readLoops([...this.loopsMap.keys()])
     this.readArrangement()
@@ -178,6 +194,7 @@ export class SongStore {
   replace(song: SongDoc): void {
     this.doc.transact(() => {
       this.synthMap.clear()
+      this.performanceMap.clear()
       this.drumsMap.clear()
       this.patternsArray.delete(0, this.patternsArray.length)
       this.loopsMap.clear()
@@ -240,6 +257,13 @@ export class SongStore {
     }, true)
   }
 
+  // Chord shape, arp pattern and rate: each change is its own undo step.
+  setPerformance(patch: Partial<Performance>): void {
+    this.edit(() => {
+      for (const [key, value] of Object.entries(patch)) this.performanceMap.set(key, value)
+    }, true)
+  }
+
   // Changes one step (on/off, velocity, accent, probability, ratchet).
   setStep(index: number, track: TrackId, step: number, patch: Partial<DrumStep>): void {
     const map = this.patternsArray.get(index)
@@ -265,6 +289,7 @@ export class SongStore {
   // The song's parts, for saving.
   toSongDoc(): SongDoc {
     const synth = this.synthMap.toJSON() as Partial<SynthParams>
+    const performance = this.performanceMap.toJSON() as Partial<Performance>
     return {
       arrangement: this.arrangement.map(({ bars, drums, name, pads, pattern }) => ({
         bars,
@@ -288,6 +313,7 @@ export class SongStore {
         )
       },
       loops: this.loops.filter((l): l is Loop => l !== null),
+      performance: Object.keys(performance).length ? performance : null,
       synth: Object.keys(synth).length ? synth : null
     }
   }
@@ -342,6 +368,10 @@ export class SongStore {
     this.loops = next
   }
 
+  private readPerformance() {
+    this.performance = { ...DEFAULT_PERFORMANCE, ...this.performanceMap.toJSON() }
+  }
+
   private readSynth() {
     this.synth = this.synthMap.toJSON()
   }
@@ -349,6 +379,9 @@ export class SongStore {
   // A song without drums gets the default groove on pattern A.
   private write(song: null | SongDoc) {
     for (const [key, value] of Object.entries(song?.synth ?? {})) this.synthMap.set(key, value)
+    for (const [key, value] of Object.entries(song?.performance ?? {})) {
+      this.performanceMap.set(key, value)
+    }
     this.writeDrums(song?.drums ?? null)
     for (const loop of song?.loops ?? []) this.loopsMap.set(String(loop.slot), loop)
     this.arrangementArray.push((song?.arrangement ?? []).map(sectionMap))

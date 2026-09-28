@@ -98,6 +98,15 @@ const loop = z.object({
   slot: z.int().min(0).max(7)
 })
 
+// Chord and arpeggiator settings for the synth keyboard.
+const performance = z.object({
+  arp: z.enum(['down', 'off', 'random', 'up', 'updown']).exactOptional(),
+  arp_rate: z.enum(['1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32']).exactOptional(),
+  chord: z
+    .enum(['5', '7', 'aug', 'dim', 'maj', 'maj7', 'min', 'min7', 'off', 'sus2', 'sus4'])
+    .exactOptional()
+})
+
 // One section of the arrangement: which pads and drums play, for how many bars.
 const section = z.object({
   bars: z.int().min(1).max(64),
@@ -116,6 +125,7 @@ export const songSchema = z.object({
   drums: drums.nullable().default(null),
   loops: z.array(loop).max(8).default([]),
   name: name(60),
+  performance: performance.nullable().default(null),
   synth: params.nullable().default(null)
 })
 

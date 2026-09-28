@@ -20,6 +20,7 @@ const song: SongDoc = {
   arrangement: [{ bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }],
   drums: { bpm: 140, patterns: [{ kick: [true] }], volume: 0.5 },
   loops: [loop(2)],
+  performance: null,
   synth: { filter_cutoff: 300 }
 }
 
@@ -51,6 +52,8 @@ test('a new song starts with default drums and nothing to undo', () => {
   )
   expect(store.drums).toMatchObject({ kit: 'classic', swing: 50 })
   expect(store.toSongDoc().synth).toBe(null)
+  expect(store.toSongDoc().performance).toBe(null)
+  expect(store.performance).toStrictEqual({ arp: 'off', arp_rate: '1/16', chord: 'off' })
   expect(store.canUndo).toBe(false)
   expect(onchange).not.toHaveBeenCalled()
 })
@@ -200,4 +203,26 @@ test('changing an LFO target rescales its depth, as one undo step', () => {
   expect(store.synth).toStrictEqual({ lfo1_depth: 25, lfo1_target: 'pitch', lfo2_depth: 10 })
   store.undo()
   expect(store.toSongDoc().synth).toStrictEqual({ lfo1_depth: 1, lfo2_depth: 10 })
+})
+
+test('chord and arp settings load with defaults filled in, save, and undo one at a time', () => {
+  const store = new SongStore({ ...song, performance: { chord: 'min' } })
+  expect(store.performance).toStrictEqual({ arp: 'off', arp_rate: '1/16', chord: 'min' })
+
+  store.setPerformance({ arp: 'updown' })
+  store.setPerformance({ arp_rate: '1/8t' })
+  expect(store.toSongDoc().performance).toStrictEqual({
+    arp: 'updown',
+    arp_rate: '1/8t',
+    chord: 'min'
+  })
+
+  store.undo()
+  expect(store.performance.arp_rate).toBe('1/16')
+  expect(store.performance.arp).toBe('updown')
+  store.undo()
+  expect(store.toSongDoc().performance).toStrictEqual({ chord: 'min' })
+
+  store.replace(song)
+  expect(store.performance.chord).toBe('off')
 })

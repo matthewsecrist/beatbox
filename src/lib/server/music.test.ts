@@ -95,6 +95,7 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     drums: drums(140),
     loops: [{ ...loop, params: { evil: 'x', osc1_wave: 'sine' } }],
     name: 'Jam',
+    performance: { arp: 'updown', arp_rate: '1/8t', chord: 'min7' },
     synth: { evil: 'x', filter_cutoff: 300 }
   })
 
@@ -102,6 +103,7 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
   expect(saved.synth).toStrictEqual({ filter_cutoff: 300 })
   expect(saved.drums?.bpm).toBe(140)
   expect(saved.loops[0]?.params).toStrictEqual({ osc1_wave: 'sine' })
+  expect(saved.performance).toStrictEqual({ arp: 'updown', arp_rate: '1/8t', chord: 'min7' })
   expect(saved.arrangement).toStrictEqual([
     { bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }
   ])
@@ -114,7 +116,9 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { drums: { ...drums(120), patterns: Array<object>(5).fill({}) } },
     { drums: { ...drums(120), patterns: [{ kick: [{ on: true, ratchet: 5 }] }] } },
     { drums: { ...drums(120), swing: 90 } },
-    { drums: drums(999) }
+    { drums: drums(999) },
+    { performance: { chord: 'blues' } },
+    { performance: { arp_rate: '1/3' } }
   ]
   for (const attrs of invalid) {
     await expect(

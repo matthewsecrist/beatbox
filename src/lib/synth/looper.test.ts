@@ -394,3 +394,27 @@ test('a take stopped early in a bar keeps the notes already played in it', () =>
   expect(take.length).toBe(4) // extended to 2 bars (8 beats = 4 s)
   expect(take.events.filter((e) => e.on).map((e) => e.midi)).toStrictEqual([60, 64])
 })
+
+test('timed notes land at their own times, in order; ones from before the take are left out', () => {
+  const { clock, transport } = fakeAudio()
+  const rec = createRecorder(transport)
+  transport.acquire('rec') // grid starts at 0.05 s
+  rec.start([], 4) // take starts at beat 4 = 2.05 s
+
+  clock.now = 2.2
+  rec.note(60, true, 1.925) // began in the count-in (beat 3.75): dropped with its end
+  rec.note(60, false, 2.175)
+  clock.now = 2.8
+  rec.note(67, true, 2.8) // reported first...
+  rec.note(67, false, 2.925)
+  rec.note(64, true, 2.55) // ...but played before it
+  rec.note(64, false, 2.675)
+  clock.now = 4
+
+  expect(rec.finish()?.events).toStrictEqual([
+    { midi: 64, on: true, t: 0.5 },
+    { midi: 64, on: false, t: 0.625 },
+    { midi: 67, on: true, t: 0.75 },
+    { midi: 67, on: false, t: 0.875 }
+  ])
+})
