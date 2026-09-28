@@ -1,8 +1,10 @@
 import { afterEach, expect, test, vi } from 'vitest'
 
+import type { TrackId } from '../types.js'
+
 import { STEP } from '../song.svelte.js'
 import { createTransport } from '../transport.js'
-import { createDrums } from './engine.js'
+import { createDrums, isAudible, TRACKS } from './engine.js'
 
 // AudioContext stand-in: records when each kick (a 150 Hz sweep) starts.
 function fakeAudio() {
@@ -106,4 +108,13 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
 
   // Step 2 at 0.175 + 0.025, its second hit halfway to step 3 (0.3 s); step 5 at 0.55.
   expect(kicks).toStrictEqual([0.2, 0.25, 2.2, 2.25, 2.55])
+})
+
+test('solo wins over mute, and several tracks can be soloed', () => {
+  const heard = (muted: TrackId[], soloed: TrackId[]) =>
+    TRACKS.filter(({ id }) => isAudible(id, new Set(muted), new Set(soloed))).map(({ id }) => id)
+
+  expect(heard([], [])).toStrictEqual(['kick', 'snare', 'clap', 'chat', 'ohat', 'tom'])
+  expect(heard(['kick', 'chat'], [])).toStrictEqual(['snare', 'clap', 'ohat', 'tom'])
+  expect(heard(['kick'], ['kick', 'snare'])).toStrictEqual(['kick', 'snare'])
 })
