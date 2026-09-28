@@ -8,12 +8,14 @@ import { json, redirect } from '@sveltejs/kit'
 import { isAuthPath, svelteKitHandler } from 'better-auth/svelte-kit'
 
 // Pages anyone can see, signed in or not. A signed-out visitor can play with a new
-// song on the home page or an example, but saving and opening songs needs an account.
+// song on the home page or an example, and listen to a shared song (/s/<shareId>,
+// liking it needs an account), but saving and opening songs needs an account.
 const PUBLIC_PAGES = new Set<string>([
   resolve('/'),
   resolve('/login'),
   ...EXAMPLES.map(({ slug }) => resolve('/examples/[slug]', { slug }))
 ])
+const SHARED = new RegExp(`^${resolve('/')}s/[\\w-]+$`)
 
 export const handle: Handle = async ({ event, resolve: resolveEvent }) => {
   // Better Auth's own endpoints (/api/auth/*), such as the magic link itself.
@@ -26,7 +28,11 @@ export const handle: Handle = async ({ event, resolve: resolveEvent }) => {
   event.locals.session = session?.session ?? null
 
   // Everything else (saved songs, the save/load API) needs a signed-in user.
-  if (!event.locals.user && !PUBLIC_PAGES.has(event.url.pathname)) {
+  if (
+    !event.locals.user &&
+    !PUBLIC_PAGES.has(event.url.pathname) &&
+    !SHARED.test(event.url.pathname)
+  ) {
     if (event.url.pathname.startsWith('/api/')) {
       return json({ error: 'Sign in first' }, { status: 401 })
     }

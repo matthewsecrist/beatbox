@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte'
 
   import { resolve } from '$app/paths'
-  import { LogOut, User } from '@lucide/svelte'
+  import { LogOut, Music, User } from '@lucide/svelte'
 
   import type { LayoutData } from './$types'
 
@@ -14,6 +14,14 @@
 <header class="flex items-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
   <a href={resolve('/')} class="text-lg font-bold tracking-tight">Beatbox</a>
   {#if data.user}
+    <a
+      id="my-songs-link"
+      href={resolve('/songs')}
+      class="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
+    >
+      <Music class="size-4" />
+      My songs
+    </a>
     <span
       id="current-user"
       title={data.user.email}

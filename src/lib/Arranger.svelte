@@ -99,7 +99,7 @@
     store.updateSection(index, { bars: Math.min(MAX_BARS, Math.max(1, n)) })
 
   const chip = (on: boolean) => [
-    'h-7 min-w-7 rounded-md px-1.5 text-xs font-semibold transition active:scale-95',
+    'h-7 min-w-7 rounded-md px-1.5 text-xs font-semibold transition active:scale-95 disabled:pointer-events-none',
     on
       ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/20 hover:bg-amber-300'
       : 'bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-200'
@@ -132,15 +132,17 @@
     >
       {position ? 'Stop song' : 'Play song'}
     </button>
-    <button
-      id="add-section"
-      type="button"
-      onclick={() => store.addSection()}
-      disabled={sections.length >= 64}
-      class="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:opacity-40"
-    >
-      + Section
-    </button>
+    {#if !store.readOnly}
+      <button
+        id="add-section"
+        type="button"
+        onclick={() => store.addSection()}
+        disabled={sections.length >= 64}
+        class="rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:opacity-40"
+      >
+        + Section
+      </button>
+    {/if}
   </div>
 
   <ol id="sections" class="space-y-2">
@@ -182,9 +184,11 @@
           maxlength="30"
           placeholder={'Section ' + (i + 1)}
           value={section.name}
+          readonly={store.readOnly}
+          disabled={store.readOnly}
           oninput={(e) => store.updateSection(i, { name: e.currentTarget.value })}
           aria-label={'Section ' + (i + 1) + ' name'}
-          class="w-32 min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none"
+          class="w-32 min-w-0 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-medium text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none disabled:hover:border-transparent"
         />
 
         <div class="flex items-center rounded-md bg-zinc-950/60" role="group" aria-label="Length">
@@ -192,7 +196,7 @@
             type="button"
             class={iconBtn}
             aria-label="Fewer bars"
-            disabled={section.bars <= 1}
+            disabled={store.readOnly || section.bars <= 1}
             onclick={() => setBars(i, section.bars - 1)}>−</button
           >
           <span class="w-16 text-center font-mono text-xs tabular-nums text-zinc-300">
@@ -203,7 +207,7 @@
             type="button"
             class={iconBtn}
             aria-label="More bars"
-            disabled={section.bars >= MAX_BARS}
+            disabled={store.readOnly || section.bars >= MAX_BARS}
             onclick={() => setBars(i, section.bars + 1)}>+</button
           >
         </div>
@@ -225,6 +229,7 @@
               type="button"
               class={chip(!section.drums)}
               aria-pressed={!section.drums}
+              disabled={store.readOnly}
               aria-label="No drums"
               onclick={() => store.updateSection(i, { drums: false })}>–</button
             >
@@ -234,6 +239,7 @@
                 type="button"
                 class={chip(on)}
                 aria-pressed={on}
+                disabled={store.readOnly}
                 aria-label={'Drum pattern ' + letter}
                 onclick={() => {
                   store.updateSection(i, { drums: true, pattern: p })
@@ -246,6 +252,7 @@
               type="button"
               class={chip(section.pads.includes(slot))}
               aria-pressed={section.pads.includes(slot)}
+              disabled={store.readOnly}
               aria-label={'Pad ' + (slot + 1)}
               onclick={() => togglePad(i, section, slot)}
             >
@@ -254,35 +261,37 @@
           {/each}
         </div>
 
-        <div class="ml-auto flex items-center">
-          <button
-            type="button"
-            class={iconBtn}
-            aria-label="Move up"
-            disabled={i === 0}
-            onclick={() => store.moveSection(i, -1)}>↑</button
-          >
-          <button
-            type="button"
-            class={iconBtn}
-            aria-label="Move down"
-            disabled={i === sections.length - 1}
-            onclick={() => store.moveSection(i, 1)}>↓</button
-          >
-          <button
-            type="button"
-            class={iconBtn}
-            aria-label="Duplicate"
-            disabled={sections.length >= 64}
-            onclick={() => store.duplicateSection(i)}>⧉</button
-          >
-          <button
-            type="button"
-            class={[iconBtn, 'hover:text-red-400']}
-            aria-label="Delete section"
-            onclick={() => store.removeSection(i)}>✕</button
-          >
-        </div>
+        {#if !store.readOnly}
+          <div class="ml-auto flex items-center">
+            <button
+              type="button"
+              class={iconBtn}
+              aria-label="Move up"
+              disabled={i === 0}
+              onclick={() => store.moveSection(i, -1)}>↑</button
+            >
+            <button
+              type="button"
+              class={iconBtn}
+              aria-label="Move down"
+              disabled={i === sections.length - 1}
+              onclick={() => store.moveSection(i, 1)}>↓</button
+            >
+            <button
+              type="button"
+              class={iconBtn}
+              aria-label="Duplicate"
+              disabled={sections.length >= 64}
+              onclick={() => store.duplicateSection(i)}>⧉</button
+            >
+            <button
+              type="button"
+              class={[iconBtn, 'hover:text-red-400']}
+              aria-label="Delete section"
+              onclick={() => store.removeSection(i)}>✕</button
+            >
+          </div>
+        {/if}
 
         {#if current}
           <span
@@ -295,9 +304,13 @@
       <li
         class="rounded-xl border border-dashed border-zinc-800 p-6 text-center text-sm text-zinc-500"
       >
-        Add sections, pick which pads and drums play in each, then <span class="text-zinc-300"
-          >Play song</span
-        > runs them in order.
+        {#if store.readOnly}
+          This song has no sections yet.
+        {:else}
+          Add sections, pick which pads and drums play in each, then <span class="text-zinc-300"
+            >Play song</span
+          > runs them in order.
+        {/if}
       </li>
     {/each}
   </ol>

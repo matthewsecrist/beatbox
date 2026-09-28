@@ -56,8 +56,9 @@
       {max}
       {step}
       value={settings[key]}
+      disabled={store.readOnly}
       oninput={(e) => store.setEffects({ [key]: Number(e.currentTarget.value) })}
-      class="w-full cursor-pointer accent-amber-400"
+      class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
     />
   </label>
 {/snippet}
@@ -90,8 +91,9 @@
         <select
           id="fx-delay_time"
           value={settings.delay_time}
+          disabled={store.readOnly}
           onchange={(e) => store.setEffects({ delay_time: e.currentTarget.value as DelayTime })}
-          class="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none"
+          class="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none disabled:cursor-default disabled:hover:border-zinc-700"
         >
           {#each DELAY_TIMES as [value, label] (value)}
             <option {value}>{label}</option>

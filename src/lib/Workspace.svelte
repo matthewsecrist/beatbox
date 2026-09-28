@@ -45,8 +45,8 @@
   let song: null | { id: string; name: string } = $state(
     start.song ? { id: start.song.id, name: start.song.name } : null
   )
-  // An example opens as a new song that already has a name.
-  let name = $state(start.song?.name ?? start.example?.name ?? '')
+  // An example or a shared song opens with its name.
+  let name = $state(start.song?.name ?? start.example?.name ?? start.shared?.name ?? '')
   let dirty = $state(false)
   let saving = $state(false)
   let songs = $state(start.songs)
@@ -60,8 +60,14 @@
   // in, and Open lists only the examples. Signing in reloads the page, so this never
   // changes while mounted.
   const signedIn = start.signedIn
+  // Someone's shared song: it plays, but can't be changed or saved (see /s/[shareId]).
+  const readOnly = start.shared !== null
 
-  const store = new SongStore(start.song ?? start.example, () => (dirty = true))
+  const store = new SongStore(
+    start.song ?? start.example ?? start.shared?.song ?? null,
+    () => (dirty = true),
+    { readOnly }
+  )
 
   // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
   // field (which keeps the browser's own text undo).
@@ -186,7 +192,8 @@
 
   onMount(() => {
     // Just signed in with a song made while signed out: carry on with it, unsaved.
-    const pending = start.signedIn && !start.song && !start.example ? takePendingSong() : null
+    const pending =
+      start.signedIn && !start.song && !start.example && !readOnly ? takePendingSong() : null
     if (pending) {
       store.replace(pending.song)
       name = pending.name
@@ -210,7 +217,7 @@
 </script>
 
 <svelte:head>
-  <title>{song?.name ?? start.example?.name ?? 'New song'} · Beatbox</title>
+  <title>{name || 'New song'} · Beatbox</title>
 </svelte:head>
 
 <div
@@ -234,84 +241,101 @@
     <span>{anyPlaying ? 'Stop' : 'Play song'}</span>
   </button>
 
-  <form id="song-form" onsubmit={saveSong} class="flex min-w-0 flex-1 items-center gap-2">
-    <span
-      id="song-status"
-      data-dirty={String(dirty)}
-      class={['size-2 shrink-0 rounded-full transition', dirty ? 'bg-amber-400' : 'bg-emerald-500']}
-      title={dirty ? 'Unsaved changes' : 'Saved'}
-    ></span>
-    <div class="min-w-0 flex-1">
-      <input
-        id="song-name"
-        name="name"
-        type="text"
-        maxlength="60"
-        placeholder="Untitled song"
-        aria-label="Song name"
-        value={name}
-        oninput={rename}
-        class="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-lg font-semibold tracking-tight text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none"
-      />
+  {#if readOnly}
+    <div class="flex min-w-0 flex-1 items-center gap-2">
+      <h1 id="song-name" class="truncate px-2 text-lg font-semibold tracking-tight">{name}</h1>
+      <span
+        id="listen-only"
+        title="This is someone's shared song: you can listen, but not change it"
+        class="shrink-0 rounded-full border border-zinc-700 px-2 py-0.5 text-xs text-zinc-400"
+        >Listen only</span
+      >
     </div>
-    {#if signedIn}
+  {:else}
+    <form id="song-form" onsubmit={saveSong} class="flex min-w-0 flex-1 items-center gap-2">
+      <span
+        id="song-status"
+        data-dirty={String(dirty)}
+        class={[
+          'size-2 shrink-0 rounded-full transition',
+          dirty ? 'bg-amber-400' : 'bg-emerald-500'
+        ]}
+        title={dirty ? 'Unsaved changes' : 'Saved'}
+      ></span>
+      <div class="min-w-0 flex-1">
+        <input
+          id="song-name"
+          name="name"
+          type="text"
+          maxlength="60"
+          placeholder="Untitled song"
+          aria-label="Song name"
+          value={name}
+          oninput={rename}
+          class="w-full rounded-md border border-transparent bg-transparent px-2 py-1.5 text-lg font-semibold tracking-tight text-zinc-100 placeholder:text-zinc-600 transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none"
+        />
+      </div>
+      {#if signedIn}
+        <button
+          id="save-song"
+          type="submit"
+          disabled={saving}
+          class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:opacity-60"
+        >
+          Save
+        </button>
+      {:else}
+        <a
+          id="sign-in-to-save"
+          href={resolve('/login')}
+          onclick={signIn}
+          title="Songs are saved to your account"
+          class="shrink-0 rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95"
+        >
+          Sign in to save
+        </a>
+      {/if}
+    </form>
+  {/if}
+
+  {#if !readOnly}
+    <div class="flex items-center" role="group" aria-label="History">
       <button
-        id="save-song"
-        type="submit"
-        disabled={saving}
-        class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:opacity-60"
+        id="undo"
+        type="button"
+        aria-label="Undo"
+        title="Undo (Ctrl/Cmd+Z)"
+        disabled={!store.canUndo}
+        onclick={() => store.undo()}
+        class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
       >
-        Save
+        <Undo2 class="size-4" />
       </button>
-    {:else}
-      <a
-        id="sign-in-to-save"
-        href={resolve('/login')}
-        onclick={signIn}
-        title="Songs are saved to your account"
-        class="shrink-0 rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95"
+      <button
+        id="redo"
+        type="button"
+        aria-label="Redo"
+        title="Redo (Shift+Ctrl/Cmd+Z)"
+        disabled={!store.canRedo}
+        onclick={() => store.redo()}
+        class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
       >
-        Sign in to save
-      </a>
-    {/if}
-  </form>
+        <Redo2 class="size-4" />
+      </button>
+    </div>
 
-  <div class="flex items-center" role="group" aria-label="History">
     <button
-      id="undo"
+      id="open-library"
       type="button"
-      aria-label="Undo"
-      title="Undo (Ctrl/Cmd+Z)"
-      disabled={!store.canUndo}
-      onclick={() => store.undo()}
-      class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+      aria-haspopup="dialog"
+      title="Loop Browser"
+      onclick={() => (libraryOpen = true)}
+      class="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
     >
-      <Undo2 class="size-4" />
+      <Library class="size-4" />
+      Loops
     </button>
-    <button
-      id="redo"
-      type="button"
-      aria-label="Redo"
-      title="Redo (Shift+Ctrl/Cmd+Z)"
-      disabled={!store.canRedo}
-      onclick={() => store.redo()}
-      class="flex size-8 items-center justify-center rounded-md text-zinc-300 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
-    >
-      <Redo2 class="size-4" />
-    </button>
-  </div>
-
-  <button
-    id="open-library"
-    type="button"
-    aria-haspopup="dialog"
-    title="Loop Browser"
-    onclick={() => (libraryOpen = true)}
-    class="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
-  >
-    <Library class="size-4" />
-    Loops
-  </button>
+  {/if}
 
   <a
     id="new-song"
@@ -347,6 +371,14 @@
         {:else}
           <li class="px-3 py-2 text-sm text-zinc-500">No saved songs yet</li>
         {/each}
+        <li>
+          <a
+            id="manage-songs"
+            href={resolve('/songs')}
+            onclick={openSong}
+            class={[menuItem, 'text-zinc-400']}>All my songs and sharing…</a
+          >
+        </li>
       {/if}
       <li id="examples-heading" class={menuHeading}>Examples</li>
       {#each start.examples as ex (ex.slug)}
@@ -376,7 +408,7 @@
     <Arranger {store} />
   </div>
 </div>
-<LoopBrowser {store} bind:open={libraryOpen} />
+{#if !readOnly}<LoopBrowser {store} bind:open={libraryOpen} />{/if}
 
 {#if flash}
   <div id={'flash-' + flash.kind} role="alert" class="fixed top-4 right-4 z-50">

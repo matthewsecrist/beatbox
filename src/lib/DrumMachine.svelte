@@ -215,8 +215,9 @@
         max="200"
         step="1"
         value={bpm}
+        disabled={store.readOnly}
         oninput={(e) => store.setDrums({ bpm: Number(e.currentTarget.value) })}
-        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
       />
       <span class="w-8 font-mono text-amber-300 tabular-nums">{bpm}</span>
     </label>
@@ -234,8 +235,9 @@
         max="1"
         step="0.01"
         value={volume}
+        disabled={store.readOnly}
         oninput={(e) => store.setDrums({ volume: Number(e.currentTarget.value) })}
-        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
       />
     </label>
     <label
@@ -252,8 +254,9 @@
         max="75"
         step="1"
         value={swing}
+        disabled={store.readOnly}
         oninput={(e) => store.setDrums({ swing: Number(e.currentTarget.value) })}
-        class="min-w-0 flex-1 cursor-pointer accent-amber-400"
+        class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
       />
       <span class="w-8 font-mono text-amber-300 tabular-nums">{swing}%</span>
     </label>
@@ -265,6 +268,7 @@
       <select
         id="drums-kit"
         value={store.drums.kit}
+        disabled={store.readOnly}
         onchange={(e) => {
           const kit = KITS.find((k) => k.id === e.currentTarget.value)
           if (kit) store.setKit(kit.id)
@@ -309,61 +313,72 @@
         </button>
       {/each}
     </div>
-    <span class="mr-auto text-xs text-zinc-500">Editing {LETTERS[editing]}</span>
-    <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = shown)}>
-      Copy
-    </button>
-    <button
-      id="drums-paste"
-      type="button"
-      class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
-      disabled={!clipboard}
-      onclick={() => clipboard && setEditing(clipboard)}
+    <span class="mr-auto text-xs text-zinc-500"
+      >{store.readOnly ? 'Showing' : 'Editing'} {LETTERS[editing]}</span
     >
-      Paste
-    </button>
-    <button id="drums-clear" type="button" class={btn} onclick={() => setEditing(empty())}>
-      Clear
-    </button>
-    <button
-      id="drums-randomize"
-      type="button"
-      class={btn}
-      onclick={() => setEditing(randomPattern())}
-    >
-      Randomize
-    </button>
-    <button id="drums-reset" type="button" class={btn} onclick={() => setEditing(DEFAULT_PATTERN)}>
-      Reset
-    </button>
+    {#if !store.readOnly}
+      <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = shown)}>
+        Copy
+      </button>
+      <button
+        id="drums-paste"
+        type="button"
+        class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
+        disabled={!clipboard}
+        onclick={() => clipboard && setEditing(clipboard)}
+      >
+        Paste
+      </button>
+      <button id="drums-clear" type="button" class={btn} onclick={() => setEditing(empty())}>
+        Clear
+      </button>
+      <button
+        id="drums-randomize"
+        type="button"
+        class={btn}
+        onclick={() => setEditing(randomPattern())}
+      >
+        Randomize
+      </button>
+      <button
+        id="drums-reset"
+        type="button"
+        class={btn}
+        onclick={() => setEditing(DEFAULT_PATTERN)}
+      >
+        Reset
+      </button>
+    {/if}
   </div>
 
-  <div
-    id="drum-edit-mode"
-    class="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-zinc-900 p-1"
-    role="group"
-    aria-label="Step edit"
-  >
-    {#each MODES as m (m.id)}
-      <span class="flex items-center gap-0.5 pr-1">
-        <button
-          id={'drums-mode-' + m.id}
-          type="button"
-          aria-pressed={mode === m.id}
-          onclick={() => (mode = m.id)}
-          class={[
-            'rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
-            mode === m.id
-              ? 'bg-zinc-100 text-zinc-900'
-              : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-          ]}
-        >
-          {m.label}
-        </button>
-        <Info label={m.label} text={help('step_' + m.id) ?? ''} />
-      </span>
-    {/each}
-  </div>
+  {#if !store.readOnly}
+    <div
+      id="drum-edit-mode"
+      class="flex w-fit max-w-full flex-wrap gap-1 rounded-lg bg-zinc-900 p-1"
+      role="group"
+      aria-label="Step edit"
+    >
+      {#each MODES as m (m.id)}
+        <span class="flex items-center gap-0.5 pr-1">
+          <button
+            id={'drums-mode-' + m.id}
+            type="button"
+            aria-pressed={mode === m.id}
+            onclick={() => (mode = m.id)}
+            class={[
+              'rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
+              mode === m.id
+                ? 'bg-zinc-100 text-zinc-900'
+                : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+            ]}
+          >
+            {m.label}
+          </button>
+          <Info label={m.label} text={help('step_' + m.id) ?? ''} />
+        </span>
+      {/each}
+    </div>
+  {/if}
 
   <div id="drum-grid" class="space-y-1.5 overflow-x-auto">
     <div
@@ -389,10 +404,11 @@
               type="button"
               aria-label={`${track.label} step ${i + 1}${detail && ', ' + detail}`}
               aria-pressed={step.on}
+              disabled={store.readOnly}
               onclick={() => click(track.id, i, step)}
               style:opacity={step.on ? 0.35 + 0.65 * step.velocity : undefined}
               class={[
-                'relative h-8 rounded text-[10px] font-bold text-zinc-900 transition-colors duration-75',
+                'relative h-8 rounded text-[10px] font-bold text-zinc-900 transition-colors duration-75 disabled:pointer-events-none',
                 step.on
                   ? 'bg-amber-400 shadow shadow-amber-400/30 hover:bg-amber-300'
                   : i % 4 === 0
@@ -420,10 +436,11 @@
           max="12"
           step="1"
           value={store.drums.voices[track.id].tune}
+          disabled={store.readOnly}
           oninput={(e) => store.setVoice(track.id, { tune: Number(e.currentTarget.value) })}
           aria-label={`${track.label} tune`}
           title={`Tune ${store.drums.voices[track.id].tune} semitones`}
-          class="w-16 shrink-0 cursor-pointer accent-amber-400"
+          class="w-16 shrink-0 cursor-pointer accent-amber-400 disabled:cursor-default"
         />
         <input
           id={'drums-decay-' + track.id}
@@ -432,10 +449,11 @@
           max="2"
           step="0.05"
           value={store.drums.voices[track.id].decay}
+          disabled={store.readOnly}
           oninput={(e) => store.setVoice(track.id, { decay: Number(e.currentTarget.value) })}
           aria-label={`${track.label} decay`}
           title={`Decay ${pct(store.drums.voices[track.id].decay)}`}
-          class="w-16 shrink-0 cursor-pointer accent-amber-400"
+          class="w-16 shrink-0 cursor-pointer accent-amber-400 disabled:cursor-default"
         />
       </div>
     {/each}

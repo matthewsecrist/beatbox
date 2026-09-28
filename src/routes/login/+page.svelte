@@ -49,6 +49,7 @@
         }
       }}
     >
+      <input type="hidden" name="next" value={data.next} />
       <input
         id="sign-in-email"
         name="email"
