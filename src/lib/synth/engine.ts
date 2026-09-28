@@ -14,6 +14,10 @@ export const DEFAULT_PARAMS: SynthParams = {
   filter_release: 0.3,
   filter_resonance: 4,
   filter_sustain: 0,
+  // Glide: seconds a new note takes to slide from the last one's pitch (0 = off);
+  // 'legato' only slides into a note played while the last one is still held.
+  glide: 0,
+  glide_mode: 'legato',
   lfo1_depth: 0, // units follow the target (LFO_DEPTH_MAX)
   lfo1_rate: 4,
   lfo1_target: 'filter',
@@ -61,6 +65,23 @@ function tremLevel(p: SynthParams): number {
 
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
+const CHORD = 0.005 // s: notes starting this close together are one chord
+
+// The last note a source played: where the next one glides from, and when it
+// was let go (Infinity while held).
+interface LastNote {
+  // Where this note itself glided from; a chord's later notes reuse it.
+  from: number | undefined
+  key: VoiceKey
+  midi: number
+  off: number
+  t0: number
+}
+
+// Notes glide only from the same source's last note: the keyboard (numeric
+// keys), the arpeggiator and each loop pad ("pad0:60" -> "pad0") glide on their own.
+const source = (key: VoiceKey): string =>
+  typeof key === 'number' ? 'live' : (key.split(':')[0] ?? key)
 
 export interface Synth {
   allNotesOff(): void
@@ -128,6 +149,8 @@ export function createSynth(
   let master: GainNode | null = null
   const voices = new Map<VoiceKey, Voice>() // key -> voice still held (not yet released)
   const alive = new Set<Voice>() // every voice until its oscillators end, released or not
+  // The last note each source played (see `source`), for glide.
+  const lastNotes = new Map<string, LastNote>()
 
   function ensureContext(): { ctx: BaseAudioContext; master: GainNode } {
     ctx = getCtx()
@@ -139,6 +162,7 @@ export function createSynth(
     return { ctx, master }
   }
 
+  // `from` (a MIDI note) slides the pitch from there over `glide` seconds.
   function applyOsc(
     t: number,
     osc: OscillatorNode,
@@ -146,7 +170,8 @@ export function createSynth(
     n: 1 | 2,
     midi: number,
     smooth: boolean,
-    p = params
+    p = params,
+    from?: number
   ) {
     osc.type = p[`osc${n}_wave`]
     const f = freq(midi, p[`osc${n}_octave`])
@@ -156,11 +181,32 @@ export function createSynth(
       osc.frequency.setTargetAtTime(f, t, 0.01)
       osc.detune.setTargetAtTime(d, t, 0.01)
       gain.gain.setTargetAtTime(l, t, 0.01)
-    } else {
-      osc.frequency.value = f
-      osc.detune.value = d
-      gain.gain.value = l
+      return
     }
+    if (from === undefined) {
+      osc.frequency.value = f
+    } else {
+      osc.frequency.setValueAtTime(freq(from, p[`osc${n}_octave`]), t)
+      osc.frequency.exponentialRampToValueAtTime(f, t + p.glide)
+    }
+    osc.detune.value = d
+    gain.gain.value = l
+  }
+
+  // Which note a new one glides from, and remembers it as the source's last
+  // note. Notes starting together (a chord) share one decision, so they don't
+  // slide between each other.
+  function glideFrom(key: VoiceKey, midi: number, t: number, p: SynthParams): number | undefined {
+    const src = source(key)
+    const last = lastNotes.get(src)
+    const from =
+      last && t - last.t0 < CHORD
+        ? last.from
+        : last && (p.glide_mode === 'always' || last.off > t)
+          ? last.midi
+          : undefined
+    lastNotes.set(src, { from, key, midi, off: Infinity, t0: t })
+    return p.glide > 0 && from !== midi ? from : undefined
   }
 
   // Envelope level at time t (the amp's, or the filter's with `env`), computed
@@ -244,8 +290,9 @@ export function createSynth(
     })
     const trem = ctx.createGain()
 
-    applyOsc(t, osc1, g1, 1, midi, false, p)
-    applyOsc(t, osc2, g2, 2, midi, false, p)
+    const from = glideFrom(key, midi, t, p)
+    applyOsc(t, osc1, g1, 1, midi, false, p, from)
+    applyOsc(t, osc2, g2, 2, midi, false, p, from)
     filter.type = 'lowpass'
     filter.frequency.value = p.filter_cutoff
     filter.Q.value = p.filter_resonance
@@ -312,7 +359,11 @@ export function createSynth(
   }
 
   function noteOff(key: VoiceKey, at?: number): void {
-    if (ctx) release(key, undefined, at ?? ctx.currentTime)
+    if (!ctx) return
+    const t = Math.max(at ?? ctx.currentTime, ctx.currentTime)
+    const last = lastNotes.get(source(key))
+    if (last?.key === key) last.off = t
+    release(key, undefined, t)
   }
 
   function allNotesOff(): void {

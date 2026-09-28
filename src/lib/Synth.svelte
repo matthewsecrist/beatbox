@@ -11,6 +11,7 @@
     ArpMode,
     ArpRate,
     ChordShape,
+    GlideMode,
     LfoTarget,
     LoadPresetReply,
     Loop,
@@ -130,6 +131,10 @@
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
   const LFO_TARGETS: LfoTarget[] = ['filter', 'pitch', 'amp']
+  const GLIDE_MODES: [GlideMode, string][] = [
+    ['legato', 'Legato'],
+    ['always', 'Always']
+  ]
   const CHORD_OPTIONS: [ChordShape, string][] = [
     ['off', 'Off'],
     ['maj', 'Major'],
@@ -502,6 +507,7 @@
   const fmtHz = (hz: number) =>
     hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz'
   const fmtSec = (s: number) => (s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(2) + ' s')
+  const fmtGlide = (s: number) => (s === 0 ? 'off' : fmtSec(s))
   const fmtPct = (v: number) => Math.round(v * 100) + '%'
   const fmtInt = (v: number) => (v > 0 ? '+' : '') + String(v)
   const fmtCents = (v: number) => fmtInt(v) + '¢'
@@ -671,6 +677,35 @@
   {@render slider('release', 'Release', 0.01, 4, 0.01, fmtSec)}
 {/snippet}
 
+{#snippet glide()}
+  <div
+    id="synth-glide_mode"
+    class="grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="When to glide"
+  >
+    {#each GLIDE_MODES as [mode, label] (mode)}
+      <button
+        type="button"
+        aria-pressed={params.glide_mode === mode}
+        title={mode === 'legato'
+          ? 'Only into a note played while the last one is still held'
+          : 'Into every note'}
+        onclick={() => store.setParam('glide_mode', mode)}
+        class={[
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
+          params.glide_mode === mode
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+        ]}
+      >
+        {label}
+      </button>
+    {/each}
+  </div>
+  {@render slider('glide', 'Time', 0, 1, 0.005, fmtGlide)}
+{/snippet}
+
 <div
   class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
 >
@@ -737,6 +772,7 @@
       {@render panel('Envelope', envelope)}
       {@render panel('LFO 1', lfo1)}
       {@render panel('LFO 2', lfo2)}
+      {@render panel('Glide', glide)}
     </div>
   </details>
 

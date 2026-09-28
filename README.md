@@ -45,9 +45,15 @@ release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
 has its own rate, depth and target: **Filter** (wobbles; depth in octaves),
 **Pitch** (vibrato; depth in cents) or **Amp** (tremolo; depth as a share of the
 level), so a slow filter sweep can run under a fast vibrato. Switching target
-keeps the depth at the same point of the new range. Play it with the on-screen keyboard or your computer keyboard. It comes
+keeps the depth at the same point of the new range. **Glide** slides each note's
+pitch from the last one over its **Time** (up to 1 s; 0 is off): **Legato** only
+into a note played while the last is still held (hold one key, press the next:
+the 303 slide Acid Bass uses), **Always** into every note. Chords don't slide
+within themselves, and the keyboard, the arpeggiator (which lets go of each note
+before the next, so it slides only on **Always**) and each loop pad glide
+separately. Play it with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator, filter, envelope and LFO controls sit under **Sound
+save your own. The oscillator, filter, envelope, LFO and glide controls sit under **Sound
 settings**, collapsed until you open it.
 
 **Chord and Arp** (the bar under the octave controls): **Chord** makes one key
