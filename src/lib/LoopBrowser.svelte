@@ -161,7 +161,7 @@
   onclose={onClose}
   onclick={(e) => e.target === dialog && dialog.close()}
   aria-labelledby="loop-browser-title"
-  class="m-auto h-[min(40rem,90vh)] w-[min(60rem,95vw)] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl shadow-black/60 backdrop:bg-black/70"
+  class="m-auto h-[min(40rem,90vh)] w-[min(60rem,95vw)] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl shadow-black/60 [scrollbar-color:var(--color-zinc-700)_transparent] backdrop:bg-black/70 **:[scrollbar-width:thin]"
 >
   <div class="flex h-full flex-col">
     <header class="flex items-center gap-3 border-b border-zinc-800 px-4 py-3">
