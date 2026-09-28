@@ -117,9 +117,11 @@ interface VoiceLfo {
 
 const freq = (midi: number, octave: number): number => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
 
+// `output` is where the synth plays into (an effects channel); the speakers by default.
 export function createSynth(
   initialParams: null | Partial<SynthParams>,
-  getCtx: () => BaseAudioContext = getContext
+  getCtx: () => BaseAudioContext = getContext,
+  output?: () => AudioNode
 ): Synth {
   let params: SynthParams = { ...DEFAULT_PARAMS, ...initialParams }
   let ctx: BaseAudioContext | null = null
@@ -132,7 +134,7 @@ export function createSynth(
     if (!master) {
       master = ctx.createGain()
       master.gain.value = params.volume
-      master.connect(ctx.destination)
+      master.connect(output?.() ?? ctx.destination)
     }
     return { ctx, master }
   }

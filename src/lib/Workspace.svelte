@@ -26,6 +26,7 @@
 
   import Arranger from './Arranger.svelte'
   import DrumMachine from './DrumMachine.svelte'
+  import Effects from './Effects.svelte'
   import LoopBrowser from './LoopBrowser.svelte'
   import { keepPendingSong, takePendingSong } from './pending_song.js'
   import { SongStore } from './song.svelte.js'
@@ -359,6 +360,7 @@
   <Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
   <div class="space-y-4">
     <DrumMachine {store} />
+    <Effects {store} />
     <Arranger {store} />
   </div>
 </div>

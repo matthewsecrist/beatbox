@@ -22,6 +22,7 @@
     Wave
   } from './types.js'
 
+  import { effects } from './effects.js'
   import PianoRoll from './PianoRoll.svelte'
   import { PAD_COUNT } from './song.svelte.js'
   import { chordNotes, createArp } from './synth/arp.js'
@@ -403,7 +404,8 @@
   }
 
   onMount(() => {
-    const created = createSynth($state.snapshot(params))
+    // Live notes and loop pads share this synth, and its effects channel.
+    const created = createSynth($state.snapshot(params), undefined, () => effects.channel('synth'))
     synth = created
     const createdArp = createArp(created, transport, (midi, on, at) => {
       if (recording >= 0) recorder.note(midi, on, at)

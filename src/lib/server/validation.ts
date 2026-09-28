@@ -112,6 +112,20 @@ const performance = z.object({
     .exactOptional()
 })
 
+// Shared delay and reverb, and how much of each instrument is sent to them.
+const level = z.number().min(0).max(1).exactOptional()
+const effects = z.object({
+  delay_feedback: z.number().min(0).max(0.9).exactOptional(),
+  delay_mix: level,
+  delay_time: z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16']).exactOptional(),
+  drums_delay: level,
+  drums_reverb: level,
+  reverb_mix: level,
+  reverb_size: z.number().min(0.3).max(6).exactOptional(),
+  synth_delay: level,
+  synth_reverb: level
+})
+
 // One section of the arrangement: which pads and drums play, for how many bars.
 const section = z.object({
   bars: z.int().min(1).max(64),
@@ -128,6 +142,7 @@ export const presetSchema = z.object({ name: name(60), params })
 export const songSchema = z.object({
   arrangement: z.array(section).max(64).default([]),
   drums: drums.nullable().default(null),
+  effects: effects.nullable().default(null),
   loops: z.array(loop).max(8).default([]),
   name: name(60),
   performance: performance.nullable().default(null),

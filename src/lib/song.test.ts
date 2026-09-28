@@ -19,6 +19,7 @@ const loop = (slot: number, midi = 60): Loop => ({
 const song: SongDoc = {
   arrangement: [{ bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }],
   drums: { bpm: 140, patterns: [{ kick: [true] }], volume: 0.5 },
+  effects: null,
   loops: [loop(2)],
   performance: null,
   synth: { filter_cutoff: 300 }
@@ -225,4 +226,16 @@ test('chord and arp settings load with defaults filled in, save, and undo one at
 
   store.replace(song)
   expect(store.performance.chord).toBe('off')
+})
+
+test('effects load with defaults filled in, save only what was set, and a drag undoes as one step', () => {
+  const store = new SongStore({ ...song, effects: { delay_time: '1/4' } })
+  expect(store.effects).toMatchObject({ delay_time: '1/4', synth_delay: 0, synth_reverb: 0 })
+
+  for (const send of [0.2, 0.4, 0.5]) store.setEffects({ synth_reverb: send })
+  expect(store.toSongDoc().effects).toStrictEqual({ delay_time: '1/4', synth_reverb: 0.5 })
+
+  store.undo()
+  expect(store.toSongDoc().effects).toStrictEqual({ delay_time: '1/4' })
+  expect(new SongStore(song).toSongDoc().effects).toBe(null)
 })
