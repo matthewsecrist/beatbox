@@ -44,7 +44,8 @@
   let song: null | { id: string; name: string } = $state(
     start.song ? { id: start.song.id, name: start.song.name } : null
   )
-  let name = $state(start.song?.name ?? '')
+  // An example opens as a new song that already has a name.
+  let name = $state(start.song?.name ?? start.example?.name ?? '')
   let dirty = $state(false)
   let saving = $state(false)
   let songs = $state(start.songs)
@@ -54,11 +55,12 @@
   )
   let menuOpen = $state(false)
   let libraryOpen = $state(false)
-  // Signed out, everything plays but nothing is saved: Save and Open become a link
-  // to sign in. Signing in reloads the page, so this never changes while mounted.
+  // Signed out, everything plays but nothing is saved: Save becomes a link to sign
+  // in, and Open lists only the examples. Signing in reloads the page, so this never
+  // changes while mounted.
   const signedIn = start.signedIn
 
-  const store = new SongStore(start.song, () => (dirty = true))
+  const store = new SongStore(start.song ?? start.example, () => (dirty = true))
 
   // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
   // field (which keeps the browser's own text undo).
@@ -139,6 +141,10 @@
   const loadPreset = (id: string): Promise<LoadPresetReply> =>
     request<LoadPresetReply>('GET', `/api/presets/${encodeURIComponent(id)}`)
 
+  const menuHeading =
+    'px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase select-none'
+  const menuItem = 'block truncate rounded-md px-3 py-2 text-sm transition hover:bg-zinc-800'
+
   const discardOk = () => !dirty || confirm('Discard unsaved changes?')
 
   function newSong(e: MouseEvent) {
@@ -172,7 +178,7 @@
 
   onMount(() => {
     // Just signed in with a song made while signed out: carry on with it, unsaved.
-    const pending = start.signedIn && !start.song ? takePendingSong() : null
+    const pending = start.signedIn && !start.song && !start.example ? takePendingSong() : null
     if (pending) {
       store.replace(pending.song)
       name = pending.name
@@ -196,7 +202,7 @@
 </script>
 
 <svelte:head>
-  <title>{song ? song.name : 'New song'} · Beatbox</title>
+  <title>{song?.name ?? start.example?.name ?? 'New song'} · Beatbox</title>
 </svelte:head>
 
 <div
@@ -303,26 +309,24 @@
     New
   </a>
 
-  {#if signedIn}
-    <details id="song-menu" class="group relative" bind:open={menuOpen}>
-      <summary
-        class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700"
-      >
-        Open <ChevronDown class="size-4 transition group-open:rotate-180" />
-      </summary>
-      <ul
-        class="absolute right-0 z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl shadow-black/60"
-      >
+  <details id="song-menu" class="group relative" bind:open={menuOpen}>
+    <summary
+      class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700"
+    >
+      Open <ChevronDown class="size-4 transition group-open:rotate-180" />
+    </summary>
+    <ul
+      class="absolute right-0 z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl shadow-black/60"
+    >
+      {#if signedIn}
+        <li class={menuHeading}>Your songs</li>
         {#each songs as s (s.id)}
           <li>
             <a
               id={'open-song-' + s.id}
               href={resolve('/songs/[id]', { id: s.id })}
               onclick={openSong}
-              class={[
-                'block truncate rounded-md px-3 py-2 text-sm transition hover:bg-zinc-800',
-                song?.id === s.id ? 'text-amber-300' : 'text-zinc-200'
-              ]}
+              class={[menuItem, song?.id === s.id ? 'text-amber-300' : 'text-zinc-200']}
             >
               {s.name}
             </a>
@@ -330,9 +334,25 @@
         {:else}
           <li class="px-3 py-2 text-sm text-zinc-500">No saved songs yet</li>
         {/each}
-      </ul>
-    </details>
-  {/if}
+      {/if}
+      <li id="examples-heading" class={menuHeading}>Examples</li>
+      {#each start.examples as ex (ex.slug)}
+        <li>
+          <a
+            id={'open-example-' + ex.slug}
+            href={resolve('/examples/[slug]', { slug: ex.slug })}
+            onclick={openSong}
+            class={[
+              menuItem,
+              !song && start.example?.slug === ex.slug ? 'text-amber-300' : 'text-zinc-200'
+            ]}
+          >
+            {ex.name}
+          </a>
+        </li>
+      {/each}
+    </ul>
+  </details>
 </div>
 
 <div class="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-4 xl:space-y-0">

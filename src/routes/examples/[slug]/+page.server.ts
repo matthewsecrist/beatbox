@@ -1,0 +1,23 @@
+import { getExample, listExamples } from '$lib/server/examples/index.js'
+import { listPresets, listSongs } from '$lib/server/music.js'
+import { redirect } from '@sveltejs/kit'
+
+import type { PageServerLoad } from './$types'
+
+// An example song, open to everyone, as a new unsaved song: Save makes the user's
+// own copy. `key` is fresh on every load, so reopening it starts over.
+export const load = (async ({ locals, params }) => {
+  const example = getExample(params.slug)
+  if (!example) redirect(303, '/?missing')
+  const user = locals.user
+  return {
+    example,
+    examples: listExamples(),
+    key: crypto.randomUUID(),
+    notice: null,
+    presets: user ? await listPresets(user.id) : [],
+    signedIn: user !== null,
+    song: null,
+    songs: user ? await listSongs(user.id) : []
+  }
+}) satisfies PageServerLoad

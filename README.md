@@ -19,17 +19,17 @@ npm run dev
 ```
 
 Open [localhost:5173](http://localhost:5173): everything plays without an account.
-To save, press **Sign in to save** and enter your email. Unless `RESEND_API_KEY`
-is set, the sign-in link isn't emailed but printed in the `npm run dev` output;
-open it to sign in. Your first sign-in creates your account, with a generated
-username (like `groovy-reverb-7916`, shown top right) and your own copy of
-**Midnight Arcade**: pick it from **Open ▾** and press **Play song**.
+To hear what it can do, pick **Midnight Arcade** under **Examples** in **Open ▾**
+and press **Play song**. To save, press **Sign in to save** and enter your email.
+Unless `RESEND_API_KEY` is set, the sign-in link isn't emailed but printed in the
+`npm run dev` output; open it to sign in. Your first sign-in creates your account,
+with a generated username (like `groovy-reverb-7916`, shown top right).
 
 ## What's in it
 
 **Accounts**: without one, the home page is a new song with every instrument,
-factory preset and the arranger working, but **Save** and **Open ▾** become
-**Sign in to save**, and synth presets can't be saved. An unsaved song is kept in
+factory preset and the arranger working, but **Save** becomes **Sign in to save**,
+**Open ▾** lists only the examples, and synth presets can't be saved. An unsaved song is kept in
 the browser while you sign in and comes back, still unsaved, once you're signed
 in (even if the link opens in another tab of the same browser). Sign-in is by magic link (Better
 Auth): enter your email and follow the link you're sent; it works once, for five
@@ -105,8 +105,9 @@ drum; the file explains the notation, and a bad note or bar length fails the tes
 
 **Songs**: the song bar at the top saves everything together: synth, drums,
 loops and arrangement. **Save** stores the song (a blank name becomes
-"Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one;
-both ask first if you have unsaved changes. **Play all / Stop all** starts or
+"Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one or
+an example; both ask first if you have unsaved changes. An example opens as a new,
+unsaved song: change it as you like, and **Save** makes your own copy. **Play all / Stop all** starts or
 stops the drums and every recorded pad.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
@@ -147,7 +148,7 @@ Users, sessions, songs and presets live in SQLite: locally `beatbox.db` by defau
 `wrangler.jsonc`.
 
 The migration that added accounts drops songs and presets saved before then,
-since they have no owner; new users get Midnight Arcade on first sign-in.
+since they have no owner.
 
 - `npm run db:migrate` applies the migrations in `drizzle/` locally;
   `npx wrangler d1 migrations apply beatbox --remote` applies them to D1.
@@ -193,10 +194,10 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | Path                                                                           | What                                                                                                                |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/server/db/schema.ts`                                                  | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
-| `src/lib/server/auth.ts`                                                       | Better Auth setup: magic links, and a new user's username and starter songs                                         |
-| `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/` and `/login` are open to signed-out visitors                                     |
+| `src/lib/server/auth.ts`                                                       | Better Auth setup: magic links, and a new user's username                                                           |
+| `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/`, `/login` and the examples are open to signed-out visitors                       |
 | `src/lib/server/usernames.ts`                                                  | Generated usernames                                                                                                 |
-| `src/lib/server/starter_songs/`                                                | Songs every new user gets a copy of (Midnight Arcade)                                                               |
+| `src/lib/server/examples/`, `src/routes/examples/[slug]/`                      | Example songs anyone can open (Midnight Arcade), and their page                                                     |
 | `src/routes/login/`, `src/routes/logout/`                                      | Sign-in page and sign-out                                                                                           |
 | `src/lib/server/validation.ts`                                                 | Shape and limits for presets and song parts: drums, loops, sections                                                 |
 | `src/lib/server/music.ts`                                                      | Reading and saving a user's presets and songs                                                                       |
@@ -229,9 +230,11 @@ How the pieces talk:
   `beatbox:transport` for Play all / Stop all, `beatbox:scene` for arrangement
   sections, and `beatbox:state` for what's currently playing.
 
-### Starter songs
+### Example songs
 
-Every new user gets their own copy of each song in `src/lib/server/starter_songs/`
-when their account is created. To add one, export it from the app to that folder
-as JSON (with the keys `name`, `synth`, `drums`, `loops` and `arrangement`) and
-add it to `STARTER_SONGS` in `index.ts`.
+The songs in `src/lib/server/examples/` are served from code, not the database:
+anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes
+the user's own copy. To add one, export it from the app to that folder as JSON
+(with the keys `name`, `synth`, `drums`, `loops` and `arrangement`) and add it to
+`SOURCES` in `index.ts` under its slug. They're checked with the same schema as a
+saved song, so a bad one fails the tests.

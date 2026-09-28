@@ -11,7 +11,7 @@ import { auth } from './auth.js'
 import { db } from './db/index.js'
 import { users } from './db/schema.js'
 import { sendMagicLink } from './email.js'
-import { getSong, listSongs } from './music.js'
+import { listSongs } from './music.js'
 
 // Outside a request there's no SvelteKit event for the cookie plugin to write to.
 vi.mock('$app/server', () => ({ getRequestEvent: () => undefined }))
@@ -42,21 +42,17 @@ async function signIn(email: string) {
   return row
 }
 
-test('the first sign-in creates a user with a username and a copy of Midnight Arcade', async () => {
+test('the first sign-in creates a user with a username and no songs', async () => {
   const user = await signIn('ada@example.com')
 
   expect(user.email).toBe('ada@example.com')
   expect(user.username).toMatch(/^[a-z]+-[a-z]+-\d{4}$/)
   expect(user.name).toBe(user.username)
-
-  const songs = await listSongs(user.id)
-  expect(songs.map((s) => s.name)).toStrictEqual(['Midnight Arcade'])
-  const song = await getSong(user.id, songs[0]?.id ?? '')
-  expect(song?.loops.length).toBeGreaterThan(0)
-  expect(song?.arrangement.length).toBeGreaterThan(0)
+  // The examples are served from code, not copied into each account.
+  expect(await listSongs(user.id)).toStrictEqual([])
 })
 
-test('each user gets their own copy, and signing in again gives no more', async () => {
+test('signing in again finds the same user', async () => {
   const ada = await signIn('ada@example.com')
   const bob = await signIn('bob@example.com')
   const again = await signIn('ada@example.com')
@@ -64,10 +60,6 @@ test('each user gets their own copy, and signing in again gives no more', async 
   expect(again.id).toBe(ada.id)
   expect(again.username).toBe(ada.username)
   expect(bob.username).not.toBe(ada.username)
-  expect(await listSongs(ada.id)).toHaveLength(1)
-  const [adas] = await listSongs(ada.id)
-  const [bobs] = await listSongs(bob.id)
-  expect(adas?.id).not.toBe(bobs?.id)
 })
 
 test('a magic link works only once', async () => {
