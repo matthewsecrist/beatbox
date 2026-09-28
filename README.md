@@ -85,6 +85,20 @@ it starts an empty one-bar loop to draw in).
 (or none) and toggles for each pad. **Play song** plays the sections in order,
 and every change lands on the section boundary.
 
+**Loop Browser** (**Loops** in the song bar): 120 premade loops (bass, chords,
+leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
+house and techno to drill, amapiano and bossa nova (at least 5 loops and 3 beats
+each), in one list. The sidebar searches (name, genre, instrument, synth sound) and
+filters by type, genre, instrument and length: ticked labels in one filter widen
+the list, different filters narrow it. **+** puts a loop on a pad (the first empty
+one, or the one picked under **Add to**; it follows the song tempo) or writes a
+beat into the picked drum pattern; either is one undo step. ▶ previews an item in
+time with anything already playing (beats with the song's kit and swing); press
+it again, close the browser or press Stop all to stop. To add more, add to
+`LOOP_SPECS` or `BEAT_SPECS` in `src/lib/library_items.ts`: loops are written as a
+16-step-per-bar score (`A3+C4+E4 - - . G3 …`) and beats as one `x..x` string per
+drum; the file explains the notation, and a bad note or bar length fails the tests.
+
 **Songs**: the song bar at the top saves everything together: synth, drums,
 loops and arrangement. **Save** stores the song (a blank name becomes
 "Untitled N"). **New** starts a fresh song, and **Open ▾** loads a saved one;
@@ -172,31 +186,32 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 
 ### Where things live
 
-| Path                                                   | What                                                                                                                |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/server/db/schema.ts`                          | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
-| `src/lib/server/auth.ts`                               | Better Auth setup: magic links, and a new user's username and starter songs                                         |
-| `src/hooks.server.ts`                                  | Loads the signed-in user; only `/` and `/login` are open to signed-out visitors                                     |
-| `src/lib/server/usernames.ts`                          | Generated usernames                                                                                                 |
-| `src/lib/server/starter_songs/`                        | Songs every new user gets a copy of (Midnight Arcade)                                                               |
-| `src/routes/login/`, `src/routes/logout/`              | Sign-in page and sign-out                                                                                           |
-| `src/lib/server/validation.ts`                         | Shape and limits for presets and song parts: drums, loops, sections                                                 |
-| `src/lib/server/music.ts`                              | Reading and saving a user's presets and songs                                                                       |
-| `src/routes/api/`                                      | JSON endpoints the page saves and loads through                                                                     |
-| `src/routes/+page.server.ts`, `src/routes/songs/[id]/` | The page for a new song and for a saved one                                                                         |
-| `src/lib/types.ts`                                     | Shared shapes: synth params, drums, loops, sections, window events                                                  |
-| `src/lib/song.svelte.ts`                               | `SongStore`: the open song as a Yjs document, with undo/redo                                                        |
-| `src/lib/pending_song.ts`                              | A signed-out visitor's song, kept in `localStorage` while they sign in                                              |
-| `src/lib/Workspace.svelte`                             | The page: song bar, save/load, and the working copy of the open song                                                |
-| `src/lib/Synth.svelte`                                 | Synth controls, keyboard, presets, loop pads                                                                        |
-| `src/lib/PianoRoll.svelte`                             | Note editor for a loop pad                                                                                          |
-| `src/lib/DrumMachine.svelte`                           | Step sequencer and tempo                                                                                            |
-| `src/lib/Arranger.svelte`                              | Arrangement panel                                                                                                   |
-| `src/lib/audio.ts`                                     | The single shared `AudioContext`                                                                                    |
-| `src/lib/transport.ts`                                 | Tempo, beat grid and metronome shared by every instrument                                                           |
-| `src/lib/synth/`                                       | Synth engine, loop recorder/player, piano-roll note conversion, factory presets                                     |
-| `src/lib/drums/engine.ts`                              | Drum sounds and sequencer                                                                                           |
-| `src/lib/arranger.ts`                                  | Plays the arrangement section by section                                                                            |
+| Path                                                                           | What                                                                                                                |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/server/db/schema.ts`                                                  | Drizzle tables: users and Better Auth's sessions, plus `presets` and `songs` (song parts are JSON), owned by a user |
+| `src/lib/server/auth.ts`                                                       | Better Auth setup: magic links, and a new user's username and starter songs                                         |
+| `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/` and `/login` are open to signed-out visitors                                     |
+| `src/lib/server/usernames.ts`                                                  | Generated usernames                                                                                                 |
+| `src/lib/server/starter_songs/`                                                | Songs every new user gets a copy of (Midnight Arcade)                                                               |
+| `src/routes/login/`, `src/routes/logout/`                                      | Sign-in page and sign-out                                                                                           |
+| `src/lib/server/validation.ts`                                                 | Shape and limits for presets and song parts: drums, loops, sections                                                 |
+| `src/lib/server/music.ts`                                                      | Reading and saving a user's presets and songs                                                                       |
+| `src/routes/api/`                                                              | JSON endpoints the page saves and loads through                                                                     |
+| `src/routes/+page.server.ts`, `src/routes/songs/[id]/`                         | The page for a new song and for a saved one                                                                         |
+| `src/lib/types.ts`                                                             | Shared shapes: synth params, drums, loops, sections, window events                                                  |
+| `src/lib/song.svelte.ts`                                                       | `SongStore`: the open song as a Yjs document, with undo/redo                                                        |
+| `src/lib/pending_song.ts`                                                      | A signed-out visitor's song, kept in `localStorage` while they sign in                                              |
+| `src/lib/Workspace.svelte`                                                     | The page: song bar, save/load, and the working copy of the open song                                                |
+| `src/lib/Synth.svelte`                                                         | Synth controls, keyboard, presets, loop pads                                                                        |
+| `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                          |
+| `src/lib/DrumMachine.svelte`                                                   | Step sequencer and tempo                                                                                            |
+| `src/lib/Arranger.svelte`                                                      | Arrangement panel                                                                                                   |
+| `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                    |
+| `src/lib/transport.ts`                                                         | Tempo, beat grid and metronome shared by every instrument                                                           |
+| `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                             |
+| `src/lib/synth/`                                                               | Synth engine, loop recorder/player, piano-roll note conversion, factory presets                                     |
+| `src/lib/drums/engine.ts`                                                      | Drum sounds and sequencer                                                                                           |
+| `src/lib/arranger.ts`                                                          | Plays the arrangement section by section                                                                            |
 
 How the pieces talk:
 

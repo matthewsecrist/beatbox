@@ -1,7 +1,17 @@
 <script lang="ts">
   import { goto, replaceState } from '$app/navigation'
   import { resolve } from '$app/paths'
-  import { ChevronDown, CircleAlert, Info, Play, Redo2, Square, Undo2, X } from '@lucide/svelte'
+  import {
+    ChevronDown,
+    CircleAlert,
+    Info,
+    Library,
+    Play,
+    Redo2,
+    Square,
+    Undo2,
+    X
+  } from '@lucide/svelte'
   import { onMount, untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
 
@@ -16,6 +26,7 @@
 
   import Arranger from './Arranger.svelte'
   import DrumMachine from './DrumMachine.svelte'
+  import LoopBrowser from './LoopBrowser.svelte'
   import { keepPendingSong, takePendingSong } from './pending_song.js'
   import { SongStore } from './song.svelte.js'
   import Synth from './Synth.svelte'
@@ -42,6 +53,7 @@
     start.notice ? { kind: 'error', message: start.notice } : null
   )
   let menuOpen = $state(false)
+  let libraryOpen = $state(false)
   // Signed out, everything plays but nothing is saved: Save and Open become a link
   // to sign in. Signing in reloads the page, so this never changes while mounted.
   const signedIn = start.signedIn
@@ -270,6 +282,18 @@
     </button>
   </div>
 
+  <button
+    id="open-library"
+    type="button"
+    aria-haspopup="dialog"
+    title="Loop Browser"
+    onclick={() => (libraryOpen = true)}
+    class="flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
+  >
+    <Library class="size-4" />
+    Loops
+  </button>
+
   <a
     id="new-song"
     href={resolve('/')}
@@ -314,6 +338,7 @@
 <Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
 <DrumMachine {store} />
 <Arranger {store} />
+<LoopBrowser {store} bind:open={libraryOpen} />
 
 {#if flash}
   <div id={'flash-' + flash.kind} role="alert" class="fixed top-4 right-4 z-50">
