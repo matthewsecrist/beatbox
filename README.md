@@ -104,6 +104,10 @@ the tempo for the whole song.
   values; **Accent** makes it louder. Outside Hits, clicking an off step turns
   it on. A step keeps its settings when switched off. Quieter steps look dimmer,
   a chance below 100% shows a dashed outline, accents a red dot.
+- **M** mutes a track and **S** solos it. With any track soloed only the soloed
+  ones play (solo wins over mute; several can be soloed); otherwise every unmuted
+  track plays. Silenced tracks look dimmer. It applies to the drums' own Play and
+  to the arrangement, takes effect on the next step, and isn't saved with the song.
 - **Kit** picks a synthesized kit: Classic, 606, 808, 909, Lo-fi or Trap. Each voice has its own
   **Tune** (±12 semitones) and **Decay** sliders at the end of its row; picking
   a kit resets them.

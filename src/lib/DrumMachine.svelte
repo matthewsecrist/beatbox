@@ -1,10 +1,26 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { SvelteSet } from 'svelte/reactivity'
 
   import type { SongStore } from './song.svelte.js'
-  import type { DrumPattern, DrumStep, Scene, StateDetail, TransportDetail } from './types.js'
+  import type {
+    DrumPattern,
+    DrumStep,
+    Scene,
+    StateDetail,
+    TrackId,
+    TransportDetail
+  } from './types.js'
 
-  import { createDrums, type Drums, KITS, STEPS, TRACKS } from './drums/engine.js'
+  import {
+    createDrums,
+    type Drums,
+    isAudible,
+    KITS,
+    type PatternFn,
+    STEPS,
+    TRACKS
+  } from './drums/engine.js'
   import { effects } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
@@ -93,9 +109,23 @@
   let playing = $state(false)
   let current = $state(-1)
   let drums: Drums | null = null
+  // Mute and solo are for listening only, so they stay here rather than in the song.
+  const muted = new SvelteSet<TrackId>()
+  const soloed = new SvelteSet<TrackId>()
+  const flip = (set: SvelteSet<TrackId>, id: TrackId) => {
+    if (!set.delete(id)) set.add(id)
+  }
 
-  // Read on every step, so edits (and undo) are heard at once.
-  const patternFn = (i: number) => () => store.drums.patterns[i] ?? {}
+  // Read on every step, so edits (and undo, mute and solo) are heard at once.
+  const patternFn =
+    (i: number): PatternFn =>
+    () => {
+      const pattern = store.drums.patterns[i]
+      const out: Partial<DrumPattern> = {}
+      if (!pattern) return out
+      for (const { id } of TRACKS) if (isAudible(id, muted, soloed)) out[id] = pattern[id]
+      return out
+    }
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some((s) => s.on))
 
@@ -389,6 +419,7 @@
       <span class="w-16 text-center">Decay</span>
     </div>
     {#each TRACKS as track (track.id)}
+      {@const heard = isAudible(track.id, muted, soloed)}
       <div class="flex min-w-[48rem] items-center gap-2">
         <button
           type="button"
@@ -397,7 +428,35 @@
         >
           {track.label}
         </button>
-        <div class="grid flex-1 grid-cols-16 gap-1">
+        <button
+          id={'drums-mute-' + track.id}
+          type="button"
+          aria-label={`Mute ${track.label}`}
+          aria-pressed={muted.has(track.id)}
+          title={soloed.size && muted.has(track.id) ? 'Muted (a solo overrides it)' : 'Mute'}
+          onclick={() => flip(muted, track.id)}
+          class={[
+            'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
+            muted.has(track.id)
+              ? 'border-rose-500 bg-rose-500/20 text-rose-300'
+              : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+          ]}>M</button
+        >
+        <button
+          id={'drums-solo-' + track.id}
+          type="button"
+          aria-label={`Solo ${track.label}`}
+          aria-pressed={soloed.has(track.id)}
+          title="Solo"
+          onclick={() => flip(soloed, track.id)}
+          class={[
+            'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
+            soloed.has(track.id)
+              ? 'border-amber-400 bg-amber-400 text-zinc-900'
+              : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+          ]}>S</button
+        >
+        <div class={['grid flex-1 grid-cols-16 gap-1 transition-opacity', !heard && 'opacity-40']}>
           {#each shown[track.id] as step, i (i)}
             {@const detail = describeStep(step)}
             <button
