@@ -6,6 +6,8 @@
 
   import { createDrums, type Drums, KITS, STEPS, TRACKS } from './drums/engine.js'
   import { effects } from './effects.js'
+  import { help } from './help.js'
+  import Info from './Info.svelte'
   import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
   import { transport } from './transport.js'
 
@@ -336,20 +338,23 @@
     aria-label="Step edit"
   >
     {#each MODES as m (m.id)}
-      <button
-        id={'drums-mode-' + m.id}
-        type="button"
-        aria-pressed={mode === m.id}
-        onclick={() => (mode = m.id)}
-        class={[
-          'rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
-          mode === m.id
-            ? 'bg-zinc-100 text-zinc-900'
-            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-        ]}
-      >
-        {m.label}
-      </button>
+      <span class="flex items-center gap-0.5 pr-1">
+        <button
+          id={'drums-mode-' + m.id}
+          type="button"
+          aria-pressed={mode === m.id}
+          onclick={() => (mode = m.id)}
+          class={[
+            'rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
+            mode === m.id
+              ? 'bg-zinc-100 text-zinc-900'
+              : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+          ]}
+        >
+          {m.label}
+        </button>
+        <Info label={m.label} text={help('step_' + m.id) ?? ''} />
+      </span>
     {/each}
   </div>
 

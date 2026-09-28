@@ -56,6 +56,12 @@ with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
 save your own. The oscillator, filter, envelope, LFO and glide controls sit under **Sound
 settings**, collapsed until you open it.
 
+**ⓘ explanations**: every Sound settings control and panel, the Chord/Arp bar, the
+drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet) and the
+Effects panel have an ⓘ. Hover over it (or tap it, or tab to it) for a plain-English
+explanation of what it does, written for beginners. The explanations live in
+`src/lib/help.ts`, and a new setting without one fails the tests.
+
 **Chord and Arp** (the bar under the octave controls): **Chord** makes one key
 play a chord built up from it (major, minor, 7th, major/minor 7th, sus2, sus4,
 diminished, augmented or power). **Arp** plays the notes you hold (chords
