@@ -5,6 +5,7 @@ import type {
   Drums,
   DrumStep,
   KitId,
+  LfoTarget,
   Loop,
   SavedStep,
   Section,
@@ -15,6 +16,7 @@ import type {
 } from './types.js'
 
 import { STEPS, TRACKS } from './drums/engine.js'
+import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 
 // The open song as a Yjs document. The instruments read the reactive mirrors
 // below and change the song only through the methods here, so every edit, from
@@ -199,6 +201,19 @@ export class SongStore {
     this.edit(() => {
       this.drumsMap.set('kit', kit)
       this.drumsMap.set('voices', NO_TWEAKS())
+    }, true)
+  }
+
+  // Points LFO `n` elsewhere, carrying its depth over as the same share of the
+  // new target's range, as one undo step.
+  setLfoTarget(n: 1 | 2, target: LfoTarget): void {
+    const from = this.synth[`lfo${n}_target`] ?? DEFAULT_PARAMS[`lfo${n}_target`]
+    if (from === target) return
+    const share = (this.synth[`lfo${n}_depth`] ?? 0) / LFO_DEPTH_MAX[from]
+    const depth = Math.min(1, share) * LFO_DEPTH_MAX[target]
+    this.edit(() => {
+      this.synthMap.set(`lfo${n}_target`, target)
+      this.synthMap.set(`lfo${n}_depth`, Math.round(depth * 100) / 100)
     }, true)
   }
 

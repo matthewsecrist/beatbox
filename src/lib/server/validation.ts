@@ -1,6 +1,7 @@
 import { z, type ZodError } from 'zod'
 
 const wave = z.enum(['sawtooth', 'sine', 'square', 'triangle'])
+const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
 
 // Synth params the app knows about; anything else sent by a client is dropped.
 const params = z.object({
@@ -8,8 +9,12 @@ const params = z.object({
   decay: z.number().exactOptional(),
   filter_cutoff: z.number().exactOptional(),
   filter_resonance: z.number().exactOptional(),
-  lfo_depth: z.number().exactOptional(),
-  lfo_rate: z.number().exactOptional(),
+  lfo1_depth: z.number().exactOptional(),
+  lfo1_rate: z.number().exactOptional(),
+  lfo1_target: lfoTarget.exactOptional(),
+  lfo2_depth: z.number().exactOptional(),
+  lfo2_rate: z.number().exactOptional(),
+  lfo2_target: lfoTarget.exactOptional(),
   osc1_detune: z.number().exactOptional(),
   osc1_level: z.number().exactOptional(),
   osc1_octave: z.number().exactOptional(),

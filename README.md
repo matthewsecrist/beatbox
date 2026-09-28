@@ -38,10 +38,13 @@ belongs to your account, and nobody else can see or change it. Song and preset
 names only need to be unique among your own. **Sign out** is in the header.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
-a resonant low-pass filter with an LFO for wobbles, an ADSR envelope and 16
-voices. Play it with the on-screen keyboard or your computer keyboard. It comes
+a resonant low-pass filter, two LFOs, an ADSR envelope and 16 voices. Each LFO
+has its own rate, depth and target: **Filter** (wobbles; depth in octaves),
+**Pitch** (vibrato; depth in cents) or **Amp** (tremolo; depth as a share of the
+level), so a slow filter sweep can run under a fast vibrato. Switching target
+keeps the depth at the same point of the new range. Play it with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator, filter and envelope controls sit under **Sound
+save your own. The oscillator, filter, envelope and LFO controls sit under **Sound
 settings**, collapsed until you open it.
 
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
