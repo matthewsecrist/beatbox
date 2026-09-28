@@ -6,3 +6,8 @@ body {
   background-color: var(--color-zinc-50);
   color: var(--color-zinc-900);
 }
+
+/* A modal (the Loop Browser) is open: only it scrolls. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}

@@ -60,6 +60,8 @@ interface Output {
 // so timing stays tight even when the main thread stutters.
 export function createDrums({
   getCtx = getContext,
+  // Name it holds the transport under; a second engine (a preview) needs its own.
+  id = 'drums',
   onPattern = noop,
   onStep,
   onStop = noop,
@@ -67,6 +69,7 @@ export function createDrums({
   transport = sharedTransport
 }: {
   getCtx?: () => BaseAudioContext
+  id?: string
   onPattern?: (tag: number | undefined) => void
   onStep: (step: number) => void
   onStop?: () => void
@@ -290,7 +293,7 @@ export function createDrums({
       return
     }
     ensureContext()
-    transport.acquire('drums')
+    transport.acquire(id)
     running = true
     getPattern = patternFn
     queued = null
@@ -315,7 +318,7 @@ export function createDrums({
     cancelAnimationFrame(raf)
     queue.length = 0
     for (const [src, t] of pending) if (t > ctx.currentTime) src.disconnect()
-    transport.release('drums')
+    transport.release(id)
     onStep(-1)
     onStop()
   }
