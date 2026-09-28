@@ -22,6 +22,12 @@ export const HELP = {
   delay_mix: 'How loud the echoes are compared with the original sound.',
   delay_time:
     'How far apart the echoes are, in note lengths: 1/16 is quick and close together, 1/2 is slow and far apart. Dotted times land a bit off the beat for a bouncy, galloping echo.',
+  drive:
+    'Pushes the sound so hard that it breaks up, like turning a guitar amp all the way up. A little adds warmth and grit; a lot makes it fuzzy and buzzy. Off keeps it clean. Turn the filter Cutoff down to tame the fizz.',
+  drive_mix:
+    'How much of the crunched sound you hear, blended with the clean one. 100% is all crunch. Lower keeps the clean sound underneath, so a bass stays deep and solid while the grit sits on top.',
+  drive_type:
+    'The kind of crunch. Soft is smooth and warm. Tube is warm too, but thicker, like an old amplifier. Hard is sharp and aggressive. Fold is wild and metallic, and it keeps changing as you turn up the Amount.',
   drums_delay:
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
@@ -58,6 +64,8 @@ export const HELP = {
     'The shape of the vibration, which changes the character of the sound. Sine is soft and pure, like a whistle. Tri (triangle) is a bit brighter, like a flute. Saw is buzzy and bold, like a trumpet or a big synth. Square is hollow and beepy, like an old video game.',
   panel_delay:
     'The delay is an echo: it plays back what you hear a little later, again and again, like shouting in a canyon. The echoes line up with the beat.',
+  panel_drive:
+    'Drive is distortion: it crunches the sound from the oscillators before it reaches the filter, adding a rough, buzzing edge. It makes basses growl and cut through, even on small speakers.',
   panel_envelope:
     'The envelope shapes how loud each note is over time: how it starts, how it holds while you keep the key down, and how it fades away when you let go.',
   panel_filter:

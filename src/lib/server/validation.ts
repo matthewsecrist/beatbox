@@ -7,6 +7,9 @@ const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
 const params = z.object({
   attack: z.number().exactOptional(),
   decay: z.number().exactOptional(),
+  drive: z.number().min(0).max(1).exactOptional(),
+  drive_mix: z.number().min(0).max(1).exactOptional(),
+  drive_type: z.enum(['fold', 'hard', 'soft', 'tube']).exactOptional(),
   filter_attack: z.number().exactOptional(),
   filter_cutoff: z.number().exactOptional(),
   filter_decay: z.number().exactOptional(),

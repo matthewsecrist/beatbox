@@ -13,6 +13,10 @@ export type ChordShape =
 // Tempo-synced delay time ('d' = dotted, 't' = triplet).
 export type DelayTime = '1/2' | '1/4' | '1/4d' | '1/8' | '1/8d' | '1/8t' | '1/16'
 
+// How the synth's drive bends the sound: soft rounds it off, tube rounds its top and
+// bottom differently (warmer), hard cuts it flat, fold flips it back on itself.
+export type DriveType = 'fold' | 'hard' | 'soft' | 'tube'
+
 // One drum pattern: 16 steps per track.
 export type DrumPattern = Record<TrackId, DrumStep[]>
 
@@ -138,6 +142,11 @@ export interface StateDetail {
 export interface SynthParams {
   attack: number
   decay: number
+  // Distortion before the filter, 0-1; 0 = clean. `drive_mix` blends the clean
+  // sound back in (1 = all driven).
+  drive: number
+  drive_mix: number
+  drive_type: DriveType
   // Filter envelope: times in seconds, sustain 0-1, amount in octaves (can be
   // negative; 0 = off).
   filter_attack: number

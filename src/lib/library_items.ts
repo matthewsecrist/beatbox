@@ -322,6 +322,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   {
     genre: 'Drill',
     instrument: 'Bass',
+    name: 'Gritty Drill Glide',
+    score: [
+      'F3 - - . . F3~ Ab3 - . . . . Gb3~ F3 - .',
+      'Db3 - - . . . Db3 . Eb3~ F3 - - . . C3 -'
+    ].join(' | '),
+    sound: 'Dirty 808'
+  },
+  {
+    genre: 'Drill',
+    instrument: 'Bass',
     name: 'Drill Glide 808',
     score: 'F#3 - - - - - F#3~ - - - A3~ - - G#3 - - | F#3 - - - - - E3~ - - - D3~ - - - C#3 -',
     sound: 'Deep Sub'
@@ -364,6 +374,15 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Drum & Bass
+  {
+    genre: 'Drum & Bass',
+    instrument: 'Bass',
+    name: 'Neuro Fold Stab',
+    score: ['E3 - . E3 . . G3 - . E3 . . D3 - B2 .', 'E3 - . E3 . . A3 - . G3 . . E3 - . .'].join(
+      ' | '
+    ),
+    sound: 'Fold Growl'
+  },
   {
     genre: 'Drum & Bass',
     instrument: 'Bass',
@@ -412,6 +431,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   {
     genre: 'Dubstep',
     instrument: 'Bass',
+    name: 'Folded Growl Riff',
+    score: [
+      'F3 - - - . . F3 - Ab3 - . . F3 . C4 -',
+      'Eb3 - - . . . Eb3~ F3 - - - . . . Db3 -'
+    ].join(' | '),
+    sound: 'Fold Growl'
+  },
+  {
+    genre: 'Dubstep',
+    instrument: 'Bass',
     name: 'Wobble Drop',
     score: 'E3 - - - - - . . E3 - G3 - - - . . | E3 - - - - - . . D3 - - - B2 - - -',
     sound: 'Dubstep Wobble'
@@ -451,6 +480,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Electro
+  {
+    genre: 'Electro',
+    instrument: 'Bass',
+    name: 'Robot Buzz Line',
+    score: [
+      'C3 . C3 . Eb3 . C3 . G3 - . C3 . Bb2 . .',
+      'C3 . C3 . Eb3 . F3 . G3 - . Bb3 . G3 F3 Eb3'
+    ].join(' | '),
+    sound: 'Buzz Bass'
+  },
   {
     genre: 'Electro',
     instrument: 'Bass',
@@ -497,6 +536,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Funk
+  {
+    genre: 'Funk',
+    instrument: 'Chords',
+    name: 'Gritty Organ Comp',
+    score: [
+      '. . D4+F4+A4+C5 . . D4+F4+A4+C5 . . . . D4+F4+A4+C5 . D4+F4+A4+C5 . . .',
+      '. . G3+B3+D4+F4 . . G3+B3+D4+F4 . . . . G3+B3+D4+F4 . . G3+B3+D4+F4 - .'
+    ].join(' | '),
+    sound: 'Overdrive Organ'
+  },
   {
     genre: 'Funk',
     instrument: 'Bass',
@@ -730,6 +779,15 @@ export const LOOP_SPECS: LoopSpec[] = [
   {
     genre: 'Pop',
     instrument: 'Bass',
+    name: 'Whisper Pop Bass',
+    score: ['G2 - - . . . G2 . Bb2 - . . C3 - . .', 'D3 - . . C3 . Bb2 . G2 - - . . . F2 .'].join(
+      ' | '
+    ),
+    sound: 'Buzz Bass'
+  },
+  {
+    genre: 'Pop',
+    instrument: 'Bass',
     name: 'Chorus Pump Bass',
     score: [
       'G3 - - G3 - - G3 - G3 - - G3 - - G3 -',
@@ -876,6 +934,25 @@ export const LOOP_SPECS: LoopSpec[] = [
   // Rock
   {
     genre: 'Rock',
+    instrument: 'Lead',
+    name: 'Fuzz Pedal Riff',
+    score: ['E4 - . G4 . A4 - . B4 . A4 G4 - . E4 .', 'D4 - . E4 - - . . G4 . E4 . D4 - B3 -'].join(
+      ' | '
+    ),
+    sound: 'Fuzz Lead'
+  },
+  {
+    genre: 'Rock',
+    instrument: 'Chords',
+    name: 'Overdriven Organ Stabs',
+    score: [
+      'E3+B3+E4 - - . . . E3+B3+E4 - . . D3+A3+D4 - - . . .',
+      'A3+E4+A4 - - . . . A3+E4+A4 - . . G3+D4+G4 - - - . .'
+    ].join(' | '),
+    sound: 'Overdrive Organ'
+  },
+  {
+    genre: 'Rock',
     instrument: 'Bass',
     name: 'Pick Bass Eighths',
     score: [
@@ -927,6 +1004,15 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Synthwave
+  {
+    genre: 'Synthwave',
+    instrument: 'Lead',
+    name: 'Neon Fuzz Solo',
+    score: ['A4 - - . C5 - . E5 - - . D5 . C5 - .', 'B4 - - . G4 - . B4 . C5 - . A4 - - -'].join(
+      ' | '
+    ),
+    sound: 'Fuzz Lead'
+  },
   {
     genre: 'Synthwave',
     instrument: 'Bass',
@@ -1070,6 +1156,15 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Trap
+  {
+    genre: 'Trap',
+    instrument: 'Bass',
+    name: 'Distorted 808 Slide',
+    score: ['C3 - - - . . . C3 . . Eb3~ G3 - - . .', 'F3 - - . . . F3 . . . Eb3~ C3 - - - .'].join(
+      ' | '
+    ),
+    sound: 'Dirty 808'
+  },
   {
     genre: 'Trap',
     instrument: 'Bass',
