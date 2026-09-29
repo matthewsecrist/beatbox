@@ -44,7 +44,8 @@ in **Open ▾**): every song you've saved, newest change first, with its views a
 signed in or not; **Copy link** copies it, and **Shared** narrows the list to the songs
 with a live link. **Stop sharing** makes the link stop working; sharing again makes a
 new one, and the song keeps its views and likes. Shared songs are only reachable
-through their link: there's no public list of them.
+through their link: there's no public list of them. **Delete** (after a confirmation)
+removes a song for good, along with its link, views and likes.
 
 - A shared song opens listen-only: **Play song**, each section's ▶, the drums' Play,
   its loop pads and the keyboard all play, and every setting can be seen (with its ⓘ),

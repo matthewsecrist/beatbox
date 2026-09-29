@@ -1,4 +1,5 @@
 import { requireUser } from '$lib/server/auth.js'
+import { deleteSong } from '$lib/server/music.js'
 import { listSongStats, shareSong, unshareSong } from '$lib/server/sharing.js'
 import { fail } from '@sveltejs/kit'
 
@@ -16,6 +17,13 @@ async function songId(request: Request): Promise<string> {
 }
 
 export const actions = {
+  // Deletes a song for good, with its link, views and likes.
+  delete: async ({ locals, request }) => {
+    const user = requireUser(locals)
+    return (await deleteSong(user.id, await songId(request)))
+      ? { deleted: true }
+      : fail(404, { error: 'Song not found' })
+  },
   // Shares a song (its link stays the same if it's already shared).
   share: async ({ locals, request }) => {
     const user = requireUser(locals)
