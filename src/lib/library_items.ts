@@ -1350,8 +1350,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Breakbeat',
     name: 'Amen-ish Break',
     tracks: {
-      chat: 'x.x.x.x.x.x.x?x.',
       kick: 'x.x.......xx....',
+      ride: 'x.x.x.x.x.x.x?x.',
       snare: '....X..o.x.o..X.'
     }
   },
@@ -1400,6 +1400,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     name: 'Stage Clear Fill',
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
+      crash: 'X...............',
       kick: 'x.......x.......',
       snare: '....x.......x234'
     }
@@ -1491,8 +1492,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Drum & Bass',
     name: 'Jungle Chop',
     tracks: {
-      chat: 'x.x.x.x.x.x.x.x.',
       kick: 'x.x.......x.....',
+      ride: 'x.x.x.x.x.x.x.x.',
       snare: '....X.o..x..X..2'
     }
   },
@@ -1535,7 +1536,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.xxx.xxx.xxx.xx',
       clap: '....x.......x...',
-      kick: 'x......x..x.....'
+      kick: 'x......x..x.....',
+      woodblock: 'x..x..x...x.x...'
     }
   },
   {
@@ -1554,6 +1556,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.xxx.x.x.x.',
       clap: '....X.......X...',
+      cowbell: 'x..x..x...x..x..',
       kick: 'X......X..X..X..',
       ohat: '..............x.'
     }
@@ -1565,6 +1568,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     name: 'Tom Groove',
     tracks: {
       chat: 'x.xxx.x.x.xxx.x.',
+      cowbell: 'x...o...x...o...',
       kick: 'x..x..x...x..x..',
       snare: '....X.......X...',
       tom: '..............xx'
@@ -1616,7 +1620,8 @@ export const BEAT_SPECS: BeatSpec[] = [
       chat: 'x.x.x.x.x.x.x.x.',
       clap: '....x.......x...',
       kick: 'x.....x.x.......',
-      ohat: '..............x.'
+      ohat: '..............x.',
+      snap: '....x.......x...'
     }
   },
 
@@ -1635,10 +1640,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'House',
     name: 'Deep House Shuffle',
     tracks: {
-      chat: 'x.oxx.oxx.oxx.ox',
       clap: '....x.......x...',
       kick: 'x...x...x...x...',
-      ohat: '..x...........x.'
+      ride: '..x...x...x...x.',
+      shaker: 'x.oxx.oxx.oxx.ox'
     }
   },
   {
@@ -1647,6 +1652,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'xo.xxo.xxo.xxo.x',
       clap: '....X.......X...',
+      conga: '...x..x....x.ox.',
       kick: 'x...x...x...x..x',
       ohat: '..x...x...x...x.',
       snare: '.......?......x.'
@@ -1692,7 +1698,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.o.x.o.x.o.x.o.',
       kick: 'x.......x.x....?',
-      snare: '....x.......x...'
+      snap: '....x.......x...'
     }
   },
   {
@@ -1751,7 +1757,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       kick: '........x.......',
-      snare: '........X.......'
+      rim: '........X.......'
     }
   },
   {
@@ -1818,6 +1824,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Rock',
     name: 'Punk Drive',
     tracks: {
+      crash: 'X...............',
       kick: 'x.x...x.x.x...x.',
       ohat: 'x.x.x.x.x.x.x.x.',
       snare: '....X.......X...'
@@ -1828,6 +1835,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     name: 'Tom Fill',
     tracks: {
       chat: 'x.x.x.x.........',
+      crash: 'X...............',
       kick: 'x.......x.......',
       snare: '....X.......XXXX',
       tom: '........xxxx....'
@@ -1944,9 +1952,9 @@ export const BEAT_SPECS: BeatSpec[] = [
     name: 'Trap Bounce',
     tracks: {
       chat: 'x.x.x.x.x3x3x.x.',
-      clap: '........X.......',
       kick: 'X.....x...x..x..',
-      ohat: '..............x.'
+      ohat: '..............x.',
+      snap: '........X.......'
     }
   },
   {
