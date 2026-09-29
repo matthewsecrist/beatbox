@@ -135,6 +135,8 @@ export type SavedStep = boolean | Partial<DrumStep>
 // Announced by the arranger ahead of each section boundary.
 export interface Scene {
   beat: number
+  // The section's own tempo; null plays it at the song tempo.
+  bpm: null | number
   drums: boolean
   index: number
   pads: number[]
@@ -144,6 +146,8 @@ export interface Scene {
 // One section of the arrangement.
 export interface Section {
   bars: number
+  // Its own tempo; absent or null plays it at the song tempo.
+  bpm?: null | number
   drums: boolean
   name?: null | string
   pads: number[]

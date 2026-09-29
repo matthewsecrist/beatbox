@@ -86,6 +86,7 @@
     },
     {
       "bars": 4,
+      "bpm": 76,
       "drums": true,
       "name": "Tape slows",
       "pads": [0, 5],
@@ -93,6 +94,7 @@
     },
     {
       "bars": 4,
+      "bpm": 70,
       "drums": false,
       "name": "Fade to tape",
       "pads": [4],

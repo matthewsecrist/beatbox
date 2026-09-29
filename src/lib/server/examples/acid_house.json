@@ -51,6 +51,7 @@
     },
     {
       "bars": 16,
+      "bpm": 128,
       "drums": true,
       "name": "Peak 2",
       "pads": [1, 2, 3],

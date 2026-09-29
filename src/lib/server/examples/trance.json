@@ -58,6 +58,7 @@
     },
     {
       "bars": 16,
+      "bpm": 140,
       "drums": true,
       "name": "Final drop",
       "pads": [0, 1, 2, 3, 4],

@@ -27,6 +27,9 @@
     )
   )
   const MAX_BARS = 64
+  // The song's own Tempo slider's range.
+  const MIN_BPM = 60
+  const MAX_BPM = 200
   const DRUM_PATTERNS = ['A', 'B', 'C', 'D']
   const INSTRUMENTS: Instrument[] = ['synth', 'drums']
   const muted = new SvelteSet<Instrument>()
@@ -121,6 +124,14 @@
 
   const setBars = (index: number, n: number) =>
     store.updateSection(index, { bars: Math.min(MAX_BARS, Math.max(1, n)) })
+
+  // A section's own tempo; left empty, it plays at the song tempo.
+  function setTempo(index: number, text: string) {
+    const bpm = Math.round(Number(text))
+    store.updateSection(index, {
+      bpm: text.trim() === '' || !bpm ? null : Math.min(MAX_BPM, Math.max(MIN_BPM, bpm))
+    })
+  }
 
   // Track names stay in view while the sections scroll sideways.
   const cell = 'sticky left-0 z-10 bg-zinc-950 pr-2'
@@ -295,6 +306,31 @@
               onclick={() => setBars(i, section.bars + 1)}>+</button
             >
           </div>
+          <label
+            class="flex items-center justify-between gap-1 rounded-md bg-zinc-950/60 py-0.5 pl-2 pr-1 text-[10px] uppercase tracking-wider text-zinc-500"
+          >
+            <span class="flex items-center gap-1"
+              >Tempo<Info label="Section tempo" text={help('section_bpm') ?? ''} /></span
+            >
+            <input
+              id={'section-bpm-' + i}
+              type="number"
+              min={MIN_BPM}
+              max={MAX_BPM}
+              step="1"
+              placeholder={String(store.drums.bpm)}
+              value={section.bpm ?? ''}
+              readonly={store.readOnly}
+              disabled={store.readOnly}
+              onchange={(e) => setTempo(i, e.currentTarget.value)}
+              aria-label={'Section ' + (i + 1) + ' tempo'}
+              title={section.bpm ? `${section.bpm} BPM` : `Song tempo (${store.drums.bpm} BPM)`}
+              class={[
+                'w-14 rounded border border-transparent bg-transparent px-1 text-right font-mono text-xs tabular-nums transition placeholder:text-zinc-600 hover:border-zinc-700 focus:border-amber-400 focus:outline-none disabled:hover:border-transparent',
+                section.bpm ? 'text-amber-300' : 'text-zinc-300'
+              ]}
+            />
+          </label>
           {#if !store.readOnly}
             <div class="flex items-center justify-between">
               <button

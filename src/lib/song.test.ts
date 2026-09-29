@@ -343,3 +343,18 @@ test('a read-only store refuses every edit and reports no change', () => {
   expect(store.canUndo).toBe(false)
   expect(onchange).not.toHaveBeenCalled()
 })
+
+test("a section's own tempo saves with it; cleared, the section follows the song tempo again", () => {
+  const store = new SongStore({
+    ...song,
+    arrangement: [...song.arrangement, { bars: 4, bpm: 70, drums: false, pads: [], pattern: 0 }]
+  })
+  expect(store.arrangement.map((s) => s.bpm)).toStrictEqual([undefined, 70])
+
+  store.updateSection(0, { bpm: 90 })
+  store.updateSection(1, { bpm: null })
+
+  expect(store.toSongDoc().arrangement.map((s) => s.bpm)).toStrictEqual([90, undefined])
+  store.undo()
+  expect(store.toSongDoc().arrangement.map((s) => s.bpm)).toStrictEqual([90, 70])
+})
