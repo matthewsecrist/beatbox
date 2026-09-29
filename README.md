@@ -144,7 +144,7 @@ finish.
   on the next bar. A metronome clicks while you record.
 - Takes are rounded to whole bars.
 - Each loop keeps the synth sound it was recorded with, and loops follow tempo
-  changes.
+  changes. To give a loop another sound, open it in the piano roll (below).
 - A pad started while something else plays joins on the next bar line.
 
 **Piano roll**: the pencil on a pad opens its loop as notes (on an empty pad,
@@ -157,6 +157,10 @@ it starts an empty one-bar loop to draw in).
   it, and − / + change the loop length in bars.
 - Edits are heard straight away, even while the pad plays, and are saved with
   the song.
+- While a pad is open, the synth's sound controls and presets change that pad's
+  own sound instead of the keyboard's ("Editing pad N's sound" shows at the top;
+  **Done** goes back to the keyboard). Its notes change as you turn the controls,
+  even while it plays; the keyboard keeps its own sound.
 
 **Effects**: a delay and a reverb shared by the synth (loop pads included) and
 the drums. Each instrument's **Effects** tab has its **Sends**: how much of it goes
