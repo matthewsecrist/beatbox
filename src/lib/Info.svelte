@@ -8,17 +8,27 @@
   const id = $props.id()
   let hovered = $state(false)
   let open = $state(false)
-  // Near the right edge of the window, the bubble opens to the left instead.
-  let flip = $state(false)
+  // Placed against the window (fixed), so a scrolling or clipped container (a
+  // section card) can't cut it off. Near the right edge it opens to the left.
+  let pos = $state({ left: 0, top: 0 })
   let wrapper: HTMLSpanElement | undefined = $state()
 
-  const BUBBLE = 248 // px: the bubble's width plus a margin
+  const WIDTH = 240 // px: the bubble's width (w-60)
+  const GAP = 6 // px below the ⓘ (like mt-1.5)
 
   function place() {
-    const left = wrapper?.getBoundingClientRect().left ?? 0
-    flip = left + BUBBLE > document.documentElement.clientWidth
+    const box = wrapper?.getBoundingClientRect()
+    if (!box) return
+    const flip = box.left + WIDTH + 8 > document.documentElement.clientWidth
+    pos = { left: Math.max(8, flip ? box.right - WIDTH : box.left), top: box.bottom + GAP }
   }
 </script>
+
+<!-- Any scroll (the page, or a container like the sections) moves the ⓘ. -->
+<svelte:window
+  onscrollcapture={() => (open || hovered) && place()}
+  onresize={() => (open || hovered) && place()}
+/>
 
 <span
   bind:this={wrapper}
@@ -55,9 +65,10 @@
   <span
     {id}
     role="tooltip"
+    style:left="{pos.left}px"
+    style:top="{pos.top}px"
     class={[
-      'pointer-events-none absolute top-full z-30 mt-1.5 w-60 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-left text-xs leading-relaxed font-normal text-zinc-200 shadow-xl shadow-black/60',
-      flip ? 'right-0' : 'left-0',
+      'pointer-events-none fixed z-50 w-60 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-left text-xs leading-relaxed font-normal text-zinc-200 shadow-xl shadow-black/60',
       open || hovered ? 'block' : 'hidden'
     ]}
   >
