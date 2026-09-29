@@ -2,7 +2,7 @@
   import { enhance } from '$app/forms'
   import { resolve } from '$app/paths'
   import { page } from '$app/state'
-  import { Check, Copy, ExternalLink, Eye, Heart, Link, Unlink } from '@lucide/svelte'
+  import { Check, Copy, ExternalLink, Eye, Heart, Link, Trash2, Unlink } from '@lucide/svelte'
 
   import type { PageProps } from './$types'
 
@@ -139,6 +139,23 @@
             </button>
           </form>
         {/if}
+        <form
+          method="POST"
+          action="?/delete"
+          use:enhance={({ cancel }) => {
+            if (!confirm(`Delete "${song.name}"? This can't be undone.`)) cancel()
+          }}
+        >
+          <input type="hidden" name="id" value={song.id} />
+          <button
+            id={'delete-' + song.id}
+            type="submit"
+            title="Delete song"
+            class={[small, 'hover:border-red-400/60 hover:text-red-300']}
+          >
+            <Trash2 class="size-3.5" /> Delete
+          </button>
+        </form>
       </li>
     {:else}
       <li

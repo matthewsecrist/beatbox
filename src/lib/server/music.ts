@@ -50,6 +50,15 @@ export async function createSong(userId: string, attrs: unknown): Promise<Song> 
   return song
 }
 
+// Deletes the user's song, with its likes and views. False if there's no such song.
+export async function deleteSong(userId: string, id: string): Promise<boolean> {
+  const rows = await db
+    .delete(songs)
+    .where(and(eq(songs.userId, userId), eq(songs.id, id)))
+    .returning({ id: songs.id })
+  return rows.length > 0
+}
+
 export async function getPreset(userId: string, id: string): Promise<null | Preset> {
   const rows = await db
     .select()

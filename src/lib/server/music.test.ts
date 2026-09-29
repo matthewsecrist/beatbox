@@ -9,7 +9,7 @@ import type { Drums, Loop } from '../types.js'
 import type * as schema from './db/schema.js'
 
 import { db } from './db/index.js'
-import { presets, songs, users } from './db/schema.js'
+import { presets, songLikes, songs, songViews, users } from './db/schema.js'
 import * as music from './music.js'
 import { InvalidError } from './music.js'
 
@@ -181,6 +181,22 @@ test('names only need to be unique per user', async () => {
   expect((await music.listSongs(me)).map((s) => s.name)).toStrictEqual(['Jam', 'Untitled'])
   const [theirs] = await music.listPresets(other)
   expect((await music.getPreset(other, theirs?.id ?? ''))?.params).toStrictEqual({ volume: 0.1 })
+})
+
+test("deleting a song removes it with its likes and views; other users' songs are missing", async () => {
+  const mine = await music.createSong(me, { name: 'Jam' })
+  const theirs = await music.createSong(other, { name: 'Theirs' })
+  await db.insert(songLikes).values({ songId: mine.id, userId: other })
+  await db.insert(songViews).values({ day: '2026-01-01', songId: mine.id, viewer: 'user:x' })
+
+  expect(await music.deleteSong(me, theirs.id)).toBe(false)
+  expect(await music.deleteSong(me, mine.id)).toBe(true)
+  expect(await music.deleteSong(me, mine.id)).toBe(false)
+
+  expect(await music.listSongs(me)).toStrictEqual([])
+  expect((await music.getSong(other, theirs.id))?.name).toBe('Theirs')
+  expect(await db.select().from(songLikes)).toStrictEqual([])
+  expect(await db.select().from(songViews)).toStrictEqual([])
 })
 
 test('deleting a user deletes their songs and presets', async () => {
