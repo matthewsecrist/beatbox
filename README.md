@@ -57,6 +57,20 @@ removes a song for good, along with its link, views and likes.
   to the song.
 - Opening your own song's link shows it as others see it, with an **Edit it** link.
 
+**Layout**: the song bar (Play song, name, Save, **Tempo**, undo/redo, Loops, **Song
+settings**, New, Open) sits on top; **Song settings** opens the master delay and
+reverb. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
+next to the arrangement: a column per section. Pick
+a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
+Amp, Mod, Drive & Glide** and **Effects** tabs, the drums' **Steps, Kit** and
+**Effects** tabs. The keyboard bar (octave, Chord/Arp
+and the keys) stays at the bottom whichever track is open.
+
+- Each instrument track has a **level** (the synth's covers its loop pads), and **M**
+  mutes it and **S** solos it, like the drum tracks' own (solo wins over mute). Track
+  mute and solo silence the instrument's echo and reverb sends too, and, like the
+  drums', are for listening only: they aren't saved with the song.
+
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
 a drive (distortion), a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope
 and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
@@ -83,16 +97,16 @@ within themselves, and the keyboard, the arpeggiator (which lets go of each note
 before the next, so it slides only on **Always**) and each loop pad glide
 separately. Play it with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator, drive, filter, envelope, LFO and glide controls sit under **Sound
-settings**, collapsed until you open it.
+save your own. The oscillator, filter, envelope (**Amp**), LFO (**Mod**), drive and glide
+controls each have a tab in the synth editor.
 
-**ⓘ explanations**: every Sound settings control and panel, the Chord/Arp bar, the
-drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet) and the
-Effects panel have an ⓘ. Hover over it (or tap it, or tab to it) for a plain-English
+**ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
+drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet), the
+effects and the track levels have an ⓘ. Hover over it (or tap it, or tab to it) for a plain-English
 explanation of what it does, written for beginners. The explanations live in
 `src/lib/help.ts`, and a new setting without one fails the tests.
 
-**Chord and Arp** (the bar under the octave controls): **Chord** makes one key
+**Chord and Arp** (the keyboard bar, next to the octave controls): **Chord** makes one key
 play a chord built up from it (major, minor, 7th, major/minor 7th, sus2, sus4,
 diminished, augmented or power). **Arp** plays the notes you hold (chords
 included) one at a time: **Up**, **Down**, **Up-Down** or **Random**, a **Rate**
@@ -105,8 +119,8 @@ song (not with presets, which leave them alone).
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
 grid, with four patterns (**A–D**). Copy/Paste lets you build variations, and
 Randomize, Clear and Reset act on the pattern you're editing. Switching patterns
-while the drums play changes over on the next bar. Its **Tempo** slider sets
-the tempo for the whole song.
+while the drums play changes over on the next bar. The song bar's **Tempo** slider
+sets the tempo for the whole song.
 
 - **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.
 - The step edit buttons pick what a click on a step does: **Hits** turns it on
@@ -119,11 +133,11 @@ the tempo for the whole song.
   ones play (solo wins over mute; several can be soloed); otherwise every unmuted
   track plays. Silenced tracks look dimmer. It applies to the drums' own Play and
   to the arrangement, takes effect on the next step, and isn't saved with the song.
-- **Kit** picks a synthesized kit: Classic, 606, 808, 909, Lo-fi or Trap. Each voice has its own
-  **Tune** (±12 semitones) and **Decay** sliders at the end of its row; picking
-  a kit resets them.
+- **Kit** (its own tab) picks a synthesized kit: Classic, 606, 808, 909, Lo-fi or Trap.
+  Each voice has its own **Tune** (±12 semitones) and **Decay** sliders under it;
+  picking a kit resets them.
 
-**Loop pads**: eight pads. Tap an empty pad to record, then tap it again to
+**Loop pads** (the synth's **Pads** tab): eight pads. Tap an empty pad to record, then tap it again to
 finish.
 
 - If nothing is playing, you get a one-bar count-in; otherwise recording starts
@@ -145,17 +159,19 @@ it starts an empty one-bar loop to draw in).
   the song.
 
 **Effects**: a delay and a reverb shared by the synth (loop pads included) and
-the drums. **Sends** set how much of each instrument goes to each effect (all
-off in a new song), and **Mix** how loud each effect comes back. The delay's
+the drums. Each instrument's **Effects** tab has its **Sends**: how much of it goes
+to each effect (all off in a new song). **Song settings** in the song bar has the effects
+themselves, with **Mix** for how loud each comes back. The delay's
 **Time** is a note value (1/16 to 1/2, with dotted and triplet ones) that follows
 the song tempo, with **Feedback** for how many repeats; each repeat comes back a
 little darker. The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
 Browser previews play through the same effects.
 
-**Arrangement**: a list of sections, each with a length in bars, a drum pattern
-(or none) and toggles for each pad. **Play song** plays the sections in order,
-and every change lands on the section boundary. The ▶ at the start of a section
-plays just that one, through to its end, and then stops.
+**Arrangement** (the columns next to the tracks): a list of sections, each with a
+length in bars, a drum pattern (or none) on the drums' row, and a toggle on each
+pad's row. **Play song** plays the sections in order, and every change lands on the
+section boundary. The ▶ at the top of a section plays just that one, through to its
+end, and then stops; ← and → move a section.
 
 **Loop Browser** (**Loops** in the song bar): 120 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
@@ -277,11 +293,12 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/song.svelte.ts`                                                       | `SongStore`: the open song as a Yjs document, with undo/redo                                                        |
 | `src/lib/pending_song.ts`                                                      | A signed-out visitor's song, kept in `localStorage` while they sign in                                              |
 | `src/lib/Workspace.svelte`                                                     | The page: song bar, save/load, and the working copy of the open song                                                |
-| `src/lib/Synth.svelte`                                                         | Synth controls, keyboard, presets, loop pads                                                                        |
+| `src/lib/Synth.svelte`                                                         | Synth editor (presets, pads, sound tabs) and the keyboard bar                                                       |
 | `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                          |
-| `src/lib/DrumMachine.svelte`                                                   | Step sequencer and tempo                                                                                            |
-| `src/lib/Arranger.svelte`                                                      | Arrangement panel                                                                                                   |
-| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Effects panel, and the shared delay/reverb bus every instrument plays into                                          |
+| `src/lib/DrumMachine.svelte`                                                   | Drums editor: step sequencer, kit                                                                                   |
+| `src/lib/Arranger.svelte`                                                      | Track list (level, mute, solo) and the arrangement grid                                                             |
+| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Master effects and per-instrument sends, and the shared delay/reverb bus every instrument plays into                |
+| `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                               |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                    |
 | `src/lib/transport.ts`                                                         | Tempo, beat grid and metronome shared by every instrument                                                           |
 | `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                             |

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, Pencil } from '@lucide/svelte'
+  import { Pencil } from '@lucide/svelte'
   import { onMount, type Snippet, untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
 
@@ -25,6 +25,7 @@
   } from './types.js'
 
   import { effects } from './effects.js'
+  import Effects from './Effects.svelte'
   import { help } from './help.js'
   import Info from './Info.svelte'
   import PianoRoll from './PianoRoll.svelte'
@@ -33,25 +34,42 @@
   import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
+  import Tabs from './Tabs.svelte'
   import { BEATS_PER_BAR, transport } from './transport.js'
 
   // Synth settings and loops live in the song store (and its undo history); this
   // component reads them and changes them through the store. `savePreset`/
   // `loadPreset` talk to the server. Signed out (`canSave` false), only the factory
-  // presets can be loaded and nothing can be saved.
+  // presets can be loaded and nothing can be saved. The editor (pads and sound)
+  // shows while the synth track is `selected`; the keyboard bar always shows, last
+  // in its (flex) parent, and the engine keeps running either way.
   let {
     canSave = true,
     loadPreset: fetchPreset,
     presets = [],
     savePreset: storePreset,
+    selected,
     store
   }: {
     canSave?: boolean
     loadPreset: (id: string) => Promise<LoadPresetReply>
     presets?: PresetSummary[]
     savePreset: (name: string, params: SynthParams) => Promise<SavePresetReply>
+    selected: boolean
     store: SongStore
   } = $props()
+
+  type Tab = 'amp' | 'drive' | 'effects' | 'filter' | 'mod' | 'osc' | 'pads'
+  const TABS: [Tab, string][] = [
+    ['pads', 'Pads'],
+    ['osc', 'Osc'],
+    ['filter', 'Filter'],
+    ['amp', 'Amp'],
+    ['mod', 'Mod'],
+    ['drive', 'Drive & Glide'],
+    ['effects', 'Effects']
+  ]
+  let tab: Tab = $state('pads')
 
   type NumericParam = {
     [K in keyof SynthParams]: SynthParams[K] extends number ? K : never
@@ -606,16 +624,21 @@
   </div>
 {/snippet}
 
-{#snippet panel(title: string, body: Snippet, name: string)}
+<!-- A module card; `grid` lays its sliders out in columns (for panels of sliders only). -->
+{#snippet panel(title: string, body: Snippet, name: string, grid = '')}
   <section
     class="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-inner shadow-black/40"
   >
-    <h2
+    <h3
       class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-amber-400"
     >
       {title}{@render info('panel_' + name, title)}
-    </h2>
-    {@render body()}
+    </h3>
+    {#if grid}
+      <div class={['grid gap-x-6 gap-y-4', grid]}>{@render body()}</div>
+    {:else}
+      {@render body()}
+    {/if}
   </section>
 {/snippet}
 
@@ -767,303 +790,314 @@
   {@render slider('glide', 'Time', 0, 1, 0.005, fmtGlide)}
 {/snippet}
 
-<div
-  class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
->
-  {#if !store.readOnly}
-    <div id="preset-bar" class="flex flex-wrap items-center gap-2">
-      <select
-        id="preset-select"
-        bind:value={selectedId}
-        onchange={loadPreset}
-        class="min-w-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none"
-      >
-        <option value="">Load preset…</option>
-        <optgroup label="Factory">
-          {#each FACTORY_PRESETS as preset, i (preset.name)}
-            <option value={'factory:' + i}>{preset.name}</option>
-          {/each}
-        </optgroup>
-        {#if presets.length}
-          <optgroup label="Saved">
-            {#each presets as preset (preset.id)}
-              <option value={preset.id}>{preset.name}</option>
+<div class="contents">
+  <section
+    id="synth"
+    aria-label="Synth"
+    hidden={!selected}
+    class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  >
+    <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Synth</h2>
+    {#if !store.readOnly}
+      <div id="preset-bar" class="flex flex-wrap items-center gap-2">
+        <select
+          id="preset-select"
+          bind:value={selectedId}
+          onchange={loadPreset}
+          class="min-w-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none"
+        >
+          <option value="">Load preset…</option>
+          <optgroup label="Factory">
+            {#each FACTORY_PRESETS as preset, i (preset.name)}
+              <option value={'factory:' + i}>{preset.name}</option>
             {/each}
           </optgroup>
-        {/if}
-      </select>
-      <input
-        id="preset-name"
-        type="text"
-        maxlength="60"
-        placeholder={canSave ? 'Preset name' : 'Sign in to save presets'}
-        disabled={!canSave}
-        bind:value={presetName}
-        class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
-      />
-      <button
-        id="save-preset"
-        type="button"
-        disabled={!canSave || presetName.trim() === ''}
-        onclick={savePreset}
-        class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
-      >
-        Save
-      </button>
-      <button
-        id="reset-params"
-        type="button"
-        class={btn}
-        onclick={() => store.setParams({ ...DEFAULT_PARAMS })}
-      >
-        Reset
-      </button>
-      <span id="preset-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
-    </div>
-  {/if}
-
-  <details id="synth-settings" class="group">
-    <summary
-      class="flex cursor-pointer list-none items-center gap-1 text-xs font-bold uppercase tracking-[0.2em] text-amber-400"
-    >
-      Sound settings <ChevronDown class="size-4 transition group-open:rotate-180" />
-    </summary>
-    <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
-      {@render panel('Osc 1', osc1, 'osc')}
-      {@render panel('Osc 2', osc2, 'osc')}
-      {@render panel('Filter', filter, 'filter')}
-      {@render panel('Envelope', envelope, 'envelope')}
-      {@render panel('LFO 1', lfo1, 'lfo')}
-      {@render panel('LFO 2', lfo2, 'lfo')}
-      {@render panel('Glide', glide, 'glide')}
-      {@render panel('Drive', drive, 'drive')}
-    </div>
-  </details>
-
-  <div
-    class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
-  >
-    <div class="flex items-center gap-2">
-      <button
-        id="octave-down"
-        type="button"
-        class={btn}
-        aria-label="Octave down"
-        onclick={() => shiftOctave(-1)}>−</button
-      >
-      <span class="w-20 text-center font-mono text-sm tabular-nums text-zinc-300"
-        >Octave {baseOctave}</span
-      >
-      <button
-        id="octave-up"
-        type="button"
-        class={btn}
-        aria-label="Octave up"
-        onclick={() => shiftOctave(1)}>+</button
-      >
-    </div>
-    <p class="text-xs text-zinc-500">
-      Play with A–; keys · Z/X change octave · 1–8 trigger loop pads
-    </p>
-    <div class="w-full sm:w-56">
-      {@render slider('volume', 'Master', 0, 1, 0.01, fmtPct)}
-    </div>
-  </div>
-
-  <div
-    id="synth-play"
-    class="flex flex-wrap items-end gap-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
-  >
-    <label class="space-y-1" for="chord-select">
-      {@render caption('chord', 'Chord')}
-      <select
-        id="chord-select"
-        value={performance.chord}
-        disabled={store.readOnly}
-        onchange={(e) => store.setPerformance({ chord: e.currentTarget.value as ChordShape })}
-        class={select}
-      >
-        {#each CHORD_OPTIONS as [value, label] (value)}
-          <option {value}>{label}</option>
-        {/each}
-      </select>
-    </label>
-    <div class="space-y-1">
-      {@render caption('arp', 'Arp')}
-      <div
-        id="arp-mode"
-        class="grid grid-cols-5 gap-1 rounded-lg bg-zinc-950/60 p-1"
-        role="group"
-        aria-label="Arpeggiator"
-      >
-        {#each ARP_OPTIONS as [value, label] (value)}
-          <button
-            type="button"
-            aria-pressed={performance.arp === value}
-            disabled={store.readOnly}
-            onclick={() => store.setPerformance({ arp: value })}
-            class={[
-              'rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
-              performance.arp === value
-                ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
-                : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-            ]}
-          >
-            {label}
-          </button>
-        {/each}
-      </div>
-    </div>
-    <label class="space-y-1" for="arp-rate">
-      {@render caption('arp_rate', 'Rate')}
-      <select
-        id="arp-rate"
-        value={performance.arp_rate}
-        disabled={store.readOnly || performance.arp === 'off'}
-        onchange={(e) => store.setPerformance({ arp_rate: e.currentTarget.value as ArpRate })}
-        class={[select, performance.arp === 'off' && 'disabled:opacity-40']}
-      >
-        {#each RATE_OPTIONS as [value, label] (value)}
-          <option {value}>{label}</option>
-        {/each}
-      </select>
-    </label>
-    <p class="text-xs text-zinc-500">Hold keys to arpeggiate them in time with the song</p>
-  </div>
-
-  <section id="loop-pads" class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
-    <div class="flex items-baseline justify-between">
-      <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Loops</h2>
-      <p class="text-xs text-zinc-500">
-        {store.readOnly
-          ? 'Tap a pad to play or stop its loop'
-          : 'Tap an empty pad to record, tap again to loop it · the pencil edits its notes'}
-      </p>
-    </div>
-    <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
-      {#each pads as pad, slot (slot)}
-        <div class="group relative">
-          <button
-            id={'loop-pad-' + slot}
-            type="button"
-            aria-label={`Loop pad ${slot + 1}`}
-            aria-pressed={pad.playing || recording === slot}
-            disabled={store.readOnly && !pad.filled}
-            onclick={() => tapPad(slot)}
-            class={[
-              'relative flex aspect-square w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95 disabled:pointer-events-none',
-              recording === slot
-                ? 'animate-pulse border-red-500 bg-red-500/15 text-red-300'
-                : pad.playing
-                  ? 'border-amber-400 bg-amber-400/15 text-amber-200 shadow shadow-amber-400/20'
-                  : pad.filled
-                    ? 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-amber-400/60 hover:bg-zinc-700'
-                    : 'border-dashed border-zinc-700 text-zinc-500 hover:border-red-500/60 hover:text-red-300'
-            ]}
-          >
-            <span class="font-mono text-lg">{slot + 1}</span>
-            <span class="text-[10px] uppercase tracking-wider opacity-80">
-              {recording === slot
-                ? countingIn
-                  ? 'Count-in'
-                  : 'Done'
-                : pad.filled
-                  ? pad.label
-                  : store.readOnly
-                    ? 'Empty'
-                    : 'Rec'}
-            </span>
-            {#if pad.playing}
-              <span
-                class="absolute inset-x-0 bottom-0 h-1 bg-amber-400"
-                style="width: {pad.pos * 100}%"
-              ></span>
-            {/if}
-          </button>
-          {#if !store.readOnly && (pad.filled || recording === slot)}
-            <button
-              id={'loop-clear-' + slot}
-              type="button"
-              aria-label={`Clear loop pad ${slot + 1}`}
-              onclick={() => clearPad(slot)}
-              class="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-zinc-600 bg-zinc-900 text-xs text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:border-red-500 hover:text-red-400 focus:opacity-100 pointer-coarse:opacity-100"
-            >
-              ×
-            </button>
+          {#if presets.length}
+            <optgroup label="Saved">
+              {#each presets as preset (preset.id)}
+                <option value={preset.id}>{preset.name}</option>
+              {/each}
+            </optgroup>
           {/if}
-          {#if !store.readOnly && recording !== slot}
+        </select>
+        <input
+          id="preset-name"
+          type="text"
+          maxlength="60"
+          placeholder={canSave ? 'Preset name' : 'Sign in to save presets'}
+          disabled={!canSave}
+          bind:value={presetName}
+          class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
+        />
+        <button
+          id="save-preset"
+          type="button"
+          disabled={!canSave || presetName.trim() === ''}
+          onclick={savePreset}
+          class="rounded-md bg-amber-400 px-4 py-1.5 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+        >
+          Save
+        </button>
+        <button
+          id="reset-params"
+          type="button"
+          class={btn}
+          onclick={() => store.setParams({ ...DEFAULT_PARAMS })}
+        >
+          Reset
+        </button>
+        <span id="preset-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
+      </div>
+    {/if}
+
+    <Tabs id="synth-tabs" label="Synth editor" tabs={TABS} bind:value={tab}>
+      {#if tab === 'pads'}
+        <section
+          id="loop-pads"
+          class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
+        >
+          <p class="text-xs text-zinc-500">
+            {store.readOnly
+              ? 'Tap a pad to play or stop its loop'
+              : 'Tap an empty pad to record, tap again to loop it · the pencil edits its notes'}
+          </p>
+          <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
+            {#each pads as pad, slot (slot)}
+              <div class="group relative">
+                <button
+                  id={'loop-pad-' + slot}
+                  type="button"
+                  aria-label={`Loop pad ${slot + 1}`}
+                  aria-pressed={pad.playing || recording === slot}
+                  disabled={store.readOnly && !pad.filled}
+                  onclick={() => tapPad(slot)}
+                  class={[
+                    'relative flex aspect-square max-h-24 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95 disabled:pointer-events-none',
+                    recording === slot
+                      ? 'animate-pulse border-red-500 bg-red-500/15 text-red-300'
+                      : pad.playing
+                        ? 'border-amber-400 bg-amber-400/15 text-amber-200 shadow shadow-amber-400/20'
+                        : pad.filled
+                          ? 'border-zinc-600 bg-zinc-800 text-zinc-200 hover:border-amber-400/60 hover:bg-zinc-700'
+                          : 'border-dashed border-zinc-700 text-zinc-500 hover:border-red-500/60 hover:text-red-300'
+                  ]}
+                >
+                  <span class="font-mono text-lg">{slot + 1}</span>
+                  <span class="text-[10px] uppercase tracking-wider opacity-80">
+                    {recording === slot
+                      ? countingIn
+                        ? 'Count-in'
+                        : 'Done'
+                      : pad.filled
+                        ? pad.label
+                        : store.readOnly
+                          ? 'Empty'
+                          : 'Rec'}
+                  </span>
+                  {#if pad.playing}
+                    <span
+                      class="absolute inset-x-0 bottom-0 h-1 bg-amber-400"
+                      style="width: {pad.pos * 100}%"
+                    ></span>
+                  {/if}
+                </button>
+                {#if !store.readOnly && (pad.filled || recording === slot)}
+                  <button
+                    id={'loop-clear-' + slot}
+                    type="button"
+                    aria-label={`Clear loop pad ${slot + 1}`}
+                    onclick={() => clearPad(slot)}
+                    class="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-zinc-600 bg-zinc-900 text-xs text-zinc-400 opacity-0 transition group-hover:opacity-100 hover:border-red-500 hover:text-red-400 focus:opacity-100 pointer-coarse:opacity-100"
+                  >
+                    ×
+                  </button>
+                {/if}
+                {#if !store.readOnly && recording !== slot}
+                  <button
+                    id={'loop-edit-' + slot}
+                    type="button"
+                    aria-label={pad.filled
+                      ? `Edit loop pad ${slot + 1} in the piano roll`
+                      : `Draw a loop on pad ${slot + 1} in the piano roll`}
+                    aria-pressed={rollSlot === slot}
+                    title={pad.filled ? 'Edit notes' : 'Draw notes'}
+                    onclick={() => editPad(slot)}
+                    class={[
+                      'absolute -bottom-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full border bg-zinc-900 transition group-hover:opacity-100 hover:border-amber-400 hover:text-amber-300 focus:opacity-100 pointer-coarse:opacity-100',
+                      rollSlot === slot
+                        ? 'border-amber-400 text-amber-300 opacity-100'
+                        : 'border-zinc-600 text-zinc-400 opacity-0'
+                    ]}
+                  >
+                    <Pencil class="size-2.5" />
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </section>
+
+        {#if rollSlot !== null && rollLoop}
+          {#key rollKey}
+            <PianoRoll
+              slot={rollSlot}
+              loop={rollLoop}
+              bpm={transport.bpm}
+              playing={pads[rollSlot]?.playing ?? false}
+              position={pads[rollSlot]?.pos ?? 0}
+              onchange={onRollChange}
+              onclose={closeRoll}
+              onpreview={previewNote}
+              ontoggle={toggleRollPad}
+            />
+          {/key}
+        {/if}
+      {:else if tab === 'osc'}
+        <div class="grid gap-4 sm:grid-cols-2">
+          {@render panel('Osc 1', osc1, 'osc')}
+          {@render panel('Osc 2', osc2, 'osc')}
+        </div>
+      {:else if tab === 'filter'}
+        {@render panel('Filter', filter, 'filter', 'sm:grid-cols-2 lg:grid-cols-4')}
+      {:else if tab === 'amp'}
+        {@render panel('Envelope', envelope, 'envelope', 'sm:grid-cols-2 lg:grid-cols-4')}
+      {:else if tab === 'mod'}
+        <div class="grid gap-4 sm:grid-cols-2">
+          {@render panel('LFO 1', lfo1, 'lfo')}
+          {@render panel('LFO 2', lfo2, 'lfo')}
+        </div>
+      {:else if tab === 'drive'}
+        <div class="grid gap-4 sm:grid-cols-2">
+          {@render panel('Drive', drive, 'drive')}
+          {@render panel('Glide', glide, 'glide')}
+        </div>
+      {:else}
+        <Effects part="synth" {store} />
+      {/if}
+    </Tabs>
+  </section>
+
+  <!-- The keyboard is always there (last in the parent), whichever track is being edited. -->
+  <section
+    id="keyboard-bar"
+    aria-label="Keyboard"
+    class="order-last space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  >
+    <div id="synth-play" class="flex flex-wrap items-end gap-4">
+      <div class="space-y-1">
+        <span class="block text-xs uppercase tracking-wider text-zinc-400">Octave</span>
+        <div class="flex items-center gap-1">
+          <button
+            id="octave-down"
+            type="button"
+            class={btn}
+            aria-label="Octave down"
+            onclick={() => shiftOctave(-1)}>−</button
+          >
+          <span class="w-8 text-center font-mono text-sm tabular-nums text-zinc-300"
+            >{baseOctave}</span
+          >
+          <button
+            id="octave-up"
+            type="button"
+            class={btn}
+            aria-label="Octave up"
+            onclick={() => shiftOctave(1)}>+</button
+          >
+        </div>
+      </div>
+      <label class="space-y-1" for="chord-select">
+        {@render caption('chord', 'Chord')}
+        <select
+          id="chord-select"
+          value={performance.chord}
+          disabled={store.readOnly}
+          onchange={(e) => store.setPerformance({ chord: e.currentTarget.value as ChordShape })}
+          class={select}
+        >
+          {#each CHORD_OPTIONS as [value, label] (value)}
+            <option {value}>{label}</option>
+          {/each}
+        </select>
+      </label>
+      <div class="space-y-1">
+        {@render caption('arp', 'Arp')}
+        <div
+          id="arp-mode"
+          class="grid grid-cols-5 gap-1 rounded-lg bg-zinc-950/60 p-1"
+          role="group"
+          aria-label="Arpeggiator"
+        >
+          {#each ARP_OPTIONS as [value, label] (value)}
             <button
-              id={'loop-edit-' + slot}
               type="button"
-              aria-label={pad.filled
-                ? `Edit loop pad ${slot + 1} in the piano roll`
-                : `Draw a loop on pad ${slot + 1} in the piano roll`}
-              aria-pressed={rollSlot === slot}
-              title={pad.filled ? 'Edit notes' : 'Draw notes'}
-              onclick={() => editPad(slot)}
+              aria-pressed={performance.arp === value}
+              disabled={store.readOnly}
+              onclick={() => store.setPerformance({ arp: value })}
               class={[
-                'absolute -bottom-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full border bg-zinc-900 transition group-hover:opacity-100 hover:border-amber-400 hover:text-amber-300 focus:opacity-100 pointer-coarse:opacity-100',
-                rollSlot === slot
-                  ? 'border-amber-400 text-amber-300 opacity-100'
-                  : 'border-zinc-600 text-zinc-400 opacity-0'
+                'rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+                performance.arp === value
+                  ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
               ]}
             >
-              <Pencil class="size-2.5" />
+              {label}
             </button>
-          {/if}
+          {/each}
         </div>
+      </div>
+      <label class="space-y-1" for="arp-rate">
+        {@render caption('arp_rate', 'Rate')}
+        <select
+          id="arp-rate"
+          value={performance.arp_rate}
+          disabled={store.readOnly || performance.arp === 'off'}
+          onchange={(e) => store.setPerformance({ arp_rate: e.currentTarget.value as ArpRate })}
+          class={[select, performance.arp === 'off' && 'disabled:opacity-40']}
+        >
+          {#each RATE_OPTIONS as [value, label] (value)}
+            <option {value}>{label}</option>
+          {/each}
+        </select>
+      </label>
+      <p class="text-xs text-zinc-500">
+        Play with A–; keys · Z/X change octave · 1–8 trigger loop pads · hold keys to arpeggiate
+      </p>
+    </div>
+
+    <div id="keyboard" class="relative flex h-40 select-none sm:h-48" style="touch-action: none">
+      {#each keys as key (key.midi)}
+        <button
+          type="button"
+          aria-label={key.label}
+          onpointerdown={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            press(key.midi)
+          }}
+          onpointerenter={(e) => e.buttons & 1 && press(key.midi)}
+          onpointerup={() => release(key.midi)}
+          onpointerleave={() => release(key.midi)}
+          onpointercancel={() => release(key.midi)}
+          style={key.black
+            ? `left: ${(key.white / whiteCount) * 100}%; width: ${(100 / whiteCount) * 0.6}%; transform: translateX(-50%)`
+            : ''}
+          class={[
+            'transition-colors duration-75',
+            key.black
+              ? 'absolute top-0 z-10 h-[60%] rounded-b-md border border-black shadow-lg shadow-black/60'
+              : 'relative h-full flex-1 rounded-b-lg border border-zinc-400 first:rounded-bl-lg',
+            key.black && (held.has(key.midi) ? 'bg-amber-500' : 'bg-zinc-900 hover:bg-zinc-700'),
+            !key.black && (held.has(key.midi) ? 'bg-amber-300' : 'bg-zinc-100 hover:bg-white')
+          ]}
+        >
+          {#if !key.black && key.midi % 12 === 0}
+            <span
+              class="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-zinc-500"
+              >{key.label}</span
+            >
+          {/if}
+        </button>
       {/each}
     </div>
   </section>
-
-  {#if rollSlot !== null && rollLoop}
-    {#key rollKey}
-      <PianoRoll
-        slot={rollSlot}
-        loop={rollLoop}
-        bpm={transport.bpm}
-        playing={pads[rollSlot]?.playing ?? false}
-        position={pads[rollSlot]?.pos ?? 0}
-        onchange={onRollChange}
-        onclose={closeRoll}
-        onpreview={previewNote}
-        ontoggle={toggleRollPad}
-      />
-    {/key}
-  {/if}
-
-  <div id="keyboard" class="relative flex h-40 select-none sm:h-48" style="touch-action: none">
-    {#each keys as key (key.midi)}
-      <button
-        type="button"
-        aria-label={key.label}
-        onpointerdown={(e) => {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-          press(key.midi)
-        }}
-        onpointerenter={(e) => e.buttons & 1 && press(key.midi)}
-        onpointerup={() => release(key.midi)}
-        onpointerleave={() => release(key.midi)}
-        onpointercancel={() => release(key.midi)}
-        style={key.black
-          ? `left: ${(key.white / whiteCount) * 100}%; width: ${(100 / whiteCount) * 0.6}%; transform: translateX(-50%)`
-          : ''}
-        class={[
-          'transition-colors duration-75',
-          key.black
-            ? 'absolute top-0 z-10 h-[60%] rounded-b-md border border-black shadow-lg shadow-black/60'
-            : 'relative h-full flex-1 rounded-b-lg border border-zinc-400 first:rounded-bl-lg',
-          key.black && (held.has(key.midi) ? 'bg-amber-500' : 'bg-zinc-900 hover:bg-zinc-700'),
-          !key.black && (held.has(key.midi) ? 'bg-amber-300' : 'bg-zinc-100 hover:bg-white')
-        ]}
-      >
-        {#if !key.black && key.midi % 12 === 0}
-          <span
-            class="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-zinc-500"
-            >{key.label}</span
-          >
-        {/if}
-      </button>
-    {/each}
-  </div>
 </div>

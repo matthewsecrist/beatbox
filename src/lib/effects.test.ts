@@ -98,6 +98,19 @@ test('a channel plays dry and into each effect at its send level', () => {
   expect(drums).not.toBe(input)
 })
 
+test('muting silences only that instrument, even before its channel exists', () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.mute('drums', true)
+  const drums = bus.channel('drums') as unknown as FakeNode
+  const synth = bus.channel('synth') as unknown as FakeNode
+  expect([drums.gain.value, synth.gain.value]).toStrictEqual([0, 1])
+
+  bus.mute('drums', false)
+  bus.mute('synth', true)
+  expect([drums.gain.value, synth.gain.value]).toStrictEqual([1, 0])
+})
+
 test('tempo changes move the delay time; the reverb impulse is only remade for a new size', () => {
   const { buffers, getCtx, nodes } = fakeAudio()
   const bus = createEffects(getCtx)

@@ -404,12 +404,8 @@ export function createDrums({
   return { close, setKit, setSwing, setVolume, start, stop, stopAt, trigger }
 }
 
-// Whether a track sounds: with any track soloed only the soloed ones play (solo
-// wins over mute), otherwise every track that isn't muted.
-export function isAudible(
-  id: TrackId,
-  muted: ReadonlySet<TrackId>,
-  soloed: ReadonlySet<TrackId>
-): boolean {
+// Whether a track (a drum, or a whole instrument) sounds: with any track soloed
+// only the soloed ones play (solo wins over mute), otherwise every unmuted one.
+export function isAudible<T>(id: T, muted: ReadonlySet<T>, soloed: ReadonlySet<T>): boolean {
   return soloed.size > 0 ? soloed.has(id) : !muted.has(id)
 }

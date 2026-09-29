@@ -1,15 +1,15 @@
 <script lang="ts">
+  import type { Instrument } from './effects.js'
   import type { SongStore } from './song.svelte.js'
   import type { DelayTime, Effects } from './types.js'
 
-  import { effects } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
 
-  // The song's delay and reverb, and how much of each instrument goes to them.
-  // Settings live in the song store (and its undo history); the shared effects
-  // bus follows them, and the song tempo for the delay time.
-  let { store }: { store: SongStore } = $props()
+  // One part of the song's effects: the shared delay and reverb (`master`), or how
+  // much of one instrument goes to them (its sends). Settings live in the song
+  // store (and its undo history); Workspace keeps the effects bus in step.
+  let { part, store }: { part: 'master' | Instrument; store: SongStore } = $props()
 
   type NumericSetting = {
     [K in keyof Effects]: Effects[K] extends number ? K : never
@@ -30,8 +30,7 @@
   const fmtPct = (v: number) => Math.round(v * 100) + '%'
   const fmtSend = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   const fmtSec = (v: number) => v.toFixed(1) + ' s'
-
-  $effect(() => effects.set($state.snapshot(settings), store.drums.bpm))
+  const panel = 'space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4'
 </script>
 
 {#snippet slider(
@@ -76,13 +75,9 @@
   </h3>
 {/snippet}
 
-<section
-  id="effects"
-  class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
->
-  <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Effects</h2>
-  <div class="grid gap-4 sm:grid-cols-3">
-    <div class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
+{#if part === 'master'}
+  <div id="effects" class="grid gap-4 sm:grid-cols-2">
+    <div class={panel}>
       {@render heading('delay', 'Delay')}
       <label class="block space-y-1" for="fx-delay_time">
         <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
@@ -103,17 +98,16 @@
       {@render slider('delay_feedback', 'Feedback', 0.9, fmtPct)}
       {@render slider('delay_mix', 'Mix', 1, fmtPct)}
     </div>
-    <div class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
+    <div class={panel}>
       {@render heading('reverb', 'Reverb')}
       {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
       {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
     </div>
-    <div class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
-      {@render heading('sends', 'Sends')}
-      {@render slider('synth_delay', 'Synth → delay', 1, fmtSend)}
-      {@render slider('synth_reverb', 'Synth → reverb', 1, fmtSend)}
-      {@render slider('drums_delay', 'Drums → delay', 1, fmtSend)}
-      {@render slider('drums_reverb', 'Drums → reverb', 1, fmtSend)}
-    </div>
   </div>
-</section>
+{:else}
+  <div id={'sends-' + part} class={[panel, 'max-w-md']}>
+    {@render heading('sends', 'Sends')}
+    {@render slider(`${part}_delay`, 'To delay', 1, fmtSend)}
+    {@render slider(`${part}_reverb`, 'To reverb', 1, fmtSend)}
+  </div>
+{/if}

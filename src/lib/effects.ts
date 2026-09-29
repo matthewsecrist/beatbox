@@ -41,6 +41,8 @@ const SMOOTH = 0.02 // s: glide for level and time changes, so they don't click
 export interface EffectsBus {
   // The node an instrument plays into (created on first use).
   channel(instrument: Instrument): AudioNode
+  // Silences an instrument (dry and sends) or brings it back; listening only.
+  mute(instrument: Instrument, muted: boolean): void
   // Applies the song's settings; `bpm` sets the delay time.
   set(settings: Effects, bpm: number): void
 }
@@ -62,6 +64,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
   let settings = DEFAULT_EFFECTS
   let bpm = 110
   let bus: Bus | null = null
+  const muted = new Set<Instrument>()
 
   function build(): Bus {
     const ctx = getCtx()
@@ -126,6 +129,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       const input = ctx.createGain()
       const delay = ctx.createGain()
       const reverb = ctx.createGain()
+      input.gain.value = muted.has(instrument) ? 0 : 1
       input.connect(ctx.destination)
       input.connect(delay).connect(b.delay)
       input.connect(reverb).connect(b.reverb)
@@ -134,6 +138,12 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       b.inputs[instrument] = input
       b.channels[instrument] = { delay, reverb }
       return input
+    },
+    mute(instrument: Instrument, on: boolean): void {
+      if (on) muted.add(instrument)
+      else muted.delete(instrument)
+      const input = bus?.inputs[instrument]
+      if (bus && input) input.gain.setTargetAtTime(on ? 0 : 1, bus.ctx.currentTime, SMOOTH)
     },
     set(next: Effects, nextBpm: number): void {
       settings = next

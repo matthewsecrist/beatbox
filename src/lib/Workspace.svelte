@@ -8,6 +8,7 @@
     Library,
     Play,
     Redo2,
+    Settings2,
     Square,
     Undo2,
     X
@@ -15,6 +16,7 @@
   import { onMount, untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
 
+  import type { Instrument } from './effects.js'
   import type {
     LoadPresetReply,
     SavePresetReply,
@@ -26,11 +28,15 @@
 
   import Arranger from './Arranger.svelte'
   import DrumMachine from './DrumMachine.svelte'
+  import { effects } from './effects.js'
   import Effects from './Effects.svelte'
+  import { help } from './help.js'
+  import InfoTip from './Info.svelte'
   import LoopBrowser from './LoopBrowser.svelte'
   import { keepPendingSong, takePendingSong } from './pending_song.js'
   import { SongStore } from './song.svelte.js'
   import Synth from './Synth.svelte'
+  import { transport } from './transport.js'
 
   // The music workspace: synth, loop pads and drum machine, saved together as a song.
   //
@@ -68,6 +74,13 @@
     () => (dirty = true),
     { readOnly }
   )
+  // The track open in the editor (UI only).
+  let track: Instrument = $state('synth')
+
+  // The song's tempo (saved as drums.bpm) drives the shared transport, so drums,
+  // pads and arp follow it; the effects bus follows the song's settings.
+  $effect(() => transport.setBpm(store.drums.bpm))
+  $effect(() => effects.set($state.snapshot(store.effects), store.drums.bpm))
 
   // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
   // field (which keeps the browser's own text undo).
@@ -298,6 +311,23 @@
     </form>
   {/if}
 
+  <label class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400" for="tempo">
+    <span class="flex items-center gap-1"
+      >Tempo<InfoTip label="Tempo" text={help('tempo') ?? ''} /></span
+    >
+    <input
+      id="tempo"
+      type="range"
+      min="60"
+      max="200"
+      step="1"
+      value={store.drums.bpm}
+      disabled={readOnly}
+      oninput={(e) => store.setDrums({ bpm: Number(e.currentTarget.value) })}
+      class="w-28 cursor-pointer accent-amber-400 disabled:cursor-default"
+    />
+    <span class="w-8 font-mono text-amber-300 tabular-nums">{store.drums.bpm}</span>
+  </label>
   {#if !readOnly}
     <div class="flex items-center" role="group" aria-label="History">
       <button
@@ -336,6 +366,22 @@
       Loops
     </button>
   {/if}
+
+  <!-- Settings for the whole song: the master delay and reverb. -->
+  <details id="song-settings" class="group relative">
+    <summary
+      class="flex cursor-pointer list-none items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 group-open:border-amber-400/60"
+    >
+      <Settings2 class="size-4" />
+      Song settings
+      <ChevronDown class="size-4 transition group-open:rotate-180" />
+    </summary>
+    <div
+      class="absolute right-0 z-20 mt-2 w-[min(40rem,calc(100vw-2rem))] rounded-xl border border-zinc-700 bg-zinc-950 p-4 shadow-xl shadow-black/60"
+    >
+      <Effects part="master" {store} />
+    </div>
+  </details>
 
   <a
     id="new-song"
@@ -400,13 +446,17 @@
   </details>
 </div>
 
-<div class="space-y-4 xl:grid xl:grid-cols-2 xl:items-start xl:gap-4 xl:space-y-0">
-  <Synth {store} {presets} {savePreset} {loadPreset} canSave={signedIn} />
-  <div class="space-y-4">
-    <DrumMachine {store} />
-    <Effects {store} />
-    <Arranger {store} />
-  </div>
+<Arranger {store} bind:track />
+<div class="flex flex-col gap-4">
+  <Synth
+    {store}
+    {presets}
+    {savePreset}
+    {loadPreset}
+    canSave={signedIn}
+    selected={track === 'synth'}
+  />
+  <DrumMachine {store} selected={track === 'drums'} />
 </div>
 {#if !readOnly}<LoopBrowser {store} bind:open={libraryOpen} />{/if}
 
