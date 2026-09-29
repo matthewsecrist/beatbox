@@ -191,6 +191,24 @@ test('a held note follows a change of target', () => {
   expect(lfoDepth(nodes).gain.setTargetAtTime).toHaveBeenLastCalledWith(50, 0, 0.01)
 })
 
+test("a loop's new sound reaches only that loop's sounding notes", () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ filter_cutoff: 1000 }, () => ctx)
+  synth.noteOn(60) // keyboard
+  synth.noteOn(62, 0, 'pad0:62', { filter_cutoff: 400 })
+  synth.noteOn(64, 0, 'pad1:64', { filter_cutoff: 400 })
+  synth.setOwnParams('pad0:', { filter_cutoff: 2000 })
+
+  // Each voice builds the same nodes, so the second third of the filters are pad0's.
+  const filters = nodes.filter((n) => n.kind === 'filter')
+  const moved = filters.flatMap((f, i) =>
+    f.frequency.setTargetAtTime.mock.calls.some(([v]) => v === 2000) ? [i / filters.length] : []
+  )
+  expect(moved).toHaveLength(1)
+  expect(moved[0]).toBeGreaterThanOrEqual(1 / 3)
+  expect(moved[0]).toBeLessThan(2 / 3)
+})
+
 test('the filter envelope sweeps the cutoff in octaves, and releases from where it is', () => {
   const { clock, ctx, nodes } = fakeAudio()
   const synth = createSynth(

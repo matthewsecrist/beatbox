@@ -248,31 +248,37 @@ export class SongStore {
   }
 
   // Points LFO `n` elsewhere, carrying its depth over as the same share of the
-  // new target's range, as one undo step.
-  setLfoTarget(n: 1 | 2, target: LfoTarget): void {
-    const from = this.synth[`lfo${n}_target`] ?? DEFAULT_PARAMS[`lfo${n}_target`]
+  // new target's range, as one undo step. `slot` as for setParam.
+  setLfoTarget(n: 1 | 2, target: LfoTarget, slot: null | number = null): void {
+    const sound = this.soundOf(slot)
+    const from = sound[`lfo${n}_target`] ?? DEFAULT_PARAMS[`lfo${n}_target`]
     if (from === target) return
-    const share = (this.synth[`lfo${n}_depth`] ?? 0) / LFO_DEPTH_MAX[from]
+    const share = (sound[`lfo${n}_depth`] ?? 0) / LFO_DEPTH_MAX[from]
     const depth = Math.min(1, share) * LFO_DEPTH_MAX[target]
-    this.edit(() => {
-      this.synthMap.set(`lfo${n}_target`, target)
-      this.synthMap.set(`lfo${n}_depth`, Math.round(depth * 100) / 100)
-    }, true)
+    this.writeSound(
+      slot,
+      { [`lfo${n}_depth`]: Math.round(depth * 100) / 100, [`lfo${n}_target`]: target },
+      true
+    )
   }
 
   setLoop(loop: Loop): void {
     this.edit(() => this.loopsMap.set(String(loop.slot), plain(loop)), true)
   }
 
-  setParam<K extends keyof SynthParams>(key: K, value: SynthParams[K]): void {
-    this.edit(() => this.synthMap.set(key, value))
+  // One synth setting: of the keyboard's sound, or (`slot`) of that loop pad's own.
+  setParam<K extends keyof SynthParams>(
+    key: K,
+    value: SynthParams[K],
+    slot: null | number = null
+  ): void {
+    this.writeSound(slot, { [key]: value }, false)
   }
 
-  // Replaces every synth setting (a preset, or Reset) as one undo step.
-  setParams(params: SynthParams): void {
-    this.edit(() => {
-      for (const [key, value] of Object.entries(params)) this.synthMap.set(key, value)
-    }, true)
+  // Replaces every synth setting (a preset, or Reset) as one undo step. `slot` as
+  // for setParam.
+  setParams(params: SynthParams, slot: null | number = null): void {
+    this.writeSound(slot, params, true)
   }
 
   setPattern(index: number, pattern: DrumPattern): void {
@@ -282,7 +288,6 @@ export class SongStore {
       for (const { id } of TRACKS) map.set(id, [...pattern[id]])
     }, true)
   }
-
   // Chord shape, arp pattern and rate: each change is its own undo step.
   setPerformance(patch: Partial<Performance>): void {
     this.edit(() => {
@@ -310,6 +315,11 @@ export class SongStore {
     this.edit(() =>
       this.drumsMap.set('voices', { ...voices, [track]: { ...voices[track], ...patch } })
     )
+  }
+
+  // The keyboard's sound (`slot` null), or a loop pad's own ({} for an empty pad).
+  soundOf(slot: null | number): Partial<SynthParams> {
+    return slot === null ? this.synth : (this.loops[slot]?.params ?? {})
   }
 
   // The song's parts, for saving.
@@ -448,6 +458,23 @@ export class SongStore {
         return map
       })
     )
+  }
+
+  // Writes synth settings to the keyboard's sound or to a loop's. A loop keeps no
+  // volume (that stays global), and keeps its notes as the same objects, so a
+  // playing pad changes sound without restarting.
+  private writeSound(slot: null | number, patch: Partial<SynthParams>, discrete: boolean) {
+    if (slot === null) {
+      this.edit(() => {
+        for (const [key, value] of Object.entries(patch)) this.synthMap.set(key, value)
+      }, discrete)
+      return
+    }
+    const loop = this.loops[slot]
+    if (!loop) return
+    const params = plain({ ...loop.params, ...patch })
+    delete params.volume
+    this.edit(() => this.loopsMap.set(String(slot), { ...loop, params }), discrete)
   }
 }
 

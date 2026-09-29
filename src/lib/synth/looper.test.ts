@@ -75,7 +75,8 @@ function spySynth() {
     calls,
     cancelPending: vi.fn(),
     noteOff: (_key: number | string, at = NaN) => calls.push(['off', +at.toFixed(3)]),
-    noteOn: (midi: number, at = NaN) => calls.push(['on', midi, +at.toFixed(3)])
+    noteOn: (midi: number, at = NaN) => calls.push(['on', midi, +at.toFixed(3)]),
+    setOwnParams: vi.fn()
   }
 }
 
@@ -243,6 +244,28 @@ test('an edited loop takes over at once, keeping its place in the bar', () => {
     ['on', 64, 1.55], // E4 on beat 3 of the same bar
     ['off', 2.05]
   ])
+})
+
+test('a new sound for a playing loop carries on its notes and changes them live', () => {
+  const { clock, transport } = fakeAudio()
+  const sounds: (string | undefined)[] = []
+  const synth = {
+    ...spySynth(),
+    noteOn: (_midi: number, _at?: number, _key?: number | string, own?: Partial<Loop['params']>) =>
+      sounds.push(own?.osc1_wave)
+  }
+  const player = createPlayer(synth, 'pad0:', oneBar, transport)
+  player.start() // C4 held from beat 0 to beat 2
+
+  clock.now = 0.8 // C4 is sounding
+  const square = { ...oneBar, params: { osc1_wave: 'square' as const } }
+  player.setLoop(square)
+  expect(synth.setOwnParams).toHaveBeenCalledWith('pad0:', square.params) // C4 changes now
+  clock.now = 2 // next cycle
+  player.tick()
+
+  expect(synth.calls).toStrictEqual([['off', 1.05]]) // C4 ends where it was due to, not at the edit
+  expect(sounds).toStrictEqual([oneBar.params.osc1_wave, 'square'])
 })
 
 test('shortening a playing loop continues from the same point of the shorter cycle', () => {

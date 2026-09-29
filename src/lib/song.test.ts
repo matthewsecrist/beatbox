@@ -206,6 +206,30 @@ test('changing an LFO target rescales its depth, as one undo step', () => {
   expect(store.toSongDoc().synth).toStrictEqual({ lfo1_depth: 1, lfo2_depth: 10 })
 })
 
+test("a pad's own sound changes without touching its notes or the keyboard's", () => {
+  const store = new SongStore(song)
+  const before = store.loops[2]
+
+  store.setParam('filter_cutoff', 500, 2)
+  store.setParams({ ...store.synth, osc1_wave: 'square', volume: 0.2 } as never, 2)
+  store.setLfoTarget(1, 'pitch', 2)
+
+  expect(store.loops[2]?.events).toBe(before?.events) // a playing pad keeps going
+  expect(store.loops[2]?.params).toStrictEqual({
+    filter_cutoff: 300, // from the settings setParams was given
+    lfo1_depth: 0,
+    lfo1_target: 'pitch',
+    osc1_wave: 'square'
+  })
+  expect(store.synth).toStrictEqual({ filter_cutoff: 300 })
+  store.setParam('filter_cutoff', 700, 5) // empty pad: nothing to change
+  expect(store.loops[5]).toBe(null)
+
+  store.undo()
+  store.undo()
+  expect(store.loops[2]?.params).toStrictEqual({ filter_cutoff: 500, osc1_wave: 'sine' })
+})
+
 test('chord and arp settings load with defaults filled in, save, and undo one at a time', () => {
   const store = new SongStore({ ...song, performance: { chord: 'min' } })
   expect(store.performance).toStrictEqual({ arp: 'off', arp_rate: '1/16', chord: 'min' })

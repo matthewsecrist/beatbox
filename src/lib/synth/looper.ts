@@ -48,7 +48,7 @@ interface BeatEvent {
 }
 
 export function createPlayer(
-  synth: Pick<Synth, 'cancelPending' | 'noteOff' | 'noteOn'>,
+  synth: Pick<Synth, 'cancelPending' | 'noteOff' | 'noteOn' | 'setOwnParams'>,
   prefix: string,
   initial: PlayerLoop,
   transport: Pick<
@@ -95,7 +95,11 @@ export function createPlayer(
       return playing
     },
     setLoop(next: PlayerLoop): void {
+      // Only the sound changed: notes already sounding take it on, nothing restarts.
+      const sameNotes =
+        next.events === loop.events && next.length === loop.length && next.bpm === loop.bpm
       loop = next
+      if (sameNotes) return synth.setOwnParams(prefix, next.params)
       if (!playing) return
       silence()
       load()

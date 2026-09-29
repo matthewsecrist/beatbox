@@ -75,6 +75,7 @@
     [K in keyof SynthParams]: SynthParams[K] extends number ? K : never
   }[keyof SynthParams]
 
+  // The keyboard's sound: what live notes, the arp and new recordings use.
   const params: SynthParams = $derived({ ...DEFAULT_PARAMS, ...store.synth })
   const performance = $derived(store.performance)
   let presetName = $state('')
@@ -260,10 +261,21 @@
   // opened, which remounts the editor on it.
   let rollSlot: null | number = $state(null)
   const rollLoop = $derived(rollSlot === null ? null : (store.loops[rollSlot] ?? null))
+  // While a pad is open in the piano roll, the sound controls and presets change its
+  // own sound (live, even while it plays); otherwise the keyboard's.
+  const soundPad = $derived(rollLoop ? rollSlot : null)
+  const edited: SynthParams = $derived({
+    ...DEFAULT_PARAMS,
+    ...store.soundOf(soundPad),
+    volume: params.volume
+  })
   let rollKey = $state(0)
 
+  // Opening or closing a pad switches whose sound the controls edit, so the preset
+  // shown as loaded no longer applies.
   function closeRoll() {
     rollSlot = null
+    selectedId = ''
   }
 
   // Opens a pad in the piano roll; an empty pad gets an empty one-bar loop to draw in.
@@ -282,6 +294,7 @@
       })
     }
     rollSlot = slot
+    selectedId = ''
     rollKey++
   }
 
@@ -508,26 +521,26 @@
     if (id.startsWith('factory:')) {
       const preset = FACTORY_PRESETS[Number(id.slice(8))]
       if (!preset) return
-      store.setParams({ ...DEFAULT_PARAMS, volume: params.volume, ...preset.params })
+      store.setParams({ ...DEFAULT_PARAMS, volume: params.volume, ...preset.params }, soundPad)
       presetName = preset.name
       return
     }
     void fetchPreset(id).then((reply) => {
       if ('error' in reply) return showStatus(reply.error)
-      store.setParams({ ...DEFAULT_PARAMS, ...reply.params })
+      store.setParams({ ...DEFAULT_PARAMS, ...reply.params }, soundPad)
       presetName = reply.name
     })
   }
 
   function savePreset() {
-    void storePreset(presetName, $state.snapshot(params)).then((reply) => {
+    void storePreset(presetName, $state.snapshot(edited)).then((reply) => {
       if ('error' in reply) return showStatus(reply.error)
       selectedId = reply.id
       showStatus('Saved “' + reply.name + '”')
     })
   }
 
-  const cutoffPos = $derived(Math.log(params.filter_cutoff / 20) / Math.log(900))
+  const cutoffPos = $derived(Math.log(edited.filter_cutoff / 20) / Math.log(900))
   const fmtHz = (hz: number) =>
     hz >= 1000 ? (hz / 1000).toFixed(2) + ' kHz' : Math.round(hz) + ' Hz'
   const fmtSec = (s: number) => (s < 1 ? Math.round(s * 1000) + ' ms' : s.toFixed(2) + ' s')
@@ -570,7 +583,7 @@
       class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
     >
       <span class="flex items-center gap-1">{label}{@render info(key, label)}</span>
-      <span class="font-mono text-amber-300 tabular-nums normal-case">{format(params[key])}</span>
+      <span class="font-mono text-amber-300 tabular-nums normal-case">{format(edited[key])}</span>
     </span>
     <input
       id={'synth-' + key}
@@ -578,9 +591,9 @@
       {min}
       {max}
       {step}
-      value={params[key]}
+      value={edited[key]}
       disabled={store.readOnly}
-      oninput={(e) => store.setParam(key, Number(e.currentTarget.value))}
+      oninput={(e) => store.setParam(key, Number(e.currentTarget.value), soundPad)}
       class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
     />
   </label>
@@ -608,12 +621,12 @@
     {#each WAVES as wave (wave)}
       <button
         type="button"
-        aria-pressed={params[key] === wave}
+        aria-pressed={edited[key] === wave}
         disabled={store.readOnly}
-        onclick={() => store.setParam(key, wave)}
+        onclick={() => store.setParam(key, wave, soundPad)}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
-          params[key] === wave
+          edited[key] === wave
             ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
             : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
         ]}
@@ -663,12 +676,12 @@
     {#each DRIVE_TYPES as type (type)}
       <button
         type="button"
-        aria-pressed={params.drive_type === type}
+        aria-pressed={edited.drive_type === type}
         disabled={store.readOnly}
-        onclick={() => store.setParam('drive_type', type)}
+        onclick={() => store.setParam('drive_type', type, soundPad)}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
-          params.drive_type === type
+          edited.drive_type === type
             ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
             : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
         ]}
@@ -688,7 +701,7 @@
     >
       <span class="flex items-center gap-1">Cutoff{@render info('filter_cutoff', 'Cutoff')}</span>
       <span class="font-mono text-amber-300 tabular-nums normal-case"
-        >{fmtHz(params.filter_cutoff)}</span
+        >{fmtHz(edited.filter_cutoff)}</span
       >
     </span>
     <input
@@ -700,7 +713,11 @@
       value={cutoffPos}
       disabled={store.readOnly}
       oninput={(e) =>
-        store.setParam('filter_cutoff', Math.round(20 * 900 ** Number(e.currentTarget.value)))}
+        store.setParam(
+          'filter_cutoff',
+          Math.round(20 * 900 ** Number(e.currentTarget.value)),
+          soundPad
+        )}
       class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
     />
   </label>
@@ -713,7 +730,7 @@
 {/snippet}
 
 {#snippet lfo(n: 1 | 2)}
-  {@const target = params[`lfo${n}_target`]}
+  {@const target = edited[`lfo${n}_target`]}
   {@render caption(`lfo${n}_target`, 'Moves')}
   <div
     id={`synth-lfo${n}_target`}
@@ -726,7 +743,7 @@
         type="button"
         aria-pressed={target === option}
         disabled={store.readOnly}
-        onclick={() => store.setLfoTarget(n, option)}
+        onclick={() => store.setLfoTarget(n, option, soundPad)}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
           target === option
@@ -770,15 +787,15 @@
     {#each GLIDE_MODES as [mode, label] (mode)}
       <button
         type="button"
-        aria-pressed={params.glide_mode === mode}
+        aria-pressed={edited.glide_mode === mode}
         title={mode === 'legato'
           ? 'Only into a note played while the last one is still held'
           : 'Into every note'}
-        onclick={() => store.setParam('glide_mode', mode)}
+        onclick={() => store.setParam('glide_mode', mode, soundPad)}
         disabled={store.readOnly}
         class={[
           'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
-          params.glide_mode === mode
+          edited.glide_mode === mode
             ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
             : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
         ]}
@@ -797,7 +814,24 @@
     hidden={!selected}
     class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
   >
-    <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Synth</h2>
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Synth</h2>
+      {#if soundPad !== null}
+        <span
+          id="editing-pad-sound"
+          class="flex items-center gap-2 rounded-full border border-amber-400/60 bg-amber-400/10 py-0.5 pr-1 pl-3 text-xs text-amber-200"
+        >
+          Editing pad {soundPad + 1}'s sound
+          <button
+            type="button"
+            onclick={closeRoll}
+            title="Close the piano roll: the controls go back to the keyboard's sound"
+            class="rounded-full px-2 py-0.5 font-semibold text-amber-100 transition hover:bg-amber-400/20"
+            >Done</button
+          >
+        </span>
+      {/if}
+    </div>
     {#if !store.readOnly}
       <div id="preset-bar" class="flex flex-wrap items-center gap-2">
         <select
@@ -842,7 +876,7 @@
           id="reset-params"
           type="button"
           class={btn}
-          onclick={() => store.setParams({ ...DEFAULT_PARAMS })}
+          onclick={() => store.setParams({ ...DEFAULT_PARAMS }, soundPad)}
         >
           Reset
         </button>

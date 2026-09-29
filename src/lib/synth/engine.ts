@@ -221,6 +221,8 @@ export interface Synth {
   noteOff(key: VoiceKey, at?: number): void
   noteOn(midi: number, at?: number, key?: VoiceKey, own?: null | Partial<SynthParams>): void
   now(): number
+  // A loop's changed sound, for its voices already sounding (keys starting `prefix`).
+  setOwnParams(prefix: string, own: Partial<SynthParams>): void
   setParams(p: Partial<SynthParams>): void
 }
 
@@ -541,25 +543,39 @@ export function createSynth(
     return ensureContext().ctx.currentTime
   }
 
+  // Sounding voices take on changed settings, gliding so nothing clicks.
+  function follow(v: Voice, p: SynthParams, t: number): void {
+    v.filter.frequency.setTargetAtTime(p.filter_cutoff, t, 0.01)
+    v.filter.Q.setTargetAtTime(p.filter_resonance, t, 0.01)
+    for (const lfo of v.lfos) {
+      const { rate, target } = lfoParams(p, lfo.n)
+      if (lfo.target !== target) routeLfo(v, lfo, target)
+      lfo.osc.frequency.setTargetAtTime(rate, t, 0.01)
+      lfo.depth.gain.setTargetAtTime(lfoSwing(p, lfo.n), t, 0.01)
+    }
+    v.trem.gain.setTargetAtTime(tremLevel(p), t, 0.01)
+    updateDrive(v.drive, p, t)
+    applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
+    applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
+  }
+
   function setParams(p: Partial<SynthParams>): void {
     params = { ...params, ...p }
     if (!ctx || !master) return
     const t = ctx.currentTime
     master.gain.setTargetAtTime(params.volume, t, 0.01)
+    for (const v of voices.values()) if (!v.own) follow(v, params, t)
+  }
+
+  // A loop's new sound (`own`, as given to noteOn) for its voices already sounding:
+  // those keyed with `prefix`.
+  function setOwnParams(prefix: string, own: Partial<SynthParams>): void {
+    if (!ctx) return
+    const p = { ...DEFAULT_PARAMS, ...own }
     for (const v of voices.values()) {
-      if (v.own) continue
-      v.filter.frequency.setTargetAtTime(params.filter_cutoff, t, 0.01)
-      v.filter.Q.setTargetAtTime(params.filter_resonance, t, 0.01)
-      for (const lfo of v.lfos) {
-        const { rate, target } = lfoParams(params, lfo.n)
-        if (lfo.target !== target) routeLfo(v, lfo, target)
-        lfo.osc.frequency.setTargetAtTime(rate, t, 0.01)
-        lfo.depth.gain.setTargetAtTime(lfoSwing(params, lfo.n), t, 0.01)
-      }
-      v.trem.gain.setTargetAtTime(tremLevel(params), t, 0.01)
-      updateDrive(v.drive, params, t)
-      applyOsc(t, v.osc1, v.g1, 1, v.midi, true)
-      applyOsc(t, v.osc2, v.g2, 2, v.midi, true)
+      if (!v.own || typeof v.key !== 'string' || !v.key.startsWith(prefix)) continue
+      v.release = p.release
+      follow(v, p, ctx.currentTime)
     }
   }
 
@@ -572,5 +588,5 @@ export function createSynth(
     alive.clear()
   }
 
-  return { allNotesOff, cancelPending, close, noteOff, noteOn, now, setParams }
+  return { allNotesOff, cancelPending, close, noteOff, noteOn, now, setOwnParams, setParams }
 }
