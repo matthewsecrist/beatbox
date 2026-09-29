@@ -1,32 +1,15 @@
 import type { Transport } from '../transport.js'
-import type { DrumStep, KitId, TrackId, VoiceTweak } from '../types.js'
+import type { DrumStep, InstrumentId, KitId, TrackId, VoiceTweak } from '../types.js'
 
 import { getContext } from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
-
-export const TRACKS: { id: TrackId; label: string }[] = [
-  { id: 'kick', label: 'Kick' },
-  { id: 'snare', label: 'Snare' },
-  { id: 'clap', label: 'Clap' },
-  { id: 'chat', label: 'Closed Hat' },
-  { id: 'ohat', label: 'Open Hat' },
-  { id: 'tom', label: 'Tom' }
-]
-
-export const KITS: { id: KitId; label: string }[] = [
-  { id: 'classic', label: 'Classic' },
-  { id: '606', label: '606' },
-  { id: '808', label: '808' },
-  { id: '909', label: '909' },
-  { id: 'lofi', label: 'Lo-fi' },
-  { id: 'trap', label: 'Trap' }
-]
+import { KIT_SOUNDS, TRACKS } from './kits.js'
 
 export const STEPS = 16
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.1
 const ACCENT = 1.4 // gain boost on accented steps
-// Square-wave pitches mixed for the 808's metallic hats and cymbal.
+// Square-wave pitches mixed for the 808's metallic hats and cymbals.
 const METAL = [205.3, 304.4, 369.6, 522.7, 540, 800]
 
 export interface Drums {
@@ -155,17 +138,25 @@ export function createDrums({
     play(src, t, decay * h.len, f, g)
   }
 
-  // Six detuned squares through a high-pass: the 808's metallic hat. They all stop
-  // on the same sample, so whichever ends first can tear down the shared filter and gain.
-  function metal(h: Hit, freq: number, decay: number, peak: number) {
+  // Square waves through one filter: the 808's metallic hats and cymbals, and its
+  // cowbell. They all stop on the same sample, so whichever ends first can tear
+  // down the shared filter and gain.
+  function ring(
+    h: Hit,
+    pitches: number[],
+    type: BiquadFilterType,
+    freq: number,
+    decay: number,
+    peak: number
+  ) {
     const output = ensureContext()
     const { ctx } = output
     const f = ctx.createBiquadFilter()
-    f.type = 'highpass'
+    f.type = type
     f.frequency.value = freq * h.pitch
     const g = env(output, h.t, peak * h.gain, decay * h.len)
     f.connect(g)
-    for (const hz of METAL) {
+    for (const hz of pitches) {
       const o = ctx.createOscillator()
       o.type = 'square'
       o.frequency.value = hz * h.pitch
@@ -173,6 +164,9 @@ export function createDrums({
       play(o, h.t, decay * h.len, f, g)
     }
   }
+
+  const metal = (h: Hit, freq: number, decay: number, peak: number) =>
+    ring(h, METAL, 'highpass', freq, decay, peak)
 
   function clap(h: Hit, freq: number, bursts: number[], tail: number, peak: number) {
     for (const dt of bursts) hiss(h, 'bandpass', freq, 0.015, peak, dt)
@@ -189,106 +183,167 @@ export function createDrums({
     src.stop(t + decay + 0.05)
   }
 
-  // Everything is synthesized; the kits only differ in how.
-  const SOUNDS: Record<KitId, Record<TrackId, (h: Hit) => void>> = {
-    '606': {
-      chat: (h) => {
-        hiss(h, 'highpass', 10000, 0.03, 0.15)
-        metal(h, 8500, 0.035, 0.1)
-      },
-      clap: (h) => clap(h, 1600, [0, 0.008, 0.016], 0.12, 0.6),
-      kick: (h) => tone(h, 160, 55, 0.04, 0.22, 1),
-      ohat: (h) => {
-        hiss(h, 'highpass', 10000, 0.2, 0.12)
-        metal(h, 8500, 0.25, 0.08)
-      },
-      snare: (h) => {
-        tone(h, 240, 220, 0.02, 0.08, 0.3, 'triangle')
-        hiss(h, 'highpass', 2500, 0.14, 0.55)
-      },
-      tom: (h) => tone(h, 220, 160, 0.1, 0.25, 0.7)
+  // Everything is synthesized; each instrument in the library is built here.
+  const SOUNDS: Record<InstrumentId, (h: Hit) => void> = {
+    '606-chat': (h) => {
+      hiss(h, 'highpass', 10000, 0.03, 0.15)
+      metal(h, 8500, 0.035, 0.1)
     },
-    '808': {
-      chat: (h) => metal(h, 7500, 0.06, 0.12),
-      clap: (h) => clap(h, 1100, [0, 0.011, 0.022, 0.033], 0.3, 0.7),
-      kick: (h) => tone(h, 110, 48, 0.08, 0.9, 1),
-      ohat: (h) => metal(h, 7500, 0.45, 0.1),
-      snare: (h) => {
-        tone(h, 180, 180, 0.01, 0.12, 0.35, 'triangle')
-        tone(h, 330, 330, 0.01, 0.08, 0.25, 'triangle')
-        hiss(h, 'highpass', 1800, 0.18, 0.45)
-      },
-      tom: (h) => tone(h, 130, 95, 0.3, 0.45, 0.8)
+    '606-clap': (h) => clap(h, 1600, [0, 0.008, 0.016], 0.12, 0.6),
+    '606-kick': (h) => tone(h, 160, 55, 0.04, 0.22, 1),
+    '606-ohat': (h) => {
+      hiss(h, 'highpass', 10000, 0.2, 0.12)
+      metal(h, 8500, 0.25, 0.08)
     },
-    '909': {
-      chat: (h) => {
-        hiss(h, 'highpass', 9000, 0.04, 0.3)
-        metal(h, 9000, 0.04, 0.06)
-      },
-      clap: (h) => clap(h, 1300, [0, 0.013, 0.026], 0.22, 0.75),
-      kick: (h) => {
-        tone(h, 230, 52, 0.05, 0.4, 1)
-        hiss(h, 'lowpass', 3000, 0.012, 0.4)
-      },
-      ohat: (h) => {
-        hiss(h, 'highpass', 9000, 0.3, 0.22)
-        metal(h, 9000, 0.3, 0.05)
-      },
-      snare: (h) => {
-        tone(h, 200, 175, 0.03, 0.1, 0.5, 'triangle')
-        hiss(h, 'highpass', 800, 0.25, 0.75)
-      },
-      tom: (h) => {
-        tone(h, 190, 120, 0.12, 0.3, 0.8)
-        hiss(h, 'bandpass', 600, 0.03, 0.2)
-      }
+    '606-snare': (h) => {
+      tone(h, 240, 220, 0.02, 0.08, 0.3, 'triangle')
+      hiss(h, 'highpass', 2500, 0.14, 0.55)
     },
-    classic: {
-      chat: (h) => hiss(h, 'highpass', 7000, 0.05, 0.35),
-      clap: (h) => clap(h, 1500, [0, 0.01, 0.02], 0.18, 0.7),
-      kick: (h) => tone(h, 150, 40, 0.12, 0.45, 1),
-      ohat: (h) => hiss(h, 'highpass', 7000, 0.35, 0.3),
-      snare: (h) => {
-        hiss(h, 'highpass', 1000, 0.2, 0.6)
-        tone(h, 220, 160, 0.05, 0.1, 0.4, 'triangle')
-      },
-      tom: (h) => tone(h, 140, 80, 0.2, 0.35, 0.8)
+    '606-tom': (h) => tone(h, 220, 160, 0.1, 0.25, 0.7),
+    '808-chat': (h) => metal(h, 7500, 0.06, 0.12),
+    '808-clap': (h) => clap(h, 1100, [0, 0.011, 0.022, 0.033], 0.3, 0.7),
+    // A short, high sine: the 808's claves.
+    '808-claves': (h) => tone(h, 2500, 2500, 0.001, 0.045, 0.5),
+    // A tuned sine with a small drop, like the 808's congas.
+    '808-conga': (h) => tone(h, 260, 235, 0.03, 0.24, 0.8),
+    // Two squares a fifth-ish apart through a band-pass: a quick clank, then a ring.
+    '808-cowbell': (h) => {
+      ring(h, [540, 800], 'bandpass', 800, 0.06, 0.35)
+      ring(h, [540, 800], 'bandpass', 800, 0.35, 0.15)
     },
-    // Dull and dusty: band-limited noise, soft transients.
-    lofi: {
-      chat: (h) => hiss(h, 'bandpass', 5000, 0.04, 0.3),
-      clap: (h) => clap(h, 900, [0, 0.012, 0.024], 0.15, 0.5),
-      kick: (h) => {
-        tone(h, 120, 45, 0.1, 0.35, 1)
-        hiss(h, 'lowpass', 400, 0.03, 0.25)
-      },
-      ohat: (h) => hiss(h, 'bandpass', 5000, 0.25, 0.22),
-      snare: (h) => {
-        tone(h, 190, 160, 0.04, 0.12, 0.35, 'triangle')
-        hiss(h, 'bandpass', 1800, 0.16, 0.5)
-      },
-      tom: (h) => tone(h, 110, 75, 0.2, 0.4, 0.8, 'triangle')
+    '808-crash': (h) => {
+      metal(h, 5000, 1.6, 0.12)
+      hiss(h, 'highpass', 6000, 1.4, 0.1)
     },
-    // Long 808 boom, crisp hats for ratchet rolls.
-    trap: {
-      chat: (h) => metal(h, 10000, 0.03, 0.12),
-      clap: (h) => clap(h, 1200, [0, 0.009, 0.018, 0.027], 0.35, 0.8),
-      kick: (h) => {
-        tone(h, 90, 40, 0.15, 1.6, 1)
-        hiss(h, 'lowpass', 4000, 0.01, 0.3)
-      },
-      ohat: (h) => metal(h, 10000, 0.35, 0.1),
-      snare: (h) => {
-        tone(h, 230, 190, 0.02, 0.1, 0.4, 'triangle')
-        hiss(h, 'highpass', 1500, 0.14, 0.8)
-      },
-      tom: (h) => tone(h, 160, 60, 0.35, 0.6, 0.8)
+    '808-kick': (h) => tone(h, 110, 48, 0.08, 0.9, 1),
+    '808-ohat': (h) => metal(h, 7500, 0.45, 0.1),
+    '808-rim': (h) => {
+      tone(h, 1700, 1700, 0.001, 0.025, 0.45, 'triangle')
+      tone(h, 455, 455, 0.001, 0.035, 0.4, 'triangle')
+      hiss(h, 'highpass', 5000, 0.01, 0.2)
+    },
+    '808-snare': (h) => {
+      tone(h, 180, 180, 0.01, 0.12, 0.35, 'triangle')
+      tone(h, 330, 330, 0.01, 0.08, 0.25, 'triangle')
+      hiss(h, 'highpass', 1800, 0.18, 0.45)
+    },
+    '808-tom': (h) => tone(h, 130, 95, 0.3, 0.45, 0.8),
+    '909-chat': (h) => {
+      hiss(h, 'highpass', 9000, 0.04, 0.3)
+      metal(h, 9000, 0.04, 0.06)
+    },
+    '909-clap': (h) => clap(h, 1300, [0, 0.013, 0.026], 0.22, 0.75),
+    '909-crash': (h) => {
+      hiss(h, 'highpass', 5000, 1.8, 0.3)
+      metal(h, 7000, 1.2, 0.06)
+    },
+    '909-kick': (h) => {
+      tone(h, 230, 52, 0.05, 0.4, 1)
+      hiss(h, 'lowpass', 3000, 0.012, 0.4)
+    },
+    '909-ohat': (h) => {
+      hiss(h, 'highpass', 9000, 0.3, 0.22)
+      metal(h, 9000, 0.3, 0.05)
+    },
+    // A long metallic wash with a bell ping on top.
+    '909-ride': (h) => {
+      metal(h, 5500, 1.2, 0.07)
+      hiss(h, 'highpass', 8000, 0.9, 0.05)
+      tone(h, 3100, 3100, 0.001, 0.5, 0.06)
+    },
+    '909-rim': (h) => {
+      tone(h, 500, 480, 0.005, 0.03, 0.4, 'triangle')
+      hiss(h, 'bandpass', 3500, 0.02, 0.5)
+    },
+    '909-snare': (h) => {
+      tone(h, 200, 175, 0.03, 0.1, 0.5, 'triangle')
+      hiss(h, 'highpass', 800, 0.25, 0.75)
+    },
+    '909-tom': (h) => {
+      tone(h, 190, 120, 0.12, 0.3, 0.8)
+      hiss(h, 'bandpass', 600, 0.03, 0.2)
+    },
+    bongo: (h) => {
+      tone(h, 420, 390, 0.02, 0.12, 0.7)
+      hiss(h, 'bandpass', 2500, 0.008, 0.25)
+    },
+    'classic-chat': (h) => hiss(h, 'highpass', 7000, 0.05, 0.35),
+    'classic-clap': (h) => clap(h, 1500, [0, 0.01, 0.02], 0.18, 0.7),
+    'classic-kick': (h) => tone(h, 150, 40, 0.12, 0.45, 1),
+    'classic-ohat': (h) => hiss(h, 'highpass', 7000, 0.35, 0.3),
+    'classic-snare': (h) => {
+      hiss(h, 'highpass', 1000, 0.2, 0.6)
+      tone(h, 220, 160, 0.05, 0.1, 0.4, 'triangle')
+    },
+    'classic-tom': (h) => tone(h, 140, 80, 0.2, 0.35, 0.8),
+    // Lo-fi: dull and dusty, with band-limited noise and soft transients.
+    'lofi-chat': (h) => hiss(h, 'bandpass', 5000, 0.04, 0.3),
+    'lofi-clap': (h) => clap(h, 900, [0, 0.012, 0.024], 0.15, 0.5),
+    'lofi-conga': (h) => {
+      tone(h, 220, 200, 0.04, 0.2, 0.7, 'triangle')
+      hiss(h, 'bandpass', 900, 0.02, 0.2)
+    },
+    'lofi-cowbell': (h) => {
+      tone(h, 560, 560, 0.001, 0.2, 0.3, 'triangle')
+      tone(h, 835, 835, 0.001, 0.2, 0.2, 'triangle')
+    },
+    'lofi-crash': (h) => hiss(h, 'bandpass', 5000, 1.4, 0.25),
+    'lofi-kick': (h) => {
+      tone(h, 120, 45, 0.1, 0.35, 1)
+      hiss(h, 'lowpass', 400, 0.03, 0.25)
+    },
+    'lofi-ohat': (h) => hiss(h, 'bandpass', 5000, 0.25, 0.22),
+    'lofi-ride': (h) => ring(h, METAL, 'bandpass', 6000, 0.9, 0.07),
+    'lofi-rim': (h) => {
+      tone(h, 600, 580, 0.005, 0.04, 0.35, 'triangle')
+      hiss(h, 'bandpass', 2000, 0.025, 0.35)
+    },
+    'lofi-shaker': (h) => hiss(h, 'bandpass', 4500, 0.06, 0.25),
+    'lofi-snap': (h) => hiss(h, 'bandpass', 1800, 0.04, 0.55),
+    'lofi-snare': (h) => {
+      tone(h, 190, 160, 0.04, 0.12, 0.35, 'triangle')
+      hiss(h, 'bandpass', 1800, 0.16, 0.5)
+    },
+    'lofi-tom': (h) => tone(h, 110, 75, 0.2, 0.4, 0.8, 'triangle'),
+    // Two overlapping grains of bright noise, so it swishes rather than clicks.
+    shaker: (h) => {
+      hiss(h, 'highpass', 6000, 0.05, 0.18)
+      hiss(h, 'bandpass', 8000, 0.07, 0.22, 0.01)
+    },
+    // A sharp crack of band-passed noise with a tiny pitched click.
+    snap: (h) => {
+      hiss(h, 'bandpass', 2600, 0.035, 0.8)
+      hiss(h, 'highpass', 5000, 0.01, 0.4)
+      tone(h, 1600, 1200, 0.01, 0.015, 0.25, 'triangle')
+    },
+    // Trap: a long 808 boom, crisp hats for ratchet rolls.
+    'trap-chat': (h) => metal(h, 10000, 0.03, 0.12),
+    'trap-clap': (h) => clap(h, 1200, [0, 0.009, 0.018, 0.027], 0.35, 0.8),
+    'trap-kick': (h) => {
+      tone(h, 90, 40, 0.15, 1.6, 1)
+      hiss(h, 'lowpass', 4000, 0.01, 0.3)
+    },
+    'trap-ohat': (h) => metal(h, 10000, 0.35, 0.1),
+    'trap-snare': (h) => {
+      tone(h, 230, 190, 0.02, 0.1, 0.4, 'triangle')
+      hiss(h, 'highpass', 1500, 0.14, 0.8)
+    },
+    'trap-tom': (h) => tone(h, 160, 60, 0.35, 0.6, 0.8),
+    woodblock: (h) => {
+      tone(h, 1100, 1000, 0.005, 0.06, 0.6)
+      hiss(h, 'bandpass', 1800, 0.01, 0.2)
     }
   }
 
+  // The track's own library pick, or else its kit's sound.
   function hit(id: TrackId, t: number, gain: number) {
     const v = voices[id]
-    SOUNDS[kit][id]({ gain, len: v?.decay ?? 1, pitch: 2 ** ((v?.tune ?? 0) / 12), t })
+    SOUNDS[v?.sound ?? KIT_SOUNDS[kit][id]]({
+      gain,
+      len: v?.decay ?? 1,
+      pitch: 2 ** ((v?.tune ?? 0) / 12),
+      t
+    })
   }
 
   // Beats after the straight grid that `step` lands: swing delays every second 16th.

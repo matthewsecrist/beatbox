@@ -5,6 +5,7 @@ import type {
   Drums,
   DrumStep,
   Effects,
+  InstrumentId,
   KitId,
   LfoTarget,
   Loop,
@@ -14,10 +15,12 @@ import type {
   SongDoc,
   SynthParams,
   TrackId,
+  Voices,
   VoiceTweak
 } from './types.js'
 
-import { STEPS, TRACKS } from './drums/engine.js'
+import { STEPS } from './drums/engine.js'
+import { KIT_SOUNDS, TRACKS } from './drums/kits.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
 import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
@@ -31,7 +34,8 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 //   synth        Y.Map      param -> number | wave (missing = default)
 //   performance  Y.Map      arp, arp_rate, chord (missing = default)
 //   effects      Y.Map      delay/reverb settings and send levels (missing = default)
-//   drums        Y.Map      bpm, volume, swing, kit, voices (track -> VoiceTweak, plain JSON)
+//   drums        Y.Map      bpm, volume, swing, kit, voices (track -> VoiceTweak: tune,
+//                           decay and any library instrument in place of the kit's; plain JSON)
 //   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
 //   arrangement  Y.Array    Y.Map per section (id, name, bars, drums, pattern, pads)
@@ -45,19 +49,19 @@ export const STEP: DrumStep = { accent: false, on: false, probability: 1, ratche
 const row = (on: number[]): DrumStep[] =>
   Array.from({ length: STEPS }, (_, i) => ({ ...STEP, on: on.includes(i) }))
 
-const NO_TWEAKS = (): Record<TrackId, VoiceTweak> =>
-  Object.fromEntries(TRACKS.map(({ id }) => [id, { decay: 1, tune: 0 }])) as Record<
+// Every track's tweaks: the saved ones, defaults for the rest.
+const fillVoices = (saved: Voices = {}): Record<TrackId, VoiceTweak> =>
+  Object.fromEntries(TRACKS.map(({ id }) => [id, { decay: 1, tune: 0, ...saved[id] }])) as Record<
     TrackId,
     VoiceTweak
   >
 
+// Kick on the beat, hats on the 8ths, snare on 2 and 4; every other track empty.
 export const DEFAULT_PATTERN: DrumPattern = {
+  ...(Object.fromEntries(TRACKS.map(({ id }) => [id, row([])])) as DrumPattern),
   chat: row([0, 2, 4, 6, 8, 10, 12, 14]),
-  clap: row([]),
   kick: row([0, 4, 8, 12]),
-  ohat: row([]),
-  snare: row([4, 12]),
-  tom: row([])
+  snare: row([4, 12])
 }
 
 // A section as the arranger sees it: with a stable id for keyed rendering (not saved).
@@ -84,7 +88,7 @@ export class SongStore {
     kit: 'classic',
     patterns: [],
     swing: 50,
-    voices: NO_TWEAKS(),
+    voices: fillVoices(),
     volume: 0
   })
   // Delay and reverb settings and each instrument's sends, every one filled in.
@@ -239,11 +243,12 @@ export class SongStore {
     })
   }
 
-  // A kit preset starts every voice from its own tune and decay.
-  setKit(kit: KitId): void {
+  // A kit fills every track with its own sound, and starts each from its own tune
+  // and decay; a saved kit brings its tracks' tweaks and sounds too.
+  setKit(kit: KitId, voices: Voices = {}): void {
     this.edit(() => {
       this.drumsMap.set('kit', kit)
-      this.drumsMap.set('voices', NO_TWEAKS())
+      this.drumsMap.set('voices', fillVoices(voices))
     }, true)
   }
 
@@ -295,6 +300,15 @@ export class SongStore {
     }, true)
   }
 
+  // Plays `sound` from the instrument library on `track`. Picking the kit's own
+  // sound drops the choice, so the track follows the kit again.
+  setSound(track: TrackId, sound: InstrumentId): void {
+    const voice = { ...this.drums.voices[track] }
+    if (sound === KIT_SOUNDS[this.drums.kit][track]) delete voice.sound
+    else voice.sound = sound
+    this.edit(() => this.drumsMap.set('voices', { ...this.drums.voices, [track]: voice }), true)
+  }
+
   // Changes one step (on/off, velocity, accent, probability, ratchet).
   setStep(index: number, track: TrackId, step: number, patch: Partial<DrumStep>): void {
     const map = this.patternsArray.get(index)
@@ -310,7 +324,7 @@ export class SongStore {
     )
   }
 
-  setVoice(track: TrackId, patch: Partial<VoiceTweak>): void {
+  setVoice(track: TrackId, patch: Partial<Pick<VoiceTweak, 'decay' | 'tune'>>): void {
     const voices = this.drums.voices
     this.edit(() =>
       this.drumsMap.set('voices', { ...voices, [track]: { ...voices[track], ...patch } })
@@ -392,7 +406,7 @@ export class SongStore {
       kit: get<KitId>('kit', 'classic'),
       patterns: this.patternsArray.map((p) => p.toJSON() as DrumPattern),
       swing: get('swing', 50),
-      voices: get('voices', NO_TWEAKS()),
+      voices: get('voices', fillVoices()),
       volume: get('volume', 0)
     }
   }
@@ -436,9 +450,7 @@ export class SongStore {
     this.drumsMap.set('volume', drums?.volume ?? 0.8)
     this.drumsMap.set('swing', drums?.swing ?? 50)
     this.drumsMap.set('kit', drums?.kit ?? 'classic')
-    const voices = NO_TWEAKS()
-    for (const { id } of TRACKS) Object.assign(voices[id], drums?.voices?.[id])
-    this.drumsMap.set('voices', voices)
+    this.drumsMap.set('voices', fillVoices(drums?.voices))
     const source = drums ? drums.patterns : [DEFAULT_PATTERN]
     this.patternsArray.push(
       Array.from({ length: DRUM_PATTERNS }, (_, i) => {

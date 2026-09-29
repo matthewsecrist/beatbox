@@ -4,7 +4,7 @@ import type { TrackId } from '../types.js'
 
 import { STEP } from '../song.svelte.js'
 import { createTransport } from '../transport.js'
-import { createDrums, isAudible, TRACKS } from './engine.js'
+import { createDrums, isAudible } from './engine.js'
 
 // AudioContext stand-in: records when each kick (a 150 Hz sweep) starts.
 function fakeAudio() {
@@ -111,10 +111,28 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
 })
 
 test('solo wins over mute, and several tracks can be soloed', () => {
+  const tracks: TrackId[] = ['kick', 'snare', 'chat', 'cowbell']
   const heard = (muted: TrackId[], soloed: TrackId[]) =>
-    TRACKS.filter(({ id }) => isAudible(id, new Set(muted), new Set(soloed))).map(({ id }) => id)
+    tracks.filter((id) => isAudible(id, new Set(muted), new Set(soloed)))
 
-  expect(heard([], [])).toStrictEqual(['kick', 'snare', 'clap', 'chat', 'ohat', 'tom'])
-  expect(heard(['kick', 'chat'], [])).toStrictEqual(['snare', 'clap', 'ohat', 'tom'])
+  expect(heard([], [])).toStrictEqual(['kick', 'snare', 'chat', 'cowbell'])
+  expect(heard(['kick', 'chat'], [])).toStrictEqual(['snare', 'cowbell'])
   expect(heard(['kick'], ['kick', 'snare'])).toStrictEqual(['kick', 'snare'])
+})
+
+test("a track plays the library instrument picked for it instead of its kit's", () => {
+  const { getCtx, kicks } = fakeAudio()
+  const drums = createDrums({ getCtx, onStep: vi.fn() })
+  const tweak = { decay: 1, tune: 0 }
+
+  // The 808 kick (a 110 Hz sweep) isn't recorded; the Classic kick is.
+  drums.setKit('808', { kick: tweak, rim: { ...tweak, sound: 'classic-kick' } })
+  drums.trigger('kick')
+  drums.trigger('rim')
+  expect(kicks).toHaveLength(1)
+
+  drums.setKit('classic', { kick: tweak, rim: tweak })
+  drums.trigger('kick')
+  drums.trigger('rim')
+  expect(kicks).toHaveLength(2)
 })

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Play, X } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { SvelteSet } from 'svelte/reactivity'
 
@@ -6,21 +7,19 @@
   import type {
     DrumPattern,
     DrumStep,
+    KitId,
+    LoadKitReply,
+    PresetSummary,
+    SaveKitReply,
     Scene,
     StateDetail,
     TrackId,
-    TransportDetail
+    TransportDetail,
+    Voices
   } from './types.js'
 
-  import {
-    createDrums,
-    type Drums,
-    isAudible,
-    KITS,
-    type PatternFn,
-    STEPS,
-    TRACKS
-  } from './drums/engine.js'
+  import { createDrums, type Drums, isAudible, type PatternFn, STEPS } from './drums/engine.js'
+  import { INSTRUMENT_IDS, INSTRUMENTS, KIT_SOUNDS, KITS, TRACKS } from './drums/kits.js'
   import { effects } from './effects.js'
   import Effects from './Effects.svelte'
   import { help } from './help.js'
@@ -38,7 +37,8 @@
   const empty = (): DrumPattern => build(() => false)
   const LETTERS = ['A', 'B', 'C', 'D']
   // Per-track hit probability; kick always lands on the downbeat so it still grooves.
-  const DENSITY: Record<keyof DrumPattern, number> = {
+  // The percussion tracks stay empty.
+  const DENSITY: Partial<Record<keyof DrumPattern, number>> = {
     chat: 0.55,
     clap: 0.1,
     kick: 0.3,
@@ -47,7 +47,13 @@
     tom: 0.1
   }
   const randomPattern = (): DrumPattern =>
-    build((id, i) => (id === 'kick' && i === 0) || Math.random() < DENSITY[id])
+    build((id, i) => (id === 'kick' && i === 0) || Math.random() < (DENSITY[id] ?? 0))
+
+  // The instrument library by part, for the Kit tab's sound pickers.
+  const LIBRARY = TRACKS.map((part) => ({
+    ids: INSTRUMENT_IDS.filter((id) => INSTRUMENTS[id].part === part.id),
+    part
+  }))
 
   // What a click on a step changes. Outside Hits, a click on an off step switches it
   // on; on an on step it steps through the values.
@@ -78,6 +84,8 @@
     else if (mode === 'ratchet') patch = { ratchet: next([1, 2, 3, 4], step.ratchet) }
     else patch = { [mode]: next(LEVELS, step[mode]) }
     store.setStep(editing, track, i, patch)
+    // A percussion row stays put while you edit it, even once its last hit goes.
+    added.add(track)
   }
 
   function describeStep(step: DrumStep): string {
@@ -94,7 +102,23 @@
 
   // Patterns, tempo and level live in the song store (and its undo history).
   // The editor shows while the drums track is `selected`; the engine runs either way.
-  let { selected, store }: { selected: boolean; store: SongStore } = $props()
+  // `kits` are the user's saved kits, which `saveKit` and `loadKit` fetch from the
+  // server; signed out (`canSave` false) there are none, and nothing can be saved.
+  let {
+    canSave,
+    kits,
+    loadKit: fetchKit,
+    saveKit: storeKit,
+    selected,
+    store
+  }: {
+    canSave: boolean
+    kits: PresetSummary[]
+    loadKit: (id: string) => Promise<LoadKitReply>
+    saveKit: (name: string, kit: KitId, voices: Voices) => Promise<SaveKitReply>
+    selected: boolean
+    store: SongStore
+  } = $props()
 
   type Tab = 'effects' | 'kit' | 'steps'
   const TABS: [Tab, string][] = [
@@ -118,12 +142,27 @@
   let playing = $state(false)
   let current = $state(-1)
   let drums: Drums | null = null
+  // The saved kit last loaded or saved, with the song's kit as it was then. The Kit
+  // menu shows it only while the song's kit still matches (not after an edit or undo).
+  let savedKit = $state<null | { id: string; state: string }>(null)
+  const kitState = $derived(JSON.stringify([store.drums.kit, store.drums.voices]))
+  const kitShown = $derived(savedKit?.state === kitState ? 'saved:' + savedKit.id : store.drums.kit)
+  let kitName = $state('')
+  let status = $state('')
+  let statusTimer: ReturnType<typeof setTimeout> | undefined
   // Mute and solo are for listening only, so they stay here rather than in the song.
   const muted = new SvelteSet<TrackId>()
   const soloed = new SvelteSet<TrackId>()
   const flip = (set: SvelteSet<TrackId>, id: TrackId) => {
     if (!set.delete(id)) set.add(id)
   }
+  // The grid shows the core tracks, percussion the pattern uses, and percussion
+  // added here to write into (a view setting, like mute: not saved).
+  const added = new SvelteSet<TrackId>()
+  const rows = $derived(
+    TRACKS.filter((t) => t.core || added.has(t.id) || shown[t.id].some((s) => s.on))
+  )
+  const addable = $derived(TRACKS.filter((t) => !rows.includes(t)))
 
   // Read on every step, so edits (and undo, mute and solo) are heard at once.
   const patternFn =
@@ -181,6 +220,7 @@
       window.removeEventListener('beatbox:state', onState)
       engine.close()
       report(false)
+      clearTimeout(statusTimer)
     }
   })
 
@@ -209,6 +249,49 @@
   }
 
   const setEditing = (p: DrumPattern) => store.setPattern(editing, p)
+
+  // The Kit menu: a factory kit, or one of the user's saved kits ("saved:<id>").
+  function pickKit(value: string) {
+    if (value.startsWith('saved:')) {
+      const id = value.slice(6)
+      void fetchKit(id).then((reply) => {
+        if ('error' in reply) return showStatus(reply.error)
+        store.setKit(reply.kit, reply.voices)
+        savedKit = { id, state: kitState }
+        kitName = reply.name
+      })
+      return
+    }
+    const kit = KITS.find((k) => k.id === value)
+    if (!kit) return
+    store.setKit(kit.id)
+    savedKit = null
+  }
+
+  // Picks a library instrument for a track and plays it, so the choice is heard.
+  function pickSound(track: TrackId, value: string) {
+    const sound = INSTRUMENT_IDS.find((id) => id === value)
+    if (!sound) return
+    store.setSound(track, sound)
+    // The kit effect above would pass the new sound on too late for this hit.
+    drums?.setKit(store.drums.kit, store.drums.voices)
+    drums?.trigger(track)
+  }
+
+  function saveKit() {
+    const state = kitState
+    void storeKit(kitName, store.drums.kit, store.drums.voices).then((reply) => {
+      if ('error' in reply) return showStatus(reply.error)
+      savedKit = { id: reply.id, state }
+      showStatus('Saved “' + reply.name + '”')
+    })
+  }
+
+  function showStatus(msg: string) {
+    status = msg
+    clearTimeout(statusTimer)
+    statusTimer = setTimeout(() => (status = ''), 3000)
+  }
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95'
@@ -362,7 +445,7 @@
       {/if}
 
       <div id="drum-grid" class="space-y-1.5 overflow-x-auto">
-        {#each TRACKS as track (track.id)}
+        {#each rows as track (track.id)}
           {@const heard = isAudible(track.id, muted, soloed)}
           <div class="flex min-w-[40rem] items-center gap-2">
             <button
@@ -435,13 +518,54 @@
                 </button>
               {/each}
             </div>
+            {#if !store.readOnly}
+              {#if !track.core && !shown[track.id].some((s) => s.on)}
+                <button
+                  id={'drums-hide-' + track.id}
+                  type="button"
+                  aria-label={`Hide ${track.label}`}
+                  title="Hide this empty track"
+                  onclick={() => added.delete(track.id)}
+                  class="grid size-7 shrink-0 place-items-center rounded-md text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
+                >
+                  <X class="size-3.5" />
+                </button>
+              {:else}
+                <span class="size-7 shrink-0"></span>
+              {/if}
+            {/if}
           </div>
         {/each}
       </div>
-    {:else if tab === 'kit'}
-      <div class="max-w-xs">
+      {#if !store.readOnly && addable.length}
         <label
-          class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
+          class="flex w-fit items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
+          for="drums-add-track"
+        >
+          <span class="flex items-center gap-1"
+            >Add track<Info label="Add track" text={help('drums_tracks') ?? ''} /></span
+          >
+          <select
+            id="drums-add-track"
+            value=""
+            onchange={(e) => {
+              const track = addable.find((t) => t.id === e.currentTarget.value)
+              if (track) added.add(track.id)
+              e.currentTarget.value = ''
+            }}
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm normal-case text-zinc-200"
+          >
+            <option value="" disabled>Choose…</option>
+            {#each addable as track (track.id)}
+              <option value={track.id}>{track.label}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+    {:else if tab === 'kit'}
+      <div id="kit-bar" class="flex flex-wrap items-center gap-2">
+        <label
+          class="flex min-w-60 items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
           for="drums-kit"
         >
           <span class="flex items-center gap-1"
@@ -449,42 +573,103 @@
           >
           <select
             id="drums-kit"
-            value={store.drums.kit}
+            value={kitShown}
             disabled={store.readOnly}
-            onchange={(e) => {
-              const kit = KITS.find((k) => k.id === e.currentTarget.value)
-              if (kit) store.setKit(kit.id)
-            }}
+            onchange={(e) => pickKit(e.currentTarget.value)}
             class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm normal-case text-zinc-200"
           >
-            {#each KITS as kit (kit.id)}
-              <option value={kit.id}>{kit.label}</option>
-            {/each}
+            <optgroup label="Factory">
+              {#each KITS as kit (kit.id)}
+                <option value={kit.id}>{kit.label}</option>
+              {/each}
+            </optgroup>
+            {#if kits.length}
+              <optgroup label="Saved">
+                {#each kits as kit (kit.id)}
+                  <option value={'saved:' + kit.id}>{kit.name}</option>
+                {/each}
+              </optgroup>
+            {/if}
           </select>
         </label>
+        {#if !store.readOnly}
+          <input
+            id="kit-name"
+            type="text"
+            maxlength="60"
+            placeholder={canSave ? 'Kit name' : 'Sign in to save kits'}
+            disabled={!canSave}
+            bind:value={kitName}
+            class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
+          />
+          <button
+            id="save-kit"
+            type="button"
+            disabled={!canSave || kitName.trim() === ''}
+            onclick={saveKit}
+            class="rounded-md bg-amber-400 px-4 py-1 text-sm font-semibold text-zinc-900 shadow shadow-amber-400/20 transition hover:bg-amber-300 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+          >
+            Save kit
+          </button>
+          <span id="kit-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
+        {/if}
       </div>
       <div
         id="drum-voices"
-        class="grid max-w-2xl grid-cols-[auto_1fr_1fr] items-center gap-x-4 gap-y-2"
+        class="grid max-w-3xl grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr] items-center gap-x-4 gap-y-2"
       >
+        <span></span>
+        <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
+          >Sound<Info label="Sound" text={help('drums_sound') ?? ''} /></span
+        >
         <span></span>
         <span class="text-[10px] uppercase tracking-wider text-zinc-500">Tune</span>
         <span class="text-[10px] uppercase tracking-wider text-zinc-500">Decay</span>
         {#each TRACKS as track (track.id)}
+          {@const voice = store.drums.voices[track.id]}
           <span class="text-xs font-semibold uppercase tracking-wide text-zinc-400"
             >{track.label}</span
           >
+          <select
+            id={'drums-sound-' + track.id}
+            value={voice.sound ?? KIT_SOUNDS[store.drums.kit][track.id]}
+            disabled={store.readOnly}
+            onchange={(e) => pickSound(track.id, e.currentTarget.value)}
+            aria-label={`${track.label} sound`}
+            class={[
+              'min-w-0 rounded-md border bg-zinc-800 px-2 py-1 text-sm text-zinc-200',
+              voice.sound ? 'border-amber-400/60' : 'border-zinc-700'
+            ]}
+          >
+            {#each LIBRARY as { ids, part } (part.id)}
+              <optgroup label={part.label}>
+                {#each ids as id (id)}
+                  <option value={id}>{INSTRUMENTS[id].label}</option>
+                {/each}
+              </optgroup>
+            {/each}
+          </select>
+          <button
+            id={'drums-preview-' + track.id}
+            type="button"
+            aria-label={`Play ${track.label}`}
+            title="Play"
+            onclick={() => drums?.trigger(track.id)}
+            class="grid size-7 place-items-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-300 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
+          >
+            <Play class="size-3.5" />
+          </button>
           <input
             id={'drums-tune-' + track.id}
             type="range"
             min="-12"
             max="12"
             step="1"
-            value={store.drums.voices[track.id].tune}
+            value={voice.tune}
             disabled={store.readOnly}
             oninput={(e) => store.setVoice(track.id, { tune: Number(e.currentTarget.value) })}
             aria-label={`${track.label} tune`}
-            title={`Tune ${store.drums.voices[track.id].tune} semitones`}
+            title={`Tune ${voice.tune} semitones`}
             class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
           />
           <input
@@ -493,11 +678,11 @@
             min="0.25"
             max="2"
             step="0.05"
-            value={store.drums.voices[track.id].decay}
+            value={voice.decay}
             disabled={store.readOnly}
             oninput={(e) => store.setVoice(track.id, { decay: Number(e.currentTarget.value) })}
             aria-label={`${track.label} decay`}
-            title={`Decay ${pct(store.drums.voices[track.id].decay)}`}
+            title={`Decay ${pct(voice.decay)}`}
             class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
           />
         {/each}

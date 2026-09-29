@@ -1,5 +1,5 @@
 import { getExample, listExamples } from '$lib/server/examples/index.js'
-import { listPresets, listSongs } from '$lib/server/music.js'
+import { listKits, listPresets, listSongs } from '$lib/server/music.js'
 import { redirect } from '@sveltejs/kit'
 
 import type { PageServerLoad } from './$types'
@@ -14,6 +14,7 @@ export const load = (async ({ locals, params }) => {
     example,
     examples: listExamples(),
     key: crypto.randomUUID(),
+    kits: user ? await listKits(user.id) : [],
     notice: null,
     presets: user ? await listPresets(user.id) : [],
     shared: null,

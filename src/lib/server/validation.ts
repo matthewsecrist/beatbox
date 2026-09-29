@@ -1,5 +1,7 @@
 import { z, type ZodError } from 'zod'
 
+import { INSTRUMENT_IDS } from '../drums/kits.js'
+
 const wave = z.enum(['sawtooth', 'sine', 'square', 'triangle'])
 const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
 
@@ -58,38 +60,58 @@ const steps = z
 
 const voice = z.object({
   decay: z.number().min(0.25).max(2).exactOptional(),
+  sound: z.enum(INSTRUMENT_IDS).exactOptional(),
   tune: z.number().min(-12).max(12).exactOptional()
 })
+
+// Each drum track's tune, decay and library sound, on top of the kit.
+const voices = z.object({
+  chat: voice.exactOptional(),
+  clap: voice.exactOptional(),
+  conga: voice.exactOptional(),
+  cowbell: voice.exactOptional(),
+  crash: voice.exactOptional(),
+  kick: voice.exactOptional(),
+  ohat: voice.exactOptional(),
+  ride: voice.exactOptional(),
+  rim: voice.exactOptional(),
+  shaker: voice.exactOptional(),
+  snap: voice.exactOptional(),
+  snare: voice.exactOptional(),
+  tom: voice.exactOptional(),
+  woodblock: voice.exactOptional()
+})
+
+const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 
 // Drum machine state: tempo, feel, kit, level and patterns A-D of 16 steps.
 const drums = z.object({
   bpm: z.int().min(60).max(200),
-  kit: z.enum(['606', '808', '909', 'classic', 'lofi', 'trap']).exactOptional(),
+  kit: kit.exactOptional(),
   // Patterns A-D (index 0-3); arrangement sections pick one by index.
   patterns: z
     .array(
       z.object({
         chat: steps.exactOptional(),
         clap: steps.exactOptional(),
+        conga: steps.exactOptional(),
+        cowbell: steps.exactOptional(),
+        crash: steps.exactOptional(),
         kick: steps.exactOptional(),
         ohat: steps.exactOptional(),
+        ride: steps.exactOptional(),
+        rim: steps.exactOptional(),
+        shaker: steps.exactOptional(),
+        snap: steps.exactOptional(),
         snare: steps.exactOptional(),
-        tom: steps.exactOptional()
+        tom: steps.exactOptional(),
+        woodblock: steps.exactOptional()
       })
     )
     .min(1)
     .max(4),
   swing: z.number().min(50).max(75).exactOptional(),
-  voices: z
-    .object({
-      chat: voice.exactOptional(),
-      clap: voice.exactOptional(),
-      kick: voice.exactOptional(),
-      ohat: voice.exactOptional(),
-      snare: voice.exactOptional(),
-      tom: voice.exactOptional()
-    })
-    .exactOptional(),
+  voices: voices.exactOptional(),
   volume: z.number().min(0).max(1)
 })
 
@@ -141,6 +163,9 @@ const section = z.object({
   // Which drum pattern (0-3 = A-D) plays when `drums` is on.
   pattern: z.int().min(0).max(3).default(0)
 })
+
+// A saved drum kit: the factory kit it starts from, and its tracks' tweaks.
+export const kitSchema = z.object({ kit, name: name(60), voices })
 
 export const presetSchema = z.object({ name: name(60), params })
 

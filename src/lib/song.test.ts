@@ -2,7 +2,8 @@ import { expect, test, vi } from 'vitest'
 
 import type { Loop, SongDoc } from './types.js'
 
-import { STEPS, TRACKS } from './drums/engine.js'
+import { STEPS } from './drums/engine.js'
+import { TRACKS } from './drums/kits.js'
 import { DEFAULT_PATTERN, SongStore, STEP } from './song.svelte.js'
 
 const loop = (slot: number, midi = 60): Loop => ({
@@ -120,6 +121,48 @@ test('choosing a kit resets voice tweaks, and undoes as one step', () => {
   store.undo()
   expect(store.drums.kit).toBe('classic')
   expect(store.drums.voices.kick.tune).toBe(5)
+})
+
+test("a saved kit replaces every track's tweaks, as one undo step", () => {
+  const drums = { bpm: 140, patterns: [], voices: { kick: { tune: 5 } }, volume: 0.5 }
+  const store = new SongStore({ ...song, drums })
+
+  store.setKit('trap', { snare: { decay: 0.5, sound: '909-snare' } })
+  expect(store.drums.kit).toBe('trap')
+  expect(store.drums.voices.kick).toStrictEqual({ decay: 1, tune: 0 })
+  expect(store.drums.voices.snare).toStrictEqual({ decay: 0.5, sound: '909-snare', tune: 0 })
+
+  store.undo()
+  expect(store.drums.kit).toBe('classic')
+  expect(store.drums.voices.kick.tune).toBe(5)
+  expect(store.drums.voices.snare.sound).toBe(undefined)
+})
+
+test("a track's picked sound saves with the song; the kit's own sound, or a new kit, drops it", () => {
+  const store = new SongStore({
+    ...song,
+    drums: { bpm: 140, kit: '808', patterns: [], volume: 0.5 }
+  })
+  // Songs saved before the percussion tracks load them empty.
+  expect(store.drums.patterns[0]?.cowbell.every((s) => !s.on)).toBe(true)
+
+  store.setSound('snare', '909-snare')
+  store.setVoice('snare', { tune: 3 })
+  expect(store.toSongDoc().drums?.voices?.snare).toStrictEqual({
+    decay: 1,
+    sound: '909-snare',
+    tune: 3
+  })
+
+  store.setSound('snare', '808-snare')
+  expect(store.toSongDoc().drums?.voices?.snare).toStrictEqual({ decay: 1, tune: 3 })
+
+  store.setSound('cowbell', 'lofi-cowbell')
+  store.setKit('909') // a new kit gives every track its own sound again
+  expect(store.drums.voices.cowbell).toStrictEqual({ decay: 1, tune: 0 })
+
+  store.undo()
+  expect(store.drums.voices.cowbell.sound).toBe('lofi-cowbell')
 })
 
 test('a slider drag is one undo step; a discrete edit after it is another', () => {
