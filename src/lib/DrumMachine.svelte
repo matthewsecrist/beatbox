@@ -19,6 +19,7 @@
   } from './types.js'
 
   import { createDrums, type Drums, isAudible, type PatternFn, STEPS } from './drums/engine.js'
+  import { euclid } from './drums/euclid.js'
   import { INSTRUMENT_IDS, INSTRUMENTS, KIT_SOUNDS, KITS, TRACKS } from './drums/kits.js'
   import { effects } from './effects.js'
   import Effects from './Effects.svelte'
@@ -163,6 +164,26 @@
     TRACKS.filter((t) => t.core || added.has(t.id) || shown[t.id].some((s) => s.on))
   )
   const addable = $derived(TRACKS.filter((t) => !rows.includes(t)))
+  // The Euclid generator: `hits` spread evenly over a cycle of `steps`, turned
+  // `rotation` steps later and repeated across the bar, for one track.
+  let euclidTrack: TrackId = $state('kick')
+  let euclidHits = $state(3)
+  let euclidSteps = $state(8)
+  let euclidRotation = $state(0)
+  const euclidPreview = $derived(euclid(euclidHits, euclidSteps, euclidRotation, STEPS))
+
+  // Writes the rhythm into the track, as one undo step; its row stays in the grid.
+  function applyEuclid() {
+    store.setHits(editing, euclidTrack, euclidPreview)
+    added.add(euclidTrack)
+  }
+
+  // Fewer steps can't hold as many hits, or turn as far.
+  function setEuclidSteps(n: number) {
+    euclidSteps = n
+    euclidHits = Math.min(euclidHits, n)
+    euclidRotation = Math.min(euclidRotation, n - 1)
+  }
 
   // Read on every step, so edits (and undo, mute and solo) are heard at once.
   const patternFn =
@@ -441,6 +462,80 @@
               <Info label={m.label} text={help('step_' + m.id) ?? ''} />
             </span>
           {/each}
+        </div>
+        <div
+          id="drum-euclid"
+          class="flex w-fit max-w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-zinc-900 px-3 py-2"
+          role="group"
+          aria-label="Euclidean rhythm"
+        >
+          <span
+            class="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-zinc-400"
+            >Euclid<Info label="Euclid" text={help('drums_euclid') ?? ''} /></span
+          >
+          <select
+            id="drums-euclid-track"
+            bind:value={euclidTrack}
+            aria-label="Euclid track"
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200"
+          >
+            {#each TRACKS as track (track.id)}
+              <option value={track.id}>{track.label}</option>
+            {/each}
+          </select>
+          <label class="flex items-center gap-2 text-xs text-zinc-400">
+            Hits
+            <input
+              id="drums-euclid-hits"
+              type="range"
+              min="0"
+              max={euclidSteps}
+              step="1"
+              bind:value={euclidHits}
+              class="w-20 cursor-pointer accent-amber-400"
+            />
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidHits}</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs text-zinc-400">
+            Steps
+            <input
+              id="drums-euclid-steps"
+              type="range"
+              min="1"
+              max={STEPS}
+              step="1"
+              value={euclidSteps}
+              oninput={(e) => setEuclidSteps(Number(e.currentTarget.value))}
+              class="w-20 cursor-pointer accent-amber-400"
+            />
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidSteps}</span>
+          </label>
+          <label class="flex items-center gap-2 text-xs text-zinc-400">
+            Rotate
+            <input
+              id="drums-euclid-rotation"
+              type="range"
+              min="0"
+              max={euclidSteps - 1}
+              step="1"
+              bind:value={euclidRotation}
+              class="w-20 cursor-pointer accent-amber-400"
+            />
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidRotation}</span>
+          </label>
+          <div id="drums-euclid-preview" class="grid w-40 grid-cols-16 gap-0.5" aria-hidden="true">
+            {#each euclidPreview as on, i (i)}
+              <span
+                class={[
+                  'h-3 rounded-sm',
+                  on ? 'bg-amber-400' : i % 4 === 0 ? 'bg-zinc-700' : 'bg-zinc-800'
+                ]}
+              ></span>
+            {/each}
+          </div>
+          <button id="drums-euclid-apply" type="button" class={btn} onclick={applyEuclid}>
+            Apply
+          </button>
         </div>
       {/if}
 

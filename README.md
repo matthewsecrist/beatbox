@@ -126,6 +126,11 @@ bar's **Tempo** slider sets the tempo for the whole song.
 - The grid shows the six core tracks and any percussion the pattern uses. **Add
   track** gives another one a row to write into; the **×** on an empty percussion
   row hides it again. Which rows show is a view setting, not saved with the song.
+- **Euclid** spreads a number of hits as evenly as possible over a cycle of steps
+  (Bjorklund's algorithm: 3 over 8 is the tresillo, 5 over 8 the cinquillo),
+  turned **Rotate** steps later and repeated to fill the bar. Pick a track, and
+  **Apply** writes the rhythm into it in the pattern you're editing, as one undo
+  step; each step keeps its velocity, accent and other settings.
 - **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.
 - The step edit buttons pick what a click on a step does: **Hits** turns it on
   or off; **Velocity** (100/75/50/25%), **Chance** (the odds it plays each time

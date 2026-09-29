@@ -109,6 +109,29 @@ test('step settings survive switching off and saving; plain steps save as on/off
   })
 })
 
+test("writing a track's hits keeps each step's settings, and undoes as one step", () => {
+  const store = new SongStore(song)
+  store.setStep(0, 'rim', 3, { accent: true, velocity: 0.5 })
+
+  store.setHits(0, 'rim', [true, false, false, true])
+  expect(store.drums.patterns[0]?.rim.map((s) => s.on).slice(0, 5)).toStrictEqual([
+    true,
+    false,
+    false,
+    true,
+    false
+  ])
+  expect(store.drums.patterns[0]?.rim[3]).toStrictEqual({
+    ...STEP,
+    accent: true,
+    on: true,
+    velocity: 0.5
+  })
+
+  store.undo()
+  expect(store.drums.patterns[0]?.rim.filter((s) => s.on)).toHaveLength(0)
+})
+
 test('choosing a kit resets voice tweaks, and undoes as one step', () => {
   const drums = { bpm: 140, patterns: [], voices: { kick: { tune: 5 } }, volume: 0.5 }
   const store = new SongStore({ ...song, drums })
