@@ -286,7 +286,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/server/auth.ts`                                                       | Better Auth setup: magic links, and a new user's username                                                           |
 | `src/hooks.server.ts`                                                          | Loads the signed-in user; only `/`, `/login`, the examples and share links are open to signed-out visitors          |
 | `src/lib/server/usernames.ts`                                                  | Generated usernames                                                                                                 |
-| `src/lib/server/examples/`, `src/routes/examples/[slug]/`                      | Example songs anyone can open (Midnight Arcade), and their page                                                     |
+| `src/lib/server/examples/`, `src/routes/examples/[slug]/`                      | Example songs anyone can open (see [Example songs](#example-songs)), and their page                                 |
 | `src/routes/login/`, `src/routes/logout/`                                      | Sign-in page and sign-out                                                                                           |
 | `src/lib/server/validation.ts`                                                 | Shape and limits for presets and song parts: drums, loops, sections                                                 |
 | `src/lib/server/music.ts`                                                      | Reading and saving a user's presets and songs                                                                       |
