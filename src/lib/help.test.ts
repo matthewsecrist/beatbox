@@ -15,7 +15,9 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ),
     // Drum machine controls and step edit buttons
     ...['tempo', 'drums_level', 'swing', 'kit', 'drums_sound', 'drums_tracks', 'drums_euclid'],
-    ...['step_hits', 'step_velocity', 'step_accent', 'step_probability', 'step_ratchet']
+    ...['step_hits', 'step_velocity', 'step_accent', 'step_probability', 'step_ratchet'],
+    // Arrangement
+    'section_bpm'
   ]
   expect(keys.filter((key) => !help(key))).toStrictEqual([])
 })

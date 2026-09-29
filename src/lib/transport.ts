@@ -3,28 +3,47 @@ import { getContext } from './audio.js'
 export const BEATS_PER_BAR = 4
 const LOOKAHEAD = 0.1
 
+// From `beat` on, `bpm` beats per minute; null is the song tempo.
+export interface TempoChange {
+  beat: number
+  bpm: null | number
+}
+
 // Shared tempo and beat grid. Instruments `acquire` the transport while they play;
 // the first one starts the grid at beat 0 and the last `release` stops it. Beats
 // map to audio-clock times through an anchor, re-set on tempo changes so the
 // current beat position carries over: everything scheduled by beat stays in sync.
+//
+// The tempo is the song's (`setBpm`), unless a tempo map (`setTempo`) gives some
+// stretch of beats its own: the arrangement's sections with a tempo of their own.
 export interface Transport {
   acquire(id: string): void
   beatAt(t: number): number
+  // The tempo playing now.
   readonly bpm: number
+  // Back to the song tempo from now on, with no changes to come.
+  clearTempo(): void
   metronome(fromBeat: null | number): void
   nextBar(t?: number): number
   now(): number
   release(id: string): void
   readonly running: boolean
+  // The song tempo.
   setBpm(value: number): void
+  // Replaces the tempo changes to come: from each change's beat, its tempo.
+  setTempo(changes: TempoChange[]): void
   timeAt(beat: number): number
 }
 
 export function createTransport(getCtx: () => BaseAudioContext = getContext): Transport {
-  let bpm = 110
+  let songBpm = 110
   let running = false
+  // From `anchorBeat` (at `anchorTime`) the tempo is `anchorBpm`, until each of
+  // `changes` (all on later beats, in order) takes over on its beat.
   let anchorTime = 0
   let anchorBeat = 0
+  let anchorBpm: null | number = null
+  let changes: TempoChange[] = []
   const users = new Set<string>()
 
   // Metronome: clicks every beat while enabled (loop recording).
@@ -32,8 +51,45 @@ export function createTransport(getCtx: () => BaseAudioContext = getContext): Tr
   let clickTimer: ReturnType<typeof setInterval> | undefined
 
   const now = () => getCtx().currentTime
-  const beatAt = (t: number): number => anchorBeat + ((t - anchorTime) * bpm) / 60
-  const timeAt = (beat: number): number => anchorTime + ((beat - anchorBeat) * 60) / bpm
+  const rate = (bpm: null | number) => bpm ?? songBpm
+
+  // The stretch of the grid playing at audio time `t`: where it starts, and its tempo.
+  function segmentAt(t: number): { beat: number; bpm: null | number; time: number } {
+    let segment = { beat: anchorBeat, bpm: anchorBpm, time: anchorTime }
+    for (const change of changes) {
+      const time = segment.time + ((change.beat - segment.beat) * 60) / rate(segment.bpm)
+      if (time > t) break
+      segment = { beat: change.beat, bpm: change.bpm, time }
+    }
+    return segment
+  }
+
+  function beatAt(t: number): number {
+    const segment = segmentAt(t)
+    return segment.beat + ((t - segment.time) * rate(segment.bpm)) / 60
+  }
+
+  function timeAt(beat: number): number {
+    let segment = { beat: anchorBeat, bpm: anchorBpm, time: anchorTime }
+    for (const change of changes) {
+      if (change.beat > beat) break
+      const time = segment.time + ((change.beat - segment.beat) * 60) / rate(segment.bpm)
+      segment = { beat: change.beat, bpm: change.bpm, time }
+    }
+    return segment.time + ((beat - segment.beat) * 60) / rate(segment.bpm)
+  }
+
+  // Moves the anchor to now, keeping every beat from now on where it was, so the
+  // tempo can change from here without moving what's already scheduled.
+  function reanchor() {
+    if (!running) return
+    const t = now()
+    const segment = segmentAt(t)
+    anchorBeat = beatAt(t)
+    anchorTime = t
+    anchorBpm = segment.bpm
+    changes = changes.filter((c) => c.beat > anchorBeat)
+  }
 
   function click(t: number, accent: boolean) {
     const ctx = getCtx()
@@ -71,12 +127,19 @@ export function createTransport(getCtx: () => BaseAudioContext = getContext): Tr
         running = true
         anchorTime = now() + 0.05
         anchorBeat = 0
+        anchorBpm = null
+        changes = []
       }
       users.add(id)
     },
     beatAt,
     get bpm() {
-      return bpm
+      return running ? rate(segmentAt(now()).bpm) : songBpm
+    },
+    clearTempo() {
+      reanchor()
+      anchorBpm = null
+      changes = []
     },
     metronome,
     // First bar line at or after audio time `t`. Stopped: 0, where the grid starts
@@ -101,12 +164,16 @@ export function createTransport(getCtx: () => BaseAudioContext = getContext): Tr
     },
 
     setBpm(value: number) {
-      if (running) {
-        const t = now()
-        anchorBeat = beatAt(t)
-        anchorTime = t
-      }
-      bpm = value
+      reanchor()
+      songBpm = value
+    },
+
+    setTempo(list: TempoChange[]) {
+      reanchor()
+      const sorted = [...list].sort((a, b) => a.beat - b.beat)
+      // A change on the anchor's beat or before it takes over from the anchor.
+      for (const change of sorted) if (change.beat <= anchorBeat) anchorBpm = change.bpm
+      changes = sorted.filter((c) => c.beat > anchorBeat)
     },
 
     timeAt

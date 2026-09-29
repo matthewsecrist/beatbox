@@ -358,8 +358,10 @@ export class SongStore {
     const performance = this.performanceMap.toJSON() as Partial<Performance>
     const effects = this.effectsMap.toJSON() as Partial<Effects>
     return {
-      arrangement: this.arrangement.map(({ bars, drums, name, pads, pattern }) => ({
+      arrangement: this.arrangement.map(({ bars, bpm, drums, name, pads, pattern }) => ({
         bars,
+        // Saved only when the section has its own tempo.
+        ...(bpm ? { bpm } : {}),
         drums,
         name,
         pads,
@@ -515,6 +517,7 @@ function sectionMap(section: Section): Y.Map<unknown> {
   map.set('name', section.name ?? '')
   map.set('bars', section.bars)
   map.set('drums', section.drums)
+  if (section.bpm) map.set('bpm', section.bpm)
   map.set('pattern', section.pattern)
   map.set('pads', [...section.pads])
   return map

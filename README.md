@@ -121,7 +121,8 @@ grid, plus eight percussion tracks (rim shot, snap, shaker, conga, cowbell, wood
 block, ride and crash), with four patterns (**A–D**). Copy/Paste lets you build
 variations, and Randomize, Clear and Reset act on the pattern you're editing.
 Switching patterns while the drums play changes over on the next bar. The song
-bar's **Tempo** slider sets the tempo for the whole song.
+bar's **Tempo** slider sets the tempo for the whole song (a section can have its
+own; see **Arrangement**).
 
 - The grid shows the six core tracks and any percussion the pattern uses. **Add
   track** gives another one a row to write into; the **×** on an empty percussion
@@ -194,6 +195,13 @@ length in bars, a drum pattern (or none) on the drums' row, and a toggle on each
 pad's row. **Play song** plays the sections in order, and every change lands on the
 section boundary. The ▶ at the top of a section plays just that one, through to its
 end, and then stops; ← and → move a section.
+
+- A section's **Tempo** plays it at its own speed (60–200 BPM); left empty, it
+  follows the song's Tempo slider. Everything (drums, pads, arp, metronome and
+  the delay's timing) switches exactly on the section's first beat and back to
+  the song tempo after it, including when its ▶ plays it alone. Stopping goes
+  back to the song tempo. Pads keep their length in beats, so they speed up
+  or slow down with the section.
 
 **Loop Browser** (**Loops** in the song bar): 120 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
@@ -345,13 +353,13 @@ How the pieces talk:
 Each example shows off a different corner of the app, and each sets up the
 keyboard (**Chord** and **Arp**) to play along:
 
-| Example                   | Style                         | Shows off                                                                                                                                                                                            |
-| ------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, dotted-8th delay |
-| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills, congas on the peak, a shaker in the breakdown |
-| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb                                                 |
-| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords, heavy swing on the Lo-fi kit, ghost snares, rim clicks and a dusty shaker, gliding flute and vibrato lead                                                             |
-| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, a ride in the drops, breakdowns with a shaker                                                                   |
+| Example                   | Style                         | Shows off                                                                                                                                                                                                                             |
+| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, which winds down to 116 BPM, dotted-8th delay     |
+| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills, congas on the peak, a shaker in the breakdown, a second peak pushed to 128 BPM |
+| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a last outro slowed to 120 BPM                                                  |
+| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords, heavy swing on the Lo-fi kit, ghost snares, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) at the end                                         |
+| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                    |
 
 The songs in `src/lib/server/examples/` are served from code, not the database:
 anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes

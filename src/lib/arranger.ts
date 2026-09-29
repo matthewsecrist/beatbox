@@ -12,7 +12,7 @@ export interface Arranger {
   tick(): null | Position
 }
 
-export type ArrangerSection = Partial<Pick<Section, 'drums' | 'pattern'>> &
+export type ArrangerSection = Partial<Pick<Section, 'bpm' | 'drums' | 'pattern'>> &
   Pick<Section, 'bars' | 'pads'>
 
 const noop = (): void => undefined
@@ -27,7 +27,9 @@ export interface Position {
 // the shared transport. Each section boundary is announced LOOKAHEAD seconds early
 // as a scene ({ index, beat, pads, drums }) so the instruments can start and stop
 // exactly on `beat`. After the last section, a final empty scene stops everything
-// on the end beat and `onEnd` fires once that beat has passed.
+// on the end beat and `onEnd` fires once that beat has passed. A section with a
+// `bpm` of its own plays at that tempo: the transport's tempo map changes on its
+// boundary beats, set up front so every instrument's timing already knows it.
 export function createArranger({
   onEnd = noop,
   onScene,
@@ -35,7 +37,10 @@ export function createArranger({
 }: {
   onEnd?: () => void
   onScene: (scene: Scene) => void
-  transport: Pick<Transport, 'acquire' | 'beatAt' | 'nextBar' | 'now' | 'release' | 'timeAt'>
+  transport: Pick<
+    Transport,
+    'acquire' | 'beatAt' | 'clearTempo' | 'nextBar' | 'now' | 'release' | 'setTempo' | 'timeAt'
+  >
 }): Arranger {
   let playing = false
   let boundaries: number[] = [] // start beat of each section, then the end beat
@@ -45,6 +50,7 @@ export function createArranger({
   function stop() {
     if (!playing) return
     playing = false
+    transport.clearTempo()
     transport.release('song')
   }
 
@@ -60,6 +66,8 @@ export function createArranger({
       transport.acquire('song')
       const offset = transport.nextBar()
       boundaries = boundaries.map((b) => b + offset)
+      // Each section's tempo from its first beat; the song tempo again after the end.
+      transport.setTempo(boundaries.map((beat, i) => ({ beat, bpm: sections[i]?.bpm ?? null })))
       playing = true
       next = 0
       return tick()
@@ -79,6 +87,7 @@ export function createArranger({
       const s = sections[next]
       onScene({
         beat: at(boundaries, next),
+        bpm: s?.bpm ?? null,
         drums: s?.drums ?? false,
         index: s ? next : -1,
         pads: s?.pads ?? [],

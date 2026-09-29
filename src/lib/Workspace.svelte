@@ -24,6 +24,7 @@
     SaveKitReply,
     SavePresetReply,
     SaveSongReply,
+    Scene,
     StateDetail,
     SynthParams,
     Voices,
@@ -83,9 +84,13 @@
   let track: Instrument = $state('synth')
 
   // The song's tempo (saved as drums.bpm) drives the shared transport, so drums,
-  // pads and arp follow it; the effects bus follows the song's settings.
+  // pads and arp follow it (sections with their own tempo change it through the
+  // arranger). The effects bus follows the song's settings, and its tempo-synced
+  // delay the tempo playing: a section's own while it plays (set as the arranger
+  // announces it, a moment before its first beat).
+  let sectionBpm: null | number = $state(null)
   $effect(() => transport.setBpm(store.drums.bpm))
-  $effect(() => effects.set($state.snapshot(store.effects), store.drums.bpm))
+  $effect(() => effects.set($state.snapshot(store.effects), sectionBpm ?? store.drums.bpm))
 
   // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
   // field (which keeps the browser's own text undo).
@@ -231,13 +236,17 @@
     const onState = (e: CustomEvent<StateDetail>) => {
       playingBy.set(e.detail.source, e.detail.playing)
       anyPlaying = [...playingBy.values()].some(Boolean)
+      if (e.detail.source === 'song' && !e.detail.playing) sectionBpm = null
     }
+    const onScene = (e: CustomEvent<Scene>) => (sectionBpm = e.detail.bpm)
     window.addEventListener('beatbox:state', onState)
+    window.addEventListener('beatbox:scene', onScene)
     window.addEventListener('keydown', onUndoKey)
     // Ask already-mounted instruments to report in.
     window.dispatchEvent(new CustomEvent('beatbox:report', { detail: undefined }))
     return () => {
       window.removeEventListener('beatbox:state', onState)
+      window.removeEventListener('beatbox:scene', onScene)
       window.removeEventListener('keydown', onUndoKey)
     }
   })
