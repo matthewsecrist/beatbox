@@ -55,6 +55,7 @@ function fakeAudio() {
       oscs.push(o)
       return o
     },
+    createWaveShaper: () => node(),
     get currentTime() {
       return clock.now
     },

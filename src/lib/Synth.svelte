@@ -11,6 +11,7 @@
     ArpMode,
     ArpRate,
     ChordShape,
+    DriveType,
     GlideMode,
     LfoTarget,
     LoadPresetReply,
@@ -133,6 +134,8 @@
 
   const WAVES: Wave[] = ['sine', 'triangle', 'sawtooth', 'square']
   const LFO_TARGETS: LfoTarget[] = ['filter', 'pitch', 'amp']
+  // Mildest to wildest.
+  const DRIVE_TYPES: DriveType[] = ['soft', 'tube', 'hard', 'fold']
   const GLIDE_MODES: [GlideMode, string][] = [
     ['legato', 'Legato'],
     ['always', 'Always']
@@ -519,11 +522,11 @@
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
   const fmtEnvAmount = (v: number) => (v === 0 ? 'off' : fmtInt(Number(v.toFixed(2))) + ' oct')
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
-  const fmtTremolo = (v: number) => (v === 0 ? 'off' : fmtPct(v))
+  const fmtPctOrOff = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   // Depth slider per LFO target: octaves of cutoff, cents of pitch, share of level.
   const LFO_DEPTH_STEP: Record<LfoTarget, number> = { amp: 0.01, filter: 0.05, pitch: 1 }
   const LFO_DEPTH_FORMAT: Record<LfoTarget, (v: number) => string> = {
-    amp: fmtTremolo,
+    amp: fmtPctOrOff,
     filter: fmtOct,
     pitch: fmtVibrato
   }
@@ -625,6 +628,35 @@
 
 {#snippet osc1()}{@render osc(1)}{/snippet}
 {#snippet osc2()}{@render osc(2)}{/snippet}
+
+{#snippet drive()}
+  {@render caption('drive_type', 'Character')}
+  <div
+    id="synth-drive_type"
+    class="-mt-2 grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="Drive character"
+  >
+    {#each DRIVE_TYPES as type (type)}
+      <button
+        type="button"
+        aria-pressed={params.drive_type === type}
+        disabled={store.readOnly}
+        onclick={() => store.setParam('drive_type', type)}
+        class={[
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+          params.drive_type === type
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+        ]}
+      >
+        {type}
+      </button>
+    {/each}
+  </div>
+  {@render slider('drive', 'Amount', 0, 1, 0.01, fmtPctOrOff)}
+  {@render slider('drive_mix', 'Mix', 0, 1, 0.01, fmtPct)}
+{/snippet}
 
 {#snippet filter()}
   <label class="block space-y-1" for="synth-filter_cutoff">
@@ -804,6 +836,7 @@
       {@render panel('LFO 1', lfo1, 'lfo')}
       {@render panel('LFO 2', lfo2, 'lfo')}
       {@render panel('Glide', glide, 'glide')}
+      {@render panel('Drive', drive, 'drive')}
     </div>
   </details>
 

@@ -10,7 +10,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ...Object.keys(DEFAULT_PARAMS),
     ...Object.keys(DEFAULT_PERFORMANCE),
     ...Object.keys(DEFAULT_EFFECTS),
-    ...['osc', 'filter', 'envelope', 'lfo', 'glide', 'delay', 'reverb', 'sends'].map(
+    ...['osc', 'drive', 'filter', 'envelope', 'lfo', 'glide', 'delay', 'reverb', 'sends'].map(
       (panel) => 'panel_' + panel
     ),
     // Drum machine controls and step edit buttons

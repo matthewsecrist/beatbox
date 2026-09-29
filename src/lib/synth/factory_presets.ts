@@ -7,6 +7,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.001,
       decay: 0.18,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // The squelch: a snappy sweep down from 3.5 octaves over the closed filter.
       filter_attack: 0.001,
       filter_cutoff: 250,
@@ -41,6 +44,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.001,
       decay: 1.8,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 9000,
       filter_decay: 0.3,
@@ -73,6 +79,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.06,
       decay: 0.3,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // Swells open with the attack, then settles.
       filter_attack: 0.08,
       filter_cutoff: 1000,
@@ -102,10 +111,51 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // A low sine pushed hard into buzzing, with a little square for bite, and the
+    // filter keeping the top end from getting harsh.
+    name: 'Buzz Bass',
+    params: {
+      attack: 0.004,
+      decay: 0.4,
+      drive: 0.75,
+      // Some clean sine left underneath keeps the low end solid.
+      drive_mix: 0.8,
+      drive_type: 'tube',
+      filter_attack: 0.001,
+      filter_cutoff: 1100,
+      filter_decay: 0.25,
+      filter_env_amount: 1,
+      filter_release: 0.1,
+      filter_resonance: 1,
+      filter_sustain: 0.3,
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.9,
+      osc1_octave: -1,
+      osc1_wave: 'sine',
+      osc2_detune: 0,
+      osc2_level: 0.15,
+      osc2_octave: -1,
+      osc2_wave: 'square',
+      release: 0.08,
+      sustain: 0.85
+    }
+  },
+  {
     name: 'Chiptune',
     params: {
       attack: 0.001,
       decay: 0.05,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 12000,
       filter_decay: 0.3,
@@ -138,6 +188,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.005,
       decay: 0.3,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 600,
       filter_decay: 0.3,
@@ -167,10 +220,49 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // A long sliding 808 with its top roughed up; some left clean so the boom stays.
+    name: 'Dirty 808',
+    params: {
+      attack: 0.002,
+      decay: 1.2,
+      drive: 0.45,
+      drive_mix: 0.7,
+      drive_type: 'soft',
+      filter_attack: 0.001,
+      filter_cutoff: 1200,
+      filter_decay: 0.3,
+      filter_env_amount: 0.5,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0.2,
+      glide: 0.1,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.9,
+      osc1_octave: -1,
+      osc1_wave: 'sine',
+      osc2_detune: 0,
+      osc2_level: 0,
+      osc2_octave: -1,
+      osc2_wave: 'triangle',
+      release: 0.3,
+      sustain: 0.6
+    }
+  },
+  {
     name: 'Dubstep Wobble',
     params: {
       attack: 0.005,
       decay: 0.1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 280,
       filter_decay: 0.3,
@@ -203,6 +295,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.002,
       decay: 1.2,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // Bright on the strike, mellow as it rings.
       filter_attack: 0.001,
       filter_cutoff: 1600,
@@ -236,6 +331,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.08,
       decay: 0.2,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 2500,
       filter_decay: 0.3,
@@ -264,10 +362,85 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // Folded saws: a snarling, vowel-like bass that moves as the filter wobbles.
+    name: 'Fold Growl',
+    params: {
+      attack: 0.005,
+      decay: 0.3,
+      drive: 0.4,
+      drive_mix: 0.85,
+      drive_type: 'fold',
+      filter_attack: 0.001,
+      filter_cutoff: 700,
+      filter_decay: 0.2,
+      filter_env_amount: 2,
+      filter_release: 0.1,
+      filter_resonance: 6,
+      filter_sustain: 0.3,
+      glide: 0.03,
+      glide_mode: 'legato',
+      lfo1_depth: 0.8,
+      lfo1_rate: 3,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: -1,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 8,
+      osc2_level: 0.4,
+      osc2_octave: -1,
+      osc2_wave: 'square',
+      release: 0.1,
+      sustain: 0.8
+    }
+  },
+  {
+    // A fuzz-pedal guitar lead: hard-clipped saws with a singer's vibrato.
+    name: 'Fuzz Lead',
+    params: {
+      attack: 0.005,
+      decay: 0.25,
+      drive: 0.6,
+      drive_mix: 1,
+      drive_type: 'hard',
+      filter_attack: 0.001,
+      filter_cutoff: 3200,
+      filter_decay: 0.25,
+      filter_env_amount: 0.5,
+      filter_release: 0.2,
+      filter_resonance: 2,
+      filter_sustain: 0.4,
+      glide: 0.04,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 15,
+      lfo2_rate: 5.5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.6,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 6,
+      osc2_level: 0.4,
+      osc2_octave: 0,
+      osc2_wave: 'square',
+      release: 0.2,
+      sustain: 0.8
+    }
+  },
+  {
     name: 'Hoover',
     params: {
       attack: 0.02,
       decay: 0.4,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 2800,
       filter_decay: 0.3,
@@ -302,8 +475,47 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.01,
       decay: 0.05,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 8000,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0.15, // rotary speaker: level and pitch together
+      lfo1_rate: 6.5,
+      lfo1_target: 'amp',
+      lfo2_depth: 6,
+      lfo2_rate: 6.5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'sine',
+      osc2_detune: 0,
+      osc2_level: 0.5,
+      osc2_octave: 1,
+      osc2_wave: 'sine',
+      release: 0.08,
+      sustain: 1
+    }
+  },
+  {
+    // The rock organ: Organ played through a cranked valve amp.
+    name: 'Overdrive Organ',
+    params: {
+      attack: 0.01,
+      decay: 0.05,
+      drive: 0.35,
+      drive_mix: 0.8,
+      drive_type: 'tube',
+      filter_attack: 0.005,
+      filter_cutoff: 5000,
       filter_decay: 0.3,
       filter_env_amount: 0,
       filter_release: 0.3,
@@ -334,6 +546,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.001,
       decay: 0.25,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // A fast snap shut after the pluck.
       filter_attack: 0.001,
       filter_cutoff: 500,
@@ -367,6 +582,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.3,
       decay: 0.8,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 900,
       filter_decay: 0.3,
@@ -399,6 +617,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.01,
       decay: 0.3,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // A little growl opening each note.
       filter_attack: 0.01,
       filter_cutoff: 450,
@@ -432,6 +653,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.005,
       decay: 0.15,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.001,
       filter_cutoff: 2500,
       filter_decay: 0.25,
@@ -464,6 +688,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.4,
       decay: 0.5,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // Blooms open as the bow swells in.
       filter_attack: 0.6,
       filter_cutoff: 2000,
@@ -497,6 +724,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.01,
       decay: 0.2,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // A short bright bite on each note.
       filter_attack: 0.001,
       filter_cutoff: 3500,
@@ -530,6 +760,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.02,
       decay: 0.2,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       filter_attack: 0.005,
       filter_cutoff: 1800,
       filter_decay: 0.3,
@@ -563,6 +796,9 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     params: {
       attack: 0.8,
       decay: 1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
       // Opens slowly with the swell, then settles darker.
       filter_attack: 1,
       filter_cutoff: 800,

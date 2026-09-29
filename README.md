@@ -57,7 +57,17 @@ through their link: there's no public list of them.
 - Opening your own song's link shows it as others see it, with an **Edit it** link.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
-a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope and 16 voices. The
+a drive (distortion), a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope
+and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
+clean; turning it up pushes the wave harder into the **Character**'s curve: **Soft**
+rounds it off towards a square, **Tube** does too but lopsided, for a warmer sound
+with even harmonics, **Hard** cuts it flat for a sharper edge, and **Fold** flips it
+back on itself for a wild, metallic tone that keeps changing with the amount. **Mix**
+blends the clean sound back in underneath (100% is all driven), so a bass keeps
+its weight. Drive keeps the level about even as it goes up. A preset shows off each
+character: Buzz Bass and Overdrive Organ (tube), Dirty 808 (soft), Fuzz Lead (hard)
+and Fold Growl (fold), and the Loop Browser has loops built on them. It's part of the
+sound, so presets and loop pads keep their own. The
 filter envelope sweeps the cutoff from each note's start: **Env amount** sets how
 far (up to ±4 octaves; negative sweeps down, 0 is off), with its own attack, decay, sustain and
 release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
@@ -72,7 +82,7 @@ within themselves, and the keyboard, the arpeggiator (which lets go of each note
 before the next, so it slides only on **Always**) and each loop pad glide
 separately. Play it with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator, filter, envelope, LFO and glide controls sit under **Sound
+save your own. The oscillator, drive, filter, envelope, LFO and glide controls sit under **Sound
 settings**, collapsed until you open it.
 
 **ⓘ explanations**: every Sound settings control and panel, the Chord/Arp bar, the
@@ -295,13 +305,13 @@ How the pieces talk:
 Each example shows off a different corner of the app, and each sets up the
 keyboard (**Chord** and **Arp**) to play along:
 
-| Example                   | Style                         | Shows off                                                                                                                              |
-| ------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls, dotted-8th delay |
-| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, a gated Pulse Pad, 909 with swing, chance and roll fills                      |
-| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s, ratcheted and chance hi-hats, a tuned trap kit, Bell and Flute melodies in reverb                                        |
-| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords, heavy swing on the Lo-fi kit, ghost snares, gliding flute and vibrato lead                              |
-| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, breakdowns                                        |
+| Example                   | Style                         | Shows off                                                                                                                                             |
+| ------------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls, dotted-8th delay                |
+| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills |
+| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit, Bell and Flute melodies in reverb                           |
+| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords, heavy swing on the Lo-fi kit, ghost snares, gliding flute and vibrato lead                                             |
+| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, breakdowns                                                       |
 
 The songs in `src/lib/server/examples/` are served from code, not the database:
 anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes

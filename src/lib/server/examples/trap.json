@@ -1796,8 +1796,11 @@
       "params": {
         "attack": 0.005,
         "decay": 1.5,
+        "drive": 0.45,
+        "drive_mix": 0.7,
+        "drive_type": "soft",
         "filter_attack": 0.005,
-        "filter_cutoff": 600,
+        "filter_cutoff": 1200,
         "filter_decay": 0.3,
         "filter_env_amount": 0,
         "filter_release": 0.3,

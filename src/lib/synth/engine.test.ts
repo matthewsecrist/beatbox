@@ -1,9 +1,12 @@
 import { expect, type Mock, test, vi } from 'vitest'
 
+import type { SynthParams } from '../types.js'
+
 import { createSynth } from './engine.js'
 
 interface FakeNode {
   connect(next: FakeNode | FakeParam): FakeNode | FakeParam
+  curve?: Float32Array
   detune: FakeParam
   disconnect(): void
   frequency: FakeParam
@@ -58,6 +61,7 @@ function fakeAudio() {
     createBiquadFilter: () => node('filter'),
     createGain: () => node('gain'),
     createOscillator: () => Object.assign(node('osc'), { start: vi.fn(), stop: vi.fn() }),
+    createWaveShaper: () => node('shaper'),
     currentTime: 0,
     destination: {}
   }
@@ -102,6 +106,68 @@ test('amp tremolo swings a gain after the envelope', () => {
   expect(trem?.gain.value).toBe(0.75)
   expect(lfoDepth(nodes).gain.value).toBe(0.25)
   expect(nodes.some((n) => trem && n.kind === 'gain' && n.outputs.includes(trem))).toBe(true)
+})
+
+// What a signal `x` from the oscillators comes out of the drive stage as: the
+// driven copy (through the character's curve) plus the clean one (a straight line).
+function driven(nodes: FakeNode[], x: number): number {
+  const shapers = nodes.filter((n) => n.kind === 'shaper')
+  const bent = shapers.find((n) => (n.curve?.length ?? 0) > 2)
+  const straight = shapers.find((n) => n.curve?.length === 2)
+  const feeding = (to: FakeNode | undefined) => nodes.find((n) => to && n.outputs.includes(to))
+  const push = feeding(bent)
+  const level = feeding(straight)
+  const [wet, dry] = [bent?.outputs[0], straight?.outputs[0]]
+  if (!bent?.curve || !straight?.curve || !push || !level || !wet || !dry) {
+    throw new Error('drive stage is not connected')
+  }
+  if (!('gain' in wet) || !('gain' in dry)) throw new Error('drive stage has no output gains')
+  const x1 = x * level.gain.value
+  return (
+    wet.gain.value * shape(bent.curve, x1 * push.gain.value) +
+    dry.gain.value * shape(straight.curve, x1)
+  )
+}
+
+function driveNodes(params: Partial<SynthParams>): FakeNode[] {
+  const { ctx, nodes } = fakeAudio()
+  createSynth({ osc1_level: 0.6, osc2_level: 0.4, ...params }, () => ctx).noteOn(60)
+  return nodes
+}
+
+// Reads a WaveShaper curve at `x` the way the Web Audio spec interpolates it.
+function shape(curve: Float32Array, x: number): number {
+  const pos = ((curve.length - 1) / 2) * (Math.max(-1, Math.min(1, x)) + 1)
+  const k = Math.min(Math.floor(pos), curve.length - 2)
+  return (curve[k] ?? 0) + (pos - k) * ((curve[k + 1] ?? 0) - (curve[k] ?? 0))
+}
+
+const LEVELS = [-1, -0.5, 0.1, 0.7, 1]
+
+test('drive 0 leaves the sound untouched, whatever the character and mix', () => {
+  for (const drive_type of ['soft', 'tube', 'hard', 'fold'] as const) {
+    for (const drive_mix of [0, 0.5, 1]) {
+      const nodes = driveNodes({ drive: 0, drive_mix, drive_type })
+      for (const x of LEVELS) expect(driven(nodes, x)).toBeCloseTo(x, 5)
+    }
+  }
+})
+
+test('full drive squashes the wave flat, and mix 0 brings back the clean sound', () => {
+  const pushed = driveNodes({ drive: 1, drive_mix: 1, drive_type: 'soft' })
+  // A quarter-level signal comes out nearly as loud as a full one, and evenly
+  // both ways.
+  const full = driven(pushed, 1)
+  expect(driven(pushed, 0.25) / full).toBeGreaterThan(0.95)
+  expect(driven(pushed, -1)).toBeCloseTo(-full, 5)
+
+  const clean = driveNodes({ drive: 1, drive_mix: 0, drive_type: 'soft' })
+  for (const x of LEVELS) expect(driven(clean, x)).toBeCloseTo(x, 5)
+})
+
+test('tube bends the bottom of the wave harder than the top', () => {
+  const nodes = driveNodes({ drive: 0.5, drive_mix: 1, drive_type: 'tube' })
+  expect(driven(nodes, 1)).toBeGreaterThan(-driven(nodes, -1) * 1.1)
 })
 
 test('two LFOs on amp add their dips, down to silence at most', () => {

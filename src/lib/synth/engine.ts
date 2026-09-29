@@ -1,10 +1,13 @@
-import type { LfoTarget, SynthParams } from '../types.js'
+import type { DriveType, LfoTarget, SynthParams } from '../types.js'
 
 import { getContext } from '../audio.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
   decay: 0.3,
+  drive: 0,
+  drive_mix: 1,
+  drive_type: 'soft',
   // Filter envelope: sweeps the cutoff by up to `filter_env_amount` octaves
   // (negative sweeps down) with its own ADSR. 0 = off.
   filter_attack: 0.005,
@@ -67,6 +70,55 @@ const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
 const CHORD = 0.005 // s: notes starting this close together are one chord
 
+// Drive: the oscillators are scaled so their loudest possible peak sits at 1, pushed
+// up by as much as DRIVE_MAX and bent by the character's curve, then scaled back.
+// Every curve is a straight line up to 1, so drive 0 leaves the sound as it was;
+// past 1 each bends its own way, and the harder a note is pushed the more it
+// changes. A clean copy runs alongside for `drive_mix`. The filter after both can
+// then tame the fizz.
+const DRIVE_MAX = 40
+// 100 points per unit, so ±1 (where every curve starts to bend) falls exactly on
+// a point and the straight part stays exactly straight between them.
+const CURVE_SIZE = DRIVE_MAX * 200 + 1
+
+// Past 1, rounds off smoothly towards 1 + `bend`.
+function round(x: number, bend: number): number {
+  const over = Math.abs(x) - 1
+  return over <= 0 ? x : Math.sign(x) * (1 + bend * Math.tanh(over / bend))
+}
+
+const DRIVE_SHAPES: Record<DriveType, (x: number) => number> = {
+  // Folds back and forth between -1 and 1 (a triangle wave over x).
+  fold: (x) => {
+    const t = (((x + 1) % 4) + 4) % 4
+    return t < 2 ? t - 1 : 3 - t
+  },
+  hard: (x) => Math.max(-1, Math.min(1, x)),
+  soft: (x) => round(x, 0.5),
+  // The top rounds off gently and the bottom sooner: the lopsided wave adds the
+  // even harmonics that make a valve amp sound warm.
+  tube: (x) => round(x, x > 0 ? 0.5 : 0.15)
+}
+
+const curves = new Map<DriveType, Float32Array<ArrayBuffer>>()
+
+// The character's curve over inputs from -DRIVE_MAX to DRIVE_MAX (the shaper's -1..1).
+function curve(type: DriveType): Float32Array<ArrayBuffer> {
+  let c = curves.get(type)
+  if (!c) {
+    c = new Float32Array(CURVE_SIZE)
+    for (let i = 0; i < CURVE_SIZE; i++) {
+      c[i] = DRIVE_SHAPES[type](((2 * i) / (CURVE_SIZE - 1) - 1) * DRIVE_MAX)
+    }
+    curves.set(type, c)
+  }
+  return c
+}
+
+// The clean copy's curve: a straight line, there only so the clean copy goes
+// through the same oversampling (and delay) as the driven one and lines up with it.
+const STRAIGHT = new Float32Array([-1, 1])
+
 // The notes a source last started together (one note, or a chord): where the
 // next ones glide from, and when they were let go (Infinity while held).
 interface LastNote {
@@ -78,6 +130,82 @@ interface LastNote {
   key: VoiceKey
   off: number
   t0: number
+}
+
+// Gains around the curves: `level` sets the oscillators' loudest peak at 1, `push`
+// drives them into the curve, and `wet`/`dry` set the driven and clean copies'
+// share. `wet` brings the driven copy's loudest peak back to where it was clean.
+// Pushed into soft, tube or hard, a note becomes a fuller, squarer wave, so it also
+// comes down a little more (push ** -0.1, about 3 dB at full drive) to stay about as
+// loud as the clean sound; fold doesn't fill out, so it doesn't.
+function driveGains(p: SynthParams): { dry: number; level: number; push: number; wet: number } {
+  const peak = Math.max(p.osc1_level + p.osc2_level, 0.01)
+  const push = DRIVE_MAX ** p.drive
+  const shape = DRIVE_SHAPES[p.drive_type]
+  const top = Math.max(1, Math.abs(shape(push)), Math.abs(shape(-push)))
+  const fuller = p.drive_type === 'fold' ? 1 : push ** -0.1
+  return {
+    dry: peak * (1 - p.drive_mix),
+    level: 1 / peak,
+    push: push / DRIVE_MAX,
+    wet: (peak * p.drive_mix * fuller) / top
+  }
+}
+
+// Below anything audible: clears the offset tube's lopsided wave leaves, which
+// would otherwise thump as each note starts and stops. It follows both copies, so
+// they stay lined up with each other.
+const DC_BLOCK = 5 // Hz
+
+// A voice's drive stage: level -> push -> shaper -> wet, and level -> straight ->
+// dry alongside it, both through dc into the filter.
+interface DriveStage {
+  dc: BiquadFilterNode
+  dry: GainNode
+  level: GainNode
+  push: GainNode
+  shaper: WaveShaperNode
+  straight: WaveShaperNode
+  type: DriveType
+  wet: GainNode
+}
+
+function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): DriveStage {
+  const stage: DriveStage = {
+    dc: ctx.createBiquadFilter(),
+    dry: ctx.createGain(),
+    level: ctx.createGain(),
+    push: ctx.createGain(),
+    shaper: ctx.createWaveShaper(),
+    straight: ctx.createWaveShaper(),
+    type: p.drive_type,
+    wet: ctx.createGain()
+  }
+  stage.shaper.curve = curve(p.drive_type)
+  stage.straight.curve = STRAIGHT
+  // Keeps the added harmonics from folding back as hiss.
+  stage.shaper.oversample = stage.straight.oversample = '4x'
+  stage.dc.type = 'highpass'
+  stage.dc.frequency.value = DC_BLOCK
+  stage.dc.Q.value = 0 // no bump at the corner
+  stage.level.connect(stage.push).connect(stage.shaper).connect(stage.wet).connect(stage.dc)
+  stage.level.connect(stage.straight).connect(stage.dry).connect(stage.dc)
+  stage.dc.connect(into)
+  const g = driveGains(p)
+  for (const k of ['dry', 'level', 'push', 'wet'] as const) stage[k].gain.value = g[k]
+  return stage
+}
+
+// Follows changed params on a sounding voice, gliding the gains so it doesn't click.
+function updateDrive(stage: DriveStage, p: SynthParams, t: number): void {
+  if (stage.type !== p.drive_type) {
+    stage.type = p.drive_type
+    stage.shaper.curve = curve(p.drive_type)
+  }
+  const g = driveGains(p)
+  for (const k of ['dry', 'level', 'push', 'wet'] as const) {
+    stage[k].gain.setTargetAtTime(g[k], t, 0.01)
+  }
 }
 
 // Notes glide only from the same source's last note: the keyboard (numeric
@@ -110,6 +238,8 @@ interface Voice {
   amp: GainNode
   attack: number
   decay: number
+  // Drive stage between the oscillators and the filter (see driveGains).
+  drive: DriveStage
   // The filter envelope this note started with; amount in cents.
   fenv: FilterEnv
   filter: BiquadFilterNode
@@ -299,6 +429,7 @@ export function createSynth(
       return { depth, n, osc, target: lfoParams(p, n).target }
     })
     const trem = ctx.createGain()
+    const drive = createDrive(ctx, p, filter)
 
     const from = glideFrom(key, midi, t, p)
     applyOsc(t, osc1, g1, 1, midi, false, p, from)
@@ -307,8 +438,8 @@ export function createSynth(
     filter.frequency.value = p.filter_cutoff
     filter.Q.value = p.filter_resonance
 
-    osc1.connect(g1).connect(filter)
-    osc2.connect(g2).connect(filter)
+    osc1.connect(g1).connect(drive.level)
+    osc2.connect(g2).connect(drive.level)
     filter.connect(amp).connect(trem).connect(master)
     trem.gain.value = tremLevel(p)
 
@@ -339,6 +470,7 @@ export function createSynth(
       amp,
       attack,
       decay,
+      drive,
       fenv,
       filter,
       g1,
@@ -358,9 +490,22 @@ export function createSynth(
     for (const lfo of lfos) routeLfo(v, lfo, lfo.target)
     osc1.onended = () => {
       alive.delete(v)
-      ;[...srcs, g1, g2, filter, amp, trem, ...lfos.map((l) => l.depth)].forEach((n) =>
-        n.disconnect()
-      )
+      ;[
+        ...srcs,
+        g1,
+        g2,
+        drive.level,
+        drive.push,
+        drive.shaper,
+        drive.wet,
+        drive.dc,
+        drive.straight,
+        drive.dry,
+        filter,
+        amp,
+        trem,
+        ...lfos.map((l) => l.depth)
+      ].forEach((n) => n.disconnect())
     }
     for (const s of srcs) s.start(t)
 
@@ -412,6 +557,7 @@ export function createSynth(
         lfo.depth.gain.setTargetAtTime(lfoSwing(params, lfo.n), t, 0.01)
       }
       v.trem.gain.setTargetAtTime(tremLevel(params), t, 0.01)
+      updateDrive(v.drive, params, t)
       applyOsc(t, v.osc1, v.g1, 1, v.midi, true)
       applyOsc(t, v.osc2, v.g2, 2, v.midi, true)
     }
