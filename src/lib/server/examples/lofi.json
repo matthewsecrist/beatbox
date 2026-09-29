@@ -358,6 +358,72 @@
           },
           false
         ],
+        "shaker": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
         "snare": [
           false,
           false,
@@ -458,6 +524,24 @@
           true,
           false,
           false,
+          false,
+          false,
+          false
+        ],
+        "rim": [
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
           false,
           false,
           false

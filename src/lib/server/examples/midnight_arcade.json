@@ -196,6 +196,72 @@
           true,
           false
         ],
+        "shaker": [
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
+        ],
         "snare": [
           false,
           false,
@@ -657,6 +723,24 @@
           false,
           true,
           false
+        ],
+        "ride": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
         ]
       }
     ],
@@ -673,6 +757,7 @@
         "decay": 0.8
       },
       "tom": {
+        "sound": "808-tom",
         "tune": -3
       }
     },

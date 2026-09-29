@@ -353,6 +353,48 @@
           false,
           true,
           false
+        ],
+        "ride": [
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false
         ]
       },
       {
@@ -469,6 +511,72 @@
             "velocity": 0.5
           },
           false
+        ],
+        "shaker": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
         ],
         "tom": [
           false,

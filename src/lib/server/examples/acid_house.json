@@ -264,6 +264,30 @@
           false,
           false
         ],
+        "conga": [
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true
+        ],
         "kick": [
           {
             "accent": true,
@@ -444,6 +468,48 @@
           false,
           false,
           false,
+          false
+        ],
+        "shaker": [
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
           false
         ]
       },
