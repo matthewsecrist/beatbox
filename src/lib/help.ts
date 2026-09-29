@@ -30,6 +30,8 @@ export const HELP = {
     'The kind of crunch. Soft is smooth and warm. Tube is warm too, but thicker, like an old amplifier. Hard is sharp and aggressive. Fold is wild and metallic, and it keeps changing as you turn up the Amount.',
   drums_delay:
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
+  drums_euclid:
+    'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',

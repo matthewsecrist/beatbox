@@ -243,6 +243,22 @@ export class SongStore {
     })
   }
 
+  // Switches a track's steps on or off (`on[i]` for step i) as one undo step. Each
+  // step keeps its other settings, as when clicked on or off.
+  setHits(index: number, track: TrackId, on: boolean[]): void {
+    const map = this.patternsArray.get(index)
+    const steps = this.drums.patterns[index]?.[track]
+    if (!map || !steps) return
+    this.edit(
+      () =>
+        map.set(
+          track,
+          steps.map((s, i) => ({ ...s, on: on[i] ?? false }))
+        ),
+      true
+    )
+  }
+
   // A kit fills every track with its own sound, and starts each from its own tune
   // and decay; a saved kit brings its tracks' tweaks and sounds too.
   setKit(kit: KitId, voices: Voices = {}): void {
@@ -285,7 +301,6 @@ export class SongStore {
   setParams(params: SynthParams, slot: null | number = null): void {
     this.writeSound(slot, params, true)
   }
-
   setPattern(index: number, pattern: DrumPattern): void {
     const map = this.patternsArray.get(index)
     if (!map) return
@@ -293,6 +308,7 @@ export class SongStore {
       for (const { id } of TRACKS) map.set(id, [...pattern[id]])
     }, true)
   }
+
   // Chord shape, arp pattern and rate: each change is its own undo step.
   setPerformance(patch: Partial<Performance>): void {
     this.edit(() => {
