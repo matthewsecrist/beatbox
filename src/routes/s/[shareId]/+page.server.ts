@@ -2,7 +2,7 @@ import type { Cookies } from '@sveltejs/kit'
 
 import { resolve } from '$app/paths'
 import { listExamples } from '$lib/server/examples/index.js'
-import { listPresets, listSongs } from '$lib/server/music.js'
+import { listKits, listPresets, listSongs } from '$lib/server/music.js'
 import { getSharedSong, hasLiked, recordView, setLiked } from '$lib/server/sharing.js'
 import { fail, redirect } from '@sveltejs/kit'
 
@@ -40,6 +40,7 @@ export const load = (async ({ cookies, locals, params, url }) => {
     example: null,
     examples: listExamples(),
     key: shared.shareId,
+    kits: user ? await listKits(user.id) : [],
     notice: null,
     presets: user ? await listPresets(user.id) : [],
     share: {

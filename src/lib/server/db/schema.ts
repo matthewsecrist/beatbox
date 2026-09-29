@@ -1,6 +1,15 @@
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-import type { Drums, Effects, Loop, Performance, Section, SynthParams } from '../../types.js'
+import type {
+  Drums,
+  Effects,
+  KitId,
+  Loop,
+  Performance,
+  Section,
+  SynthParams,
+  Voices
+} from '../../types.js'
 
 const id = () =>
   text('id')
@@ -105,6 +114,21 @@ export const presets = sqliteTable(
   (t) => [uniqueIndex('presets_user_id_name_unique').on(t.userId, t.name)]
 )
 
+// A saved drum kit: the factory kit it starts from, and each track's sound, tune
+// and decay on top of it. Saving under a name the user already has overwrites it.
+export const kits = sqliteTable(
+  'kits',
+  {
+    id: id(),
+    kit: text('kit').$type<KitId>().notNull(),
+    name: text('name').notNull(),
+    userId: userId(),
+    voices: text('voices', { mode: 'json' }).$type<Voices>().notNull(),
+    ...timestamps
+  },
+  (t) => [uniqueIndex('kits_user_id_name_unique').on(t.userId, t.name)]
+)
+
 // A saved session: synth settings, chord/arp settings, drum machine, delay and
 // reverb, loop pads and arrangement.
 // The song parts are JSON; their shape is checked in `$lib/server/validation.ts`.
@@ -161,5 +185,6 @@ export const songViews = sqliteTable(
   (t) => [primaryKey({ columns: [t.songId, t.viewer, t.day] })]
 )
 
+export type Kit = typeof kits.$inferSelect
 export type Preset = typeof presets.$inferSelect
 export type Song = typeof songs.$inferSelect

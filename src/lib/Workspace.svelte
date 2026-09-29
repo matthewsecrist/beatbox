@@ -18,11 +18,15 @@
 
   import type { Instrument } from './effects.js'
   import type {
+    KitId,
+    LoadKitReply,
     LoadPresetReply,
+    SaveKitReply,
     SavePresetReply,
     SaveSongReply,
     StateDetail,
     SynthParams,
+    Voices,
     WorkspaceData
   } from './types.js'
 
@@ -57,6 +61,7 @@
   let saving = $state(false)
   let songs = $state(start.songs)
   let presets = $state(start.presets)
+  let kits = $state(start.kits)
   let flash: null | { kind: 'error' | 'info'; message: string } = $state(
     start.notice ? { kind: 'error', message: start.notice } : null
   )
@@ -126,6 +131,12 @@
     }
   }
 
+  async function saveKit(kitName: string, kit: KitId, voices: Voices): Promise<SaveKitReply> {
+    const reply = await request<SaveKitReply>('POST', '/api/kits', { kit, name: kitName, voices })
+    if ('kits' in reply) kits = reply.kits
+    return reply
+  }
+
   async function savePreset(presetName: string, params: SynthParams): Promise<SavePresetReply> {
     const reply = await request<SavePresetReply>('POST', '/api/presets', {
       name: presetName,
@@ -160,6 +171,9 @@
 
   const loadPreset = (id: string): Promise<LoadPresetReply> =>
     request<LoadPresetReply>('GET', `/api/presets/${encodeURIComponent(id)}`)
+
+  const loadKit = (id: string): Promise<LoadKitReply> =>
+    request<LoadKitReply>('GET', `/api/kits/${encodeURIComponent(id)}`)
 
   const menuHeading =
     'px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase select-none'
@@ -456,7 +470,7 @@
     canSave={signedIn}
     selected={track === 'synth'}
   />
-  <DrumMachine {store} selected={track === 'drums'} />
+  <DrumMachine {store} {kits} {saveKit} {loadKit} canSave={signedIn} selected={track === 'drums'} />
 </div>
 {#if !readOnly}<LoopBrowser {store} bind:open={libraryOpen} />{/if}
 

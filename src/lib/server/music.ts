@@ -5,8 +5,8 @@ import { and, asc, eq, ne } from 'drizzle-orm'
 import type { PresetSummary } from '../types.js'
 
 import { db } from './db/index.js'
-import { type Preset, presets, type Song, songs } from './db/schema.js'
-import { describe, presetSchema, songSchema } from './validation.js'
+import { type Kit, kits, type Preset, presets, type Song, songs } from './db/schema.js'
+import { describe, kitSchema, presetSchema, songSchema } from './validation.js'
 
 // Raised for input the app refuses to store; `message` is safe to show the user.
 export class InvalidError extends Error {}
@@ -34,8 +34,8 @@ async function uniqueName<T>(query: Promise<T>): Promise<T> {
 const nameOf = (attrs: unknown): unknown =>
   typeof attrs === 'object' && attrs !== null && 'name' in attrs ? attrs.name : undefined
 
-// Every function here acts for one user (`userId`): songs and presets belong to the
-// user who saved them, and other users' are treated as missing.
+// Every function here acts for one user (`userId`): songs, presets and kits belong
+// to the user who saved them, and other users' are treated as missing.
 
 export async function createSong(userId: string, attrs: unknown): Promise<Song> {
   const name = await nameOrUntitled(userId, nameOf(attrs))
@@ -59,6 +59,14 @@ export async function deleteSong(userId: string, id: string): Promise<boolean> {
   return rows.length > 0
 }
 
+export async function getKit(userId: string, id: string): Promise<Kit | null> {
+  const rows = await db
+    .select()
+    .from(kits)
+    .where(and(eq(kits.userId, userId), eq(kits.id, id)))
+  return rows[0] ?? null
+}
+
 export async function getPreset(userId: string, id: string): Promise<null | Preset> {
   const rows = await db
     .select()
@@ -75,6 +83,14 @@ export async function getSong(userId: string, id: string): Promise<null | Song> 
   return rows[0] ?? null
 }
 
+export function listKits(userId: string): Promise<PresetSummary[]> {
+  return db
+    .select({ id: kits.id, name: kits.name })
+    .from(kits)
+    .where(eq(kits.userId, userId))
+    .orderBy(asc(kits.name))
+}
+
 export function listPresets(userId: string): Promise<PresetSummary[]> {
   return db
     .select({ id: presets.id, name: presets.name })
@@ -89,6 +105,21 @@ export function listSongs(userId: string): Promise<PresetSummary[]> {
     .from(songs)
     .where(eq(songs.userId, userId))
     .orderBy(asc(songs.name))
+}
+
+// Saving under a name the user already has overwrites that kit.
+export async function saveKit(userId: string, attrs: unknown): Promise<Kit> {
+  const { kit, name, voices } = parse(kitSchema, attrs)
+  const [saved] = await db
+    .insert(kits)
+    .values({ kit, name, userId, voices })
+    .onConflictDoUpdate({
+      set: { kit, updatedAt: new Date(), voices },
+      target: [kits.userId, kits.name]
+    })
+    .returning()
+  if (!saved) throw new Error('kit upsert returned no row')
+  return saved
 }
 
 // Saving under a name the user already has overwrites that preset.

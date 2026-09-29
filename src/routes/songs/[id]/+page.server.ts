@@ -1,6 +1,6 @@
 import { requireUser } from '$lib/server/auth.js'
 import { listExamples } from '$lib/server/examples/index.js'
-import { getSong, listPresets, listSongs } from '$lib/server/music.js'
+import { getSong, listKits, listPresets, listSongs } from '$lib/server/music.js'
 import { redirect } from '@sveltejs/kit'
 
 import type { PageServerLoad } from './$types'
@@ -13,6 +13,7 @@ export const load = (async ({ locals, params }) => {
     example: null,
     examples: listExamples(),
     key: song.id,
+    kits: await listKits(user.id),
     notice: null,
     presets: await listPresets(user.id),
     shared: null,

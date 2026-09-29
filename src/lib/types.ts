@@ -10,6 +10,9 @@ export type ArpRate = '1/4' | '1/8' | '1/8t' | '1/16' | '1/16t' | '1/32'
 export type ChordShape =
   '5' | '7' | 'aug' | 'dim' | 'maj7' | 'maj' | 'min7' | 'min' | 'off' | 'sus2' | 'sus4'
 
+// The drum tracks every kit has its own sound for.
+export type CoreTrackId = 'chat' | 'clap' | 'kick' | 'ohat' | 'snare' | 'tom'
+
 // Tempo-synced delay time ('d' = dotted, 't' = triplet).
 export type DelayTime = '1/2' | '1/4' | '1/4d' | '1/8' | '1/8d' | '1/8t' | '1/16'
 
@@ -28,7 +31,7 @@ export interface Drums {
   patterns: Partial<Record<TrackId, SavedStep[]>>[]
   // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing.
   swing?: number
-  voices?: Partial<Record<TrackId, Partial<VoiceTweak>>>
+  voices?: Voices
   volume: number
 }
 
@@ -61,6 +64,30 @@ export interface Effects {
 // When the synth glides: into every note, or only into one played while the
 // last is still held.
 export type GlideMode = 'always' | 'legato'
+
+// A drum sound in the instrument library (`src/lib/drums/kits.ts`): each kit's own
+// core sounds, plus percussion the kits share.
+export type InstrumentId =
+  | '808-claves'
+  | '808-conga'
+  | '808-cowbell'
+  | '808-crash'
+  | '808-rim'
+  | '909-crash'
+  | '909-ride'
+  | '909-rim'
+  | 'bongo'
+  | 'lofi-conga'
+  | 'lofi-cowbell'
+  | 'lofi-crash'
+  | 'lofi-ride'
+  | 'lofi-rim'
+  | 'lofi-shaker'
+  | 'lofi-snap'
+  | 'shaker'
+  | 'snap'
+  | 'woodblock'
+  | `${KitId}-${CoreTrackId}`
 
 // Synthesized drum kits; each voice is built from oscillators and noise.
 export type KitId = '606' | '808' | '909' | 'classic' | 'lofi' | 'trap'
@@ -180,20 +207,27 @@ export interface SynthParams {
   volume: number
 }
 
-export type TrackId = 'chat' | 'clap' | 'kick' | 'ohat' | 'snare' | 'tom'
+export type TrackId =
+  'conga' | 'cowbell' | 'crash' | 'ride' | 'rim' | 'shaker' | 'snap' | 'woodblock' | CoreTrackId
 
 // Window events the instruments use to coordinate.
 export interface TransportDetail {
   play: boolean
 }
 
+// Tweaks per drum track, as saved: tracks and settings left out are defaults.
+export type Voices = Partial<Record<TrackId, Partial<VoiceTweak>>>
+
 // Per-voice adjustment on top of the kit.
 export interface VoiceTweak {
   // Multiplier on the kit's decay times (0.25-2).
   decay: number
+  // An instrument from the library in place of the kit's own; absent follows the kit.
+  sound?: InstrumentId
   // Semitones (-12 to 12).
   tune: number
 }
+
 export type Wave = 'sawtooth' | 'sine' | 'square' | 'triangle'
 
 declare global {
@@ -216,9 +250,14 @@ export interface ExampleSummary {
   slug: string
 }
 
+// Replies from the kit endpoints.
+export type LoadKitReply = { error: string } | { kit: KitId; name: string; voices: Voices }
+
 export type LoadPresetReply = { error: string } | { name: string; params: Partial<SynthParams> }
 // A saved song as the page receives it.
 export type SavedSong = PresetSummary & SongDoc
+
+export type SaveKitReply = { error: string } | { id: string; kits: PresetSummary[]; name: string }
 
 // Replies from the preset endpoints.
 export type SavePresetReply =
@@ -232,6 +271,8 @@ export interface WorkspaceData {
   example: Example | null
   examples: ExampleSummary[]
   key: string
+  // The user's saved drum kits (none signed out).
+  kits: PresetSummary[]
   notice: null | string
   presets: PresetSummary[]
   // Someone's shared song, opened from its public link: it plays, but nothing

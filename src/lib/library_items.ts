@@ -8,9 +8,10 @@ import type { TrackId } from './types.js'
 // slides it into the next one: the two overlap, so a sound with legato glide
 // (Acid Bass, Deep Sub, …) glides between them. `sound` is a factory preset.
 //
-// A beat is one 16-step drum pattern, one string per track: `x` hit, `X` accented
-// hit, `o` soft hit (half velocity), `?` hit half the time, `2` `3` `4` that many
-// hits in the step (a ratchet roll), `.` rest. Tracks left out are silent.
+// A beat is one 16-step drum pattern, one string per track (the ids in `TRACKS`,
+// `src/lib/drums/kits.ts`, percussion included): `x` hit, `X` accented hit, `o`
+// soft hit (half velocity), `?` hit half the time, `2` `3` `4` that many hits in
+// the step (a ratchet roll), `.` rest. Tracks left out are silent.
 
 export interface BeatSpec {
   genre: string
@@ -1257,10 +1258,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Afrobeat',
     name: 'Afrobeats Bounce',
     tracks: {
-      chat: 'x.xxx.xxx.xxx.xx',
+      conga: '.......x......x.',
       kick: 'x.....x.x.......',
-      snare: '...x......x..x..',
-      tom: '.......x......x.'
+      shaker: 'x.xxx.xxx.xxx.xx',
+      snare: '...x......x..x..'
     }
   },
   {
@@ -1278,8 +1279,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       clap: '....x.......x...',
-      kick: 'x......x..x.....',
-      tom: '...x..x....x..x.'
+      conga: '...x..x....x..x.',
+      kick: 'x......x..x.....'
     }
   },
 
@@ -1298,8 +1299,8 @@ export const BEAT_SPECS: BeatSpec[] = [
     genre: 'Amapiano',
     name: 'Piano Shaker Drive',
     tracks: {
-      chat: 'xoXoxoXoxoXoxoXo',
       kick: 'x...x...x...x...',
+      shaker: 'xoXoxoXoxoXoxoXo',
       snare: '.......x......x.',
       tom: '...x..x.......x.'
     }
@@ -1659,17 +1660,17 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: 'x.x.x.x.x.x.x.x.',
       kick: 'x..xx..xx..xx..x',
-      snare: 'x..x..x...x..x..'
+      rim: 'x..x..x...x..x..'
     }
   },
   {
     genre: 'Latin',
     name: 'Cumbia Scrape',
     tracks: {
-      chat: 'x.xxx.xxx.xxx.xx',
+      conga: '......x.......xx',
       kick: 'x.......x.......',
-      snare: '....x.......x...',
-      tom: '......x.......xx'
+      shaker: 'x.xxx.xxx.xxx.xx',
+      snare: '....x.......x...'
     }
   },
   {
@@ -1677,9 +1678,10 @@ export const BEAT_SPECS: BeatSpec[] = [
     name: 'Son Clave Salsa',
     tracks: {
       chat: 'x.x.xx.xx.xx.x.x',
-      clap: 'x..x..x...x.x...',
+      conga: '....x.......x.x.',
+      cowbell: 'x...x...x...x...',
       kick: '......x.......x.',
-      tom: '....x.......x.x.'
+      woodblock: 'x..x..x...x.x...'
     }
   },
 
@@ -1881,7 +1883,7 @@ export const BEAT_SPECS: BeatSpec[] = [
     tracks: {
       chat: '..x...x...x...x.',
       kick: 'x...x...x...x...',
-      snare: '.......o.......x',
+      rim: '.......o.......x',
       tom: '......x...?...x.'
     }
   },

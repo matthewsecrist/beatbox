@@ -1,7 +1,8 @@
 import type { BeatTracks } from './library_items.js'
 import type { DrumPattern, DrumStep, Loop, SynthParams, TrackId } from './types.js'
 
-import { STEPS, TRACKS } from './drums/engine.js'
+import { STEPS } from './drums/engine.js'
+import { TRACKS } from './drums/kits.js'
 import { BEAT_SPECS, LOOP_SPECS } from './library_items.js'
 import { STEP } from './song.svelte.js'
 import { FACTORY_PRESETS } from './synth/factory_presets.js'

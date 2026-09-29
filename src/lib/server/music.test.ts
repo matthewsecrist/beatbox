@@ -9,7 +9,7 @@ import type { Drums, Loop } from '../types.js'
 import type * as schema from './db/schema.js'
 
 import { db } from './db/index.js'
-import { presets, songLikes, songs, songViews, users } from './db/schema.js'
+import { kits, presets, songLikes, songs, songViews, users } from './db/schema.js'
 import * as music from './music.js'
 import { InvalidError } from './music.js'
 
@@ -35,6 +35,7 @@ async function createUser(username: string): Promise<string> {
 }
 
 beforeEach(async () => {
+  await db.delete(kits)
   await db.delete(presets)
   await db.delete(songs)
   await db.delete(users)
@@ -78,6 +79,25 @@ test('presets keep both LFOs', async () => {
   const saved = await music.savePreset(me, { name: 'Vibrato', params })
 
   expect((await music.getPreset(me, saved.id))?.params).toStrictEqual(params)
+})
+
+test('a kit saves its factory kit and track tweaks; saving under its name again overwrites it', async () => {
+  await music.saveKit(me, { kit: '808', name: 'Boom', voices: { kick: { tune: -3 } } })
+  const voices = { conga: { sound: 'bongo' }, snare: { decay: 0.5, sound: '909-snare' } }
+  const saved = await music.saveKit(me, { kit: 'trap', name: 'Boom', voices })
+
+  expect(await music.listKits(me)).toStrictEqual([{ id: saved.id, name: 'Boom' }])
+  expect(await music.getKit(me, saved.id)).toMatchObject({ kit: 'trap', voices })
+  expect(await music.getKit(other, saved.id)).toBe(null)
+})
+
+test('kits with an unknown factory kit or sound are rejected', async () => {
+  await expect(music.saveKit(me, { kit: '707', name: 'Bad', voices: {} })).rejects.toThrow(
+    InvalidError
+  )
+  await expect(
+    music.saveKit(me, { kit: '808', name: 'Bad', voices: { kick: { sound: 'gong' } } })
+  ).rejects.toThrow(InvalidError)
 })
 
 test('presets and songs are listed by name', async () => {

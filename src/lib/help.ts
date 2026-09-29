@@ -33,6 +33,10 @@ export const HELP = {
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',
+  drums_sound:
+    'Which drum sound this track plays. Each kit starts every track with its own, but you can pick any sound from any kit, like an 808 kick with a 909 snare, or a bongo on the Tom track. Changing it plays the new sound so you can hear it.',
+  drums_tracks:
+    'More drums to play: rim shot, snap, shaker, conga, cowbell, wood block, ride and crash. Adding one gives it a row in the grid; it stays once you give it some hits, and the × hides it again while it has none.',
   filter_attack:
     'How quickly the filter opens at the start of each note. Short gives a snappy "blip"; long gives a slow "wooow".',
   filter_cutoff:
@@ -49,7 +53,7 @@ export const HELP = {
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:
     'Legato only slides when you press the next key while still holding the last one, so you choose when it slides. Always slides into every note.',
-  kit: 'Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit resets the Tune and Decay knobs on each drum.',
+  kit: "Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit gives every track that kit's sound again, and resets the Tune and Decay knobs on each drum. Made your own mix? Name it and press Save kit, and it shows under Saved, ready for any song.",
   lfo_depth:
     'How big the wobble is. Off means nothing moves; turn it up for a bigger wave. What the number means depends on what it moves.',
   lfo_rate: 'How fast the wobble goes. Low is a slow wave, like breathing; high is a fast flutter.',
