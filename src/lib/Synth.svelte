@@ -314,10 +314,10 @@
     store.setLoop(loop)
   }
 
-  // Sounds a pitch with the edited loop's own synth settings.
-  function previewNote(midi: number) {
+  // Sounds a pitch with the edited loop's own synth settings, at a note's velocity.
+  function previewNote(midi: number, velocity?: number) {
     if (!synth || !rollLoop) return
-    synth.noteOn(midi, undefined, 'roll', rollLoop.params)
+    synth.noteOn(midi, undefined, 'roll', rollLoop.params, velocity)
     synth.noteOff('roll', synth.now() + 0.25)
   }
 
@@ -780,6 +780,7 @@
   </label>
   {@render slider('filter_resonance', 'Resonance', 0, 20, 0.1, fmtNum)}
   {@render slider('filter_env_amount', 'Env amount', -4, 4, 0.05, fmtEnvAmount)}
+  {@render slider('filter_velocity', 'Env velocity', 0, 1, 0.01, fmtPctOrOff)}
   {@render slider('filter_attack', 'Env attack', 0.001, 2, 0.001, fmtSec)}
   {@render slider('filter_decay', 'Env decay', 0.001, 2, 0.001, fmtSec)}
   {@render slider('filter_sustain', 'Env sustain', 0, 1, 0.01, fmtPct)}

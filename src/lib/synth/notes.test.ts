@@ -18,7 +18,8 @@ const note = (midi: number, start: number, length: number, id = 0): Note => ({
   id,
   length,
   midi,
-  start
+  start,
+  velocity: 1
 })
 const shape = (notes: Note[]) => notes.map(({ length, midi, start }) => ({ length, midi, start }))
 
@@ -50,6 +51,24 @@ test('events become notes in beats, and back to the same events', () => {
     { midi: 64, on: true, t: 1 },
     { midi: 64, on: false, t: 2 }
   ])
+})
+
+test('a note keeps its velocity through the piano roll; full velocity is left out', () => {
+  const soft = {
+    events: [
+      { midi: 60, on: true, t: 0, velocity: 0.4 },
+      { midi: 60, on: false, t: 0.5 },
+      { midi: 62, on: true, t: 0.5 }, // saved before velocity: full
+      { midi: 62, on: false, t: 1 }
+    ],
+    length: 2
+  }
+  const view = notesFromLoop(soft, 120)
+  expect(view.notes.map((n) => [n.midi, n.velocity])).toStrictEqual([
+    [60, 0.4],
+    [62, 1]
+  ])
+  expect(eventsFromNotes(view.notes, 120)).toStrictEqual(soft.events)
 })
 
 test('a note still held at the end, or restarted, is closed', () => {

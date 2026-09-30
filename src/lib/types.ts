@@ -129,6 +129,8 @@ export interface LoopEvent {
   on: boolean
   // Seconds from the start of the loop.
   t: number
+  // How hard a note-on is played, 0-1; absent means full (1).
+  velocity?: number
 }
 
 // How the synth keyboard turns keys into notes: a chord per key, and the
@@ -204,6 +206,8 @@ export interface SynthParams {
   filter_resonance: number
   filter_sustain: number
   filter_type: FilterType
+  // How much a note's velocity scales the filter envelope amount, 0-1 (0: not at all).
+  filter_velocity: number
   // Seconds to slide from the last note's pitch; 0 = off.
   glide: number
   glide_mode: GlideMode

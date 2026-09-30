@@ -161,7 +161,7 @@ export function createPlayer(
       if (at >= now + LOOKAHEAD) break
       const key = prefix + e.midi
       if (e.on) {
-        synth.noteOn(e.midi, at, key, loop.params)
+        synth.noteOn(e.midi, at, key, loop.params, e.velocity)
         sounding.add(key)
       } else {
         synth.noteOff(key, at)

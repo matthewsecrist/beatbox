@@ -59,6 +59,8 @@ export const HELP = {
   filter_sustain: 'How far open the filter stays while you keep holding the key.',
   filter_type:
     'Which part of the sound the filter keeps. Low keeps the deep part and cuts the fizz (the usual synth sound). High keeps the bright part and cuts the bass, thin and airy. Band keeps only the sound around the Cutoff, nasal like a telephone or a "wah". Notch cuts a gap out at the Cutoff, hollow and phasey when it moves.',
+  filter_velocity:
+    'How much softer notes open the filter less. Off, every note gets the same "wow" from the envelope however hard it\'s played. Turned up, a soft note stays darker and a hard one opens bright, like hitting a real piano or guitar harder. Set how hard each note plays in the piano roll\'s Vel lane.',
   glide:
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:

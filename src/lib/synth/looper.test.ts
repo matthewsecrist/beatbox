@@ -122,6 +122,37 @@ test('player repeats the loop on the beat grid', () => {
   ])
 })
 
+test('a pad plays each note at its saved velocity, full when it has none', () => {
+  const { clock, transport } = fakeAudio()
+  const velocities: (number | undefined)[] = []
+  const synth = {
+    ...spySynth(),
+    noteOn: (
+      _midi: number,
+      _at?: number,
+      _key?: number | string,
+      _own?: unknown,
+      velocity?: number
+    ) => velocities.push(velocity)
+  }
+  const loop: Loop = {
+    ...oneBar,
+    events: [
+      { midi: 60, on: true, t: 0, velocity: 0.4 },
+      { midi: 60, on: false, t: 0.5 },
+      { midi: 62, on: true, t: 1 },
+      { midi: 62, on: false, t: 1.5 }
+    ]
+  }
+  const player = createPlayer(synth, 'pad0:', loop, transport)
+
+  player.start()
+  clock.now = 1.5
+  player.tick()
+
+  expect(velocities).toStrictEqual([0.4, undefined]) // the synth plays undefined at full
+})
+
 test('a pad started after the audio clock has run starts right away', () => {
   const { clock, transport } = fakeAudio()
   const synth = spySynth()

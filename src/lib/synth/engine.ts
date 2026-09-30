@@ -18,6 +18,8 @@ export const DEFAULT_PARAMS: SynthParams = {
   filter_resonance: 4,
   filter_sustain: 0,
   filter_type: 'lowpass',
+  // How much a note's velocity scales its filter envelope, 0-1 (0: not at all).
+  filter_velocity: 0,
   // Glide: seconds a new note takes to slide from the last one's pitch (0 = off);
   // 'legato' only slides into a note played while the last one is still held.
   glide: 0,
@@ -259,7 +261,14 @@ export interface Synth {
   cancelPending(match: (key: VoiceKey) => boolean): void
   close(): void
   noteOff(key: VoiceKey, at?: number): void
-  noteOn(midi: number, at?: number, key?: VoiceKey, own?: null | Partial<SynthParams>): void
+  // `velocity` (0-1) scales the note's level, and its filter envelope by `filter_velocity`.
+  noteOn(
+    midi: number,
+    at?: number,
+    key?: VoiceKey,
+    own?: null | Partial<SynthParams>,
+    velocity?: number
+  ): void
   now(): number
   // A loop's changed sound, for its voices already sounding (keys starting `prefix`).
   setOwnParams(prefix: string, own: Partial<SynthParams>): void
@@ -297,6 +306,8 @@ interface Voice {
   osc1: OscillatorNode
   osc2: OscillatorNode
   own: boolean
+  // The envelope's peak level: HEADROOM scaled by the note's velocity.
+  peak: number
   release: number
   srcs: AudioScheduledSourceNode[]
   // The sub oscillator and its level; null when the note started without one.
@@ -439,7 +450,7 @@ export function createSynth(
     const t = Math.max(at, ctx.currentTime)
     const g = v.amp.gain
     g.cancelScheduledValues(t)
-    g.setValueAtTime(HEADROOM * envAt(v, t), t)
+    g.setValueAtTime(v.peak * envAt(v, t), t)
     g.linearRampToValueAtTime(0, t + time)
     if (v.fenv.amount) {
       const d = v.filter.detune
@@ -453,12 +464,13 @@ export function createSynth(
   // `at` is an AudioContext time (defaults to now); `key` lets loop voices coexist
   // with live ones on the same pitch; `own` pins the voice to its own params (a
   // recorded loop's sound) instead of following the live controls. Master volume
-  // stays global.
+  // stays global. `velocity` is how hard the note is played, 0-1.
   function noteOn(
     midi: number,
     at?: number,
     key: VoiceKey = midi,
-    own: null | Partial<SynthParams> = null
+    own: null | Partial<SynthParams> = null,
+    velocity = 1
   ): void {
     const { ctx, master } = ensureContext()
     const p = own ? { ...DEFAULT_PARAMS, ...own } : params
@@ -516,14 +528,18 @@ export function createSynth(
     filter.connect(amp).connect(trem).connect(master)
     trem.gain.value = tremLevel(p)
 
+    // Velocity scales the envelope's peak, so a softer note is quieter all through.
     const { attack, decay, sustain } = p
+    const peak = HEADROOM * velocity
     amp.gain.setValueAtTime(0, t)
-    amp.gain.linearRampToValueAtTime(HEADROOM, t + attack)
-    amp.gain.linearRampToValueAtTime(HEADROOM * sustain, t + attack + decay)
+    amp.gain.linearRampToValueAtTime(peak, t + attack)
+    amp.gain.linearRampToValueAtTime(peak * sustain, t + attack + decay)
 
     // The filter envelope moves the cutoff's detune; a filter LFO adds on top.
+    // `filter_velocity` lets a softer note open it less: at 1, the sweep follows
+    // velocity all the way; at 0, every note sweeps the full amount.
     const fenv: FilterEnv = {
-      amount: p.filter_env_amount * 1200,
+      amount: p.filter_env_amount * 1200 * (1 - p.filter_velocity * (1 - velocity)),
       attack: p.filter_attack,
       decay: p.filter_decay,
       release: p.filter_release,
@@ -568,6 +584,7 @@ export function createSynth(
       osc1,
       osc2,
       own: !!own,
+      peak,
       release: p.release,
       srcs,
       sub,

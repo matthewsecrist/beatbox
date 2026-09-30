@@ -167,7 +167,7 @@ export function libraryLoop({ bars, notes, params }: LibraryLoop, slot: number, 
     { bpm, events: [], length: 0, params, slot },
     {
       beats: bars * BEATS_PER_BAR,
-      notes: notes.map(([midi, start, length], id) => ({ id, length, midi, start }))
+      notes: notes.map(([midi, start, length], id) => ({ id, length, midi, start, velocity: 1 }))
     },
     bpm
   )

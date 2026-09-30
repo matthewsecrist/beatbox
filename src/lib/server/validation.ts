@@ -22,6 +22,7 @@ const params = z.object({
   filter_resonance: z.number().exactOptional(),
   filter_sustain: z.number().exactOptional(),
   filter_type: z.enum(['bandpass', 'highpass', 'lowpass', 'notch']).exactOptional(),
+  filter_velocity: z.number().min(0).max(1).exactOptional(),
   glide: z.number().min(0).max(1).exactOptional(),
   glide_mode: z.enum(['always', 'legato']).exactOptional(),
   lfo1_depth: z.number().exactOptional(),
@@ -133,7 +134,14 @@ const loop = z.object({
   // the song tempo. null for loops recorded before tempo sync.
   bpm: z.int().min(60).max(200).nullable().exactOptional(),
   events: z
-    .array(z.object({ midi: z.int().min(0).max(127), on: z.boolean(), t: z.number().min(0) }))
+    .array(
+      z.object({
+        midi: z.int().min(0).max(127),
+        on: z.boolean(),
+        t: z.number().min(0),
+        velocity: z.number().min(0).max(1).exactOptional()
+      })
+    )
     .max(4000),
   // Seconds; one full cycle of the loop.
   length: z.number().min(0.1).max(300),
