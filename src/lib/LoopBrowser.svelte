@@ -109,6 +109,7 @@
       }))
       drums.setKit(store.drums.kit, store.drums.voices)
       drums.setSwing(store.drums.swing)
+      drums.setHumanize(store.drums.humanize)
       drums.setVolume(store.drums.volume)
       const steps = beatPattern(item)
       drums.start(() => steps)

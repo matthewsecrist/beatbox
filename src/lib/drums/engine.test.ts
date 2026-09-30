@@ -110,6 +110,37 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
   expect(kicks).toStrictEqual([0.2, 0.25, 2.2, 2.25, 2.55])
 })
 
+test('humanize moves each hit by up to 20 ms at full amount, a ratchet as one', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // 16th = 0.125 s; grid starts at 0.05 s
+  // Per step: the Chance roll, then the timing drift, then a velocity drift per hit.
+  // Step 1: 0.75 drifts +10 ms at 100%; step 3 (two hits): 0 drifts the full 20 ms early.
+  const rolls = [0, 0.75, 0.5, 0, 0, 0.5, 0.5]
+  const drums = createDrums({
+    getCtx,
+    onStep: vi.fn(),
+    random: () => rolls.shift() ?? 0.5,
+    transport
+  })
+  drums.setHumanize(1)
+  const kick = Array.from({ length: 16 }, () => STEP)
+  kick[0] = { ...STEP, on: true }
+  kick[2] = { ...STEP, on: true, ratchet: 2 }
+
+  // Run the clock as it would, so hits are scheduled ahead of time and can land early.
+  drums.start(() => ({ kick }), 0)
+  for (; clock.currentTime < 0.4; clock.currentTime += 0.025) vi.advanceTimersByTime(25)
+  drums.stop()
+
+  // Step 1 at 0.05 + 0.01; step 3 at 0.3 - 0.02, its second hit 62.5 ms on (0.3425).
+  expect(kicks).toStrictEqual([0.06, 0.28, 0.342])
+  expect(rolls).toStrictEqual([])
+})
+
 test('solo wins over mute, and several tracks can be soloed', () => {
   const tracks: TrackId[] = ['kick', 'snare', 'chat', 'cowbell']
   const heard = (muted: TrackId[], soloed: TrackId[]) =>

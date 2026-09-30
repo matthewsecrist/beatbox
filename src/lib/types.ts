@@ -25,6 +25,8 @@ export type DrumPattern = Record<TrackId, DrumStep[]>
 
 export interface Drums {
   bpm: number
+  // 0-1: how far each hit drifts, at random, from its time and velocity (0 = exact).
+  humanize?: number
   // Absent in songs saved before kits: 'classic'.
   kit?: KitId
   // Patterns A-D; saved songs may omit tracks, and store plain on/off steps.
