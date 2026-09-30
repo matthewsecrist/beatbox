@@ -69,6 +69,9 @@ interface Output {
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
 // so timing stays tight even when the main thread stutters.
 export function createDrums({
+  // Which tracks are heard (mute and solo). Checked on every step; the pattern
+  // itself stays whole, so its grid is known even with every track silenced.
+  audible = () => true,
   getCtx = getContext,
   // Name it holds the transport under; a second engine (a preview) needs its own.
   id = 'drums',
@@ -82,6 +85,7 @@ export function createDrums({
   random = Math.random,
   transport = sharedTransport
 }: {
+  audible?: (track: TrackId) => boolean
   getCtx?: () => BaseAudioContext
   id?: string
   onKick?: (at: number, level: number) => void
@@ -412,7 +416,8 @@ export function createDrums({
       const span = nextBeat + 4 / steps + late(step + 1, steps) - from
       for (const { id } of TRACKS) {
         const hitStep = pattern[id]?.[step]
-        if (!hitStep?.on || hitStep.velocity <= 0 || random() >= hitStep.probability) continue
+        if (!hitStep?.on || !audible(id) || hitStep.velocity <= 0) continue
+        if (random() >= hitStep.probability) continue
         const gain = hitStep.velocity * (hitStep.accent ? ACCENT : 1)
         // A step's ratchet hits drift together so they stay in order, never
         // earlier than now; each has its own velocity.

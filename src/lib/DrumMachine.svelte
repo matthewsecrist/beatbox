@@ -241,21 +241,18 @@
     euclidRotation = Math.min(euclidRotation, n - 1)
   }
 
-  // Read on every step, so edits (and undo, mute and solo) are heard at once.
+  // Read on every step, so edits (and undo) are heard at once; mute and solo are
+  // the engine's `audible`, so the pattern (and its grid) stays whole.
   const patternFn =
     (i: number): PatternFn =>
-    () => {
-      const pattern = store.drums.patterns[i]
-      const out: Partial<DrumPattern> = {}
-      if (!pattern) return out
-      for (const { id } of TRACKS) if (isAudible(id, muted, soloed)) out[id] = pattern[id]
-      return out
-    }
+    () =>
+      store.drums.patterns[i] ?? {}
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some((s) => s.on))
 
   onMount(() => {
     const engine = createDrums({
+      audible: (id) => isAudible(id, muted, soloed),
       onKick: (at, level) => effects.duck(at, level),
       onPattern: (i) => (playingPattern = i ?? -1),
       onStep: (s) => (current = s),

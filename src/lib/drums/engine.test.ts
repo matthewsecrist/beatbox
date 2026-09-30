@@ -143,6 +143,29 @@ test('a triplet grid spaces its steps in thirds of the beat, unswung; a grid cha
   expect(kicks.slice(4)).toStrictEqual([0.55, 0.717, 0.883, 1.05])
 })
 
+test('silencing every track keeps a triplet pattern on its grid, so unmuting lands on it', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // a beat is 0.5 s; grid starts at 0.05 s
+  let heard = false
+  const drums = createDrums({ audible: () => heard, getCtx, onStep: vi.fn(), transport })
+  // 8th triplets, a kick on every step: 1/6 s apart.
+  const kick = Array.from({ length: 12 }, () => ({ ...STEP, on: true }))
+
+  drums.start(() => ({ kick }), 0)
+  clock.currentTime = 0.2 // scheduled up to 0.3 s: steps at 0.05 and 0.217 pass silently
+  vi.advanceTimersByTime(25)
+  heard = true
+  clock.currentTime = 0.5
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  expect(kicks).toStrictEqual([0.383, 0.55]) // still thirds of a beat, not 16ths
+})
+
 test('every kick hit is reported for the sidechain, with its level; other drums are not', () => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   vi.stubGlobal('requestAnimationFrame', () => 0)
