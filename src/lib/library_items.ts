@@ -6,7 +6,9 @@ import type { TrackId } from './types.js'
 // (`A3`, `C#4`, `Bb2`, or a chord like `A3+C4+E4`) starts on that step, `-` holds
 // the notes before it one more step, `.` is a rest. A `~` after a note (`C3~`)
 // slides it into the next one: the two overlap, so a sound with legato glide
-// (Acid Bass, Deep Sub, …) glides between them. `sound` is a factory preset.
+// (Acid Bass, Deep Sub, …) glides between them. In brackets (`(C3)`, `(C3+E3)~`)
+// it's a ghost note, played at half velocity: the softer in-between notes of a
+// funk bass or an acid line. `sound` is a factory preset.
 //
 // A beat is one 16-step drum pattern, one string per track (the ids in `TRACKS`,
 // `src/lib/drums/kits.ts`, percussion included): `x` hit, `X` accented hit, `o`
@@ -35,7 +37,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Afrobeat',
     instrument: 'Bass',
     name: 'Fela Bass Riff',
-    score: 'D2 - . D2 . . F2 . G2 - . A2 . . C3 . | D2 - . D2 . . F2 . G2 . F2 . D2 - . .',
+    score: 'D2 - . (D2) . . F2 . G2 - . (A2) . . C3 . | D2 - . (D2) . . F2 . G2 . F2 . D2 - . .',
     sound: 'Pluck'
   },
   {
@@ -72,8 +74,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Palm Wine Picking',
     score: [
-      'Bb4 . G4 . Eb5 . Bb4 G4 . Bb4 . C5 . Bb4 G4 .',
-      'Ab4 . F4 . C5 . Ab4 F4 . Ab4 . Bb4 . G4 . .'
+      'Bb4 . G4 . Eb5 . Bb4 (G4) . (Bb4) . (C5) . (Bb4) G4 .',
+      'Ab4 . F4 . C5 . Ab4 (F4) . (Ab4) . (Bb4) . (G4) . .'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -221,7 +223,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Breakbeat',
     instrument: 'Bass',
     name: 'Florida Breaks Bass',
-    score: 'A3 - . A3 . . A4 . . A3 . C4 . D4~ E4 . | F3 - . F3 . . F4 . G3 - . G3 . . G4 .',
+    score:
+      'A3 - . (A3) . . A4 . . (A3) . (C4) . (D4)~ E4 . | F3 - . (F3) . . F4 . G3 - . (G3) . . G4 .',
     sound: 'Acid Bass'
   },
   {
@@ -246,8 +249,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Breakz Pluck Arp',
     score: [
-      'D4 . A4 D5 . A4 F4 . D4 . A4 D5 . C5 A4 .',
-      'Bb3 . F4 Bb4 . F4 D4 . Bb3 . F4 Bb4 . A4 F4 .'
+      'D4 . A4 (D5) . (A4) F4 . D4 . A4 (D5) . (C5) A4 .',
+      'Bb3 . F4 (Bb4) . (F4) D4 . Bb3 . F4 (Bb4) . (A4) F4 .'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -317,8 +320,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Studio Hustle Bass',
     score: [
-      'A2 . A3 . A2 . A3 A2 . A2 A3 . G2 . G3 .',
-      'F2 . F3 . F2 . F3 F2 . F2 F3 . E2 . E3 G#2'
+      'A2 . A3 . A2 . A3 (A2) . (A2) A3 . G2 . G3 .',
+      'F2 . F3 . F2 . F3 (F2) . (F2) F3 . E2 . E3 (G#2)'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -453,8 +456,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Liquid Pluck Arp',
     score: [
-      'E3 B3 G4 B3 D4 B3 G4 F#4 E3 B3 G4 B3 D4 B3 F#4 G4',
-      'C3 G3 E4 G3 B3 G3 E4 D4 C3 G3 E4 G3 B3 G3 D4 E4'
+      'E3 (B3) G4 (B3) D4 (B3) G4 (F#4) E3 (B3) G4 (B3) D4 (B3) F#4 (G4)',
+      'C3 (G3) E4 (G3) B3 (G3) E4 (D4) C3 (G3) E4 (G3) B3 (G3) D4 (E4)'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -517,8 +520,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Robot Buzz Line',
     score: [
-      'C3 . C3 . Eb3 . C3 . G3 - . C3 . Bb2 . .',
-      'C3 . C3 . Eb3 . F3 . G3 - . Bb3 . G3 F3 Eb3'
+      'C3 . C3 . Eb3 . C3 . G3 - . (C3) . (Bb2) . .',
+      'C3 . C3 . Eb3 . F3 . G3 - . (Bb3) . (G3) F3 (Eb3)'
     ].join(' | '),
     sound: 'Buzz Bass'
   },
@@ -582,7 +585,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Funk',
     instrument: 'Bass',
     name: 'Slap Pop',
-    score: 'E2 - . E2 . . G2 . A2 - . E3 . D3 B2 .',
+    score: 'E2 - . (E2) . . G2 . A2 - . (E3) . (D3) B2 .',
     sound: 'Pluck'
   },
   {
@@ -590,8 +593,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Bootsy Octave Bass',
     score: [
-      'G3 . G4 . . G3 Bb3 . C4 . . G3 . F3~ F#3 .',
-      'G3 . G4 . . G3 Bb3 . C4 . C#4~ D4 . F4 D4 .'
+      'G3 . G4 . . (G3) Bb3 . C4 . . (G3) . (F3)~ F#3 .',
+      'G3 . G4 . . (G3) Bb3 . C4 . C#4~ (D4) . (F4) D4 .'
     ].join(' | '),
     sound: 'Acid Bass'
   },
@@ -600,8 +603,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Chords',
     name: 'Clavinet Chank',
     score: [
-      '. . G#3+D4+F#4 . G#3+D4+F#4 . . G#3+D4+F#4 . . G#3+D4+F#4 . G#3+D4+F#4 . . .',
-      '. . G3+C#4+F#4 . G3+C#4+F#4 . . G3+C#4+F#4 . . G#3+D4+F#4 . G#3+D4+F#4 . G#3+D4+F#4 .'
+      '. . G#3+D4+F#4 . G#3+D4+F#4 . . (G#3+D4+F#4) . . G#3+D4+F#4 . G#3+D4+F#4 . . .',
+      '. . G3+C#4+F#4 . G3+C#4+F#4 . . (G3+C#4+F#4) . . G#3+D4+F#4 . G#3+D4+F#4 . G#3+D4+F#4 .'
     ].join(' | '),
     sound: 'Wah Clav'
   },
@@ -619,14 +622,15 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Funk',
     instrument: 'Arp',
     name: 'Wah Guitar Scratch',
-    score: 'D4 . D4 F4 . D4 A4 . D4 . C4 . D4 . F4 G4',
+    score: 'D4 . D4 (F4) . (D4) A4 . D4 . C4 . D4 . F4 (G4)',
     sound: 'Auto-Wah Lead'
   },
   {
     genre: 'Funk',
     instrument: 'Bass',
     name: 'Minimoog Funk',
-    score: 'E3 . . E3 G3 . E3 . A3 - . G3 . E3 D3 . | E3 . . E3 G3 . E3 . B3 - . A3 . G3~ A3 .',
+    score:
+      'E3 . . (E3) G3 . E3 . A3 - . (G3) . (E3) D3 . | E3 . . (E3) G3 . E3 . B3 - . (A3) . (G3)~ A3 .',
     sound: 'Moog Bass'
   },
 
@@ -635,7 +639,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Hip-hop',
     instrument: 'Bass',
     name: 'Boom Bap Upright',
-    score: 'D2 - - . . . . D2 F2 - . . A2 - G2 . | Bb2 - - . . . . Bb2 A2 - . . G2 - F2 .',
+    score: 'D2 - - . . . . (D2) F2 - . . A2 - G2 . | Bb2 - - . . . . (Bb2) A2 - . . G2 - F2 .',
     sound: 'Pluck'
   },
   {
@@ -720,8 +724,8 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Jackin Pluck Arp',
     score: [
-      'F3 C4 Ab3 F4 . C4 Ab3 F4 C4 . Ab3 F4 C4 Ab3 . Eb4',
-      'Db3 Ab3 F3 Db4 . Ab3 F3 Db4 Ab3 . F3 Db4 Ab3 F3 . C4'
+      'F3 (C4) Ab3 (F4) . (C4) Ab3 (F4) C4 . Ab3 (F4) C4 (Ab3) . (Eb4)',
+      'Db3 (Ab3) F3 (Db4) . (Ab3) F3 (Db4) Ab3 . F3 (Db4) Ab3 (F3) . (C4)'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -906,10 +910,10 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Tropical Pluck Arp',
     score: [
-      'A3 . E4 A4 . C4 . E4 A3 . E4 A4 . C4 . E4',
-      'F3 . C4 F4 . A3 . C4 F3 . C4 F4 . A3 . C4',
-      'C4 . G4 C5 . E4 . G4 C4 . G4 C5 . E4 . G4',
-      'G3 . D4 G4 . B3 . D4 G3 . D4 G4 . B3 . D4'
+      'A3 . E4 (A4) . (C4) . (E4) A3 . E4 (A4) . (C4) . (E4)',
+      'F3 . C4 (F4) . (A3) . (C4) F3 . C4 (F4) . (A3) . (C4)',
+      'C4 . G4 (C5) . (E4) . (G4) C4 . G4 (C5) . (E4) . (G4)',
+      'G3 . D4 (G4) . (B3) . (D4) G3 . D4 (G4) . (B3) . (D4)'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -963,7 +967,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Reggae',
     instrument: 'Arp',
     name: 'Dub Echo Pluck',
-    score: 'D4 . . D4 . . D4 . . . Bb3 . . Bb3 . . | C4 . . C4 . . C4 . . . G3 . . G3 . .',
+    score: 'D4 . . (D4) . . D4 . . . Bb3 . . (Bb3) . . | C4 . . (C4) . . C4 . . . G3 . . (G3) . .',
     sound: 'Pluck'
   },
   {
@@ -1161,10 +1165,10 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Outrun Sequencer',
     score: [
-      'A3 C4 E4 A4 A3 C4 E4 A4 A3 C4 E4 A4 A3 C4 E4 A4',
-      'F3 A3 C4 F4 F3 A3 C4 F4 F3 A3 C4 F4 F3 A3 C4 F4',
-      'G3 C4 E4 G4 G3 C4 E4 G4 G3 C4 E4 G4 G3 C4 E4 G4',
-      'G3 B3 D4 G4 G3 B3 D4 G4 G3 B3 D4 G4 G3 B3 D4 G4'
+      'A3 (C4) E4 (A4) A3 (C4) E4 (A4) A3 (C4) E4 (A4) A3 (C4) E4 (A4)',
+      'F3 (A3) C4 (F4) F3 (A3) C4 (F4) F3 (A3) C4 (F4) F3 (A3) C4 (F4)',
+      'G3 (C4) E4 (G4) G3 (C4) E4 (G4) G3 (C4) E4 (G4) G3 (C4) E4 (G4)',
+      'G3 (B3) D4 (G4) G3 (B3) D4 (G4) G3 (B3) D4 (G4) G3 (B3) D4 (G4)'
     ].join(' | '),
     sound: 'Pluck'
   },
@@ -1174,7 +1178,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Techno',
     instrument: 'Bass',
     name: 'Acid Line',
-    score: 'C4 C4 C5~ C4 . C4 Eb4 C4 C4 . Bb3~ C4 G4 C4~ C5 .',
+    score: 'C4 (C4) C5~ (C4) . (C4) Eb4 (C4) C4 . Bb3~ (C4) G4 (C4)~ C5 .',
     sound: 'Acid Bass'
   },
   {
@@ -1205,7 +1209,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     genre: 'Techno',
     instrument: 'Arp',
     name: 'Warehouse Sequence',
-    score: 'A4 . C5~ A4 . E5 A4 . C5 A4 . E5 A4~ - G5 .',
+    score: 'A4 . C5~ (A4) . (E5) A4 . C5 (A4) . (E5) A4~ - G5 .',
     sound: 'Acid Bass'
   },
 
