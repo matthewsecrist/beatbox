@@ -14,6 +14,7 @@
     DriveType,
     FilterType,
     GlideMode,
+    LfoNote,
     LfoTarget,
     LoadPresetReply,
     Loop,
@@ -32,7 +33,7 @@
   import PianoRoll from './PianoRoll.svelte'
   import { PAD_COUNT } from './song.svelte.js'
   import { chordNotes, createArp } from './synth/arp.js'
-  import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
+  import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX, LFO_NOTES } from './synth/engine.js'
   import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
   import Tabs from './Tabs.svelte'
@@ -43,8 +44,10 @@
   // `loadPreset` talk to the server. Signed out (`canSave` false), only the factory
   // presets can be loaded and nothing can be saved. The editor (pads and sound)
   // shows while the synth track is `selected`; the keyboard bar always shows, last
-  // in its (flex) parent, and the engine keeps running either way.
+  // in its (flex) parent, and the engine keeps running either way. `bpm` is the
+  // tempo playing (a section's own while it plays), for synced LFOs.
   let {
+    bpm,
     canSave = true,
     loadPreset: fetchPreset,
     presets = [],
@@ -52,6 +55,7 @@
     selected,
     store
   }: {
+    bpm: number
     canSave?: boolean
     loadPreset: (id: string) => Promise<LoadPresetReply>
     presets?: PresetSummary[]
@@ -499,6 +503,8 @@
     }
   })
 
+  // Synced LFOs follow the tempo playing.
+  $effect(() => synth?.setTempo(bpm))
   // The sound follows the store: edits, presets, undo and redo.
   $effect(() => synth?.setParams($state.snapshot(params)))
 
@@ -569,6 +575,13 @@
     filter: fmtOct,
     pitch: fmtVibrato
   }
+  // "1/8d" -> "1/8 dotted", "1/8t" -> "1/8T", as the delay's times read.
+  const fmtNote = (note: LfoNote) =>
+    note.endsWith('d')
+      ? note.slice(0, -1) + ' dotted'
+      : note.endsWith('t')
+        ? note.slice(0, -1) + 'T'
+        : note
 
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40'
@@ -799,7 +812,50 @@
       </button>
     {/each}
   </div>
-  {@render slider(`lfo${n}_rate`, 'Rate', 0.1, 20, 0.1, fmtRate)}
+  {@render caption(`lfo${n}_sync`, 'Speed')}
+  <div
+    id={`synth-lfo${n}_sync`}
+    class="-mt-2 grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="LFO {n} speed"
+  >
+    {#each [false, true] as sync (sync)}
+      <button
+        type="button"
+        aria-pressed={edited[`lfo${n}_sync`] === sync}
+        disabled={store.readOnly}
+        onclick={() => store.setParam(`lfo${n}_sync`, sync, soundPad)}
+        class={[
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+          edited[`lfo${n}_sync`] === sync
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+        ]}
+      >
+        {sync ? 'Sync' : 'Hz'}
+      </button>
+    {/each}
+  </div>
+  {#if edited[`lfo${n}_sync`]}
+    <label class="block space-y-1" for={`synth-lfo${n}_note`}>
+      <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+        >Note{@render info(`lfo${n}_note`, 'Note')}</span
+      >
+      <select
+        id={`synth-lfo${n}_note`}
+        value={edited[`lfo${n}_note`]}
+        disabled={store.readOnly}
+        onchange={(e) => store.setParam(`lfo${n}_note`, e.currentTarget.value as LfoNote, soundPad)}
+        class={select + ' w-full'}
+      >
+        {#each LFO_NOTES as note (note)}
+          <option value={note}>{fmtNote(note)}</option>
+        {/each}
+      </select>
+    </label>
+  {:else}
+    {@render slider(`lfo${n}_rate`, 'Rate', 0.1, 20, 0.1, fmtRate)}
+  {/if}
   {@render slider(
     `lfo${n}_depth`,
     'Depth',

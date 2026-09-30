@@ -98,6 +98,10 @@ export type InstrumentId =
 // Synthesized drum kits; each voice is built from oscillators and noise.
 export type KitId = '606' | '808' | '909' | 'classic' | 'lofi' | 'trap'
 
+// A tempo-synced LFO cycle: a note value from a whole note to a 1/32, plain,
+// dotted (d, half as long again) or triplet (t, two thirds as long).
+export type LfoNote = `1/${1 | 2 | 4 | 8 | 16 | 32}${'' | 'd' | 't'}`
+
 // What the synth's LFO modulates: filter cutoff (wobble), pitch (vibrato) or
 // level (tremolo).
 export type LfoTarget = 'amp' | 'filter' | 'pitch'
@@ -198,12 +202,17 @@ export interface SynthParams {
   glide: number
   glide_mode: GlideMode
   // Two LFOs, each with its own rate and target. Depth units follow the
-  // target: octaves (filter), cents (pitch), 0-1 (amp).
+  // target: octaves (filter), cents (pitch), 0-1 (amp). With `sync` on, one cycle
+  // lasts `note` at the tempo playing instead of running at `rate` Hz.
   lfo1_depth: number
+  lfo1_note: LfoNote
   lfo1_rate: number
+  lfo1_sync: boolean
   lfo1_target: LfoTarget
   lfo2_depth: number
+  lfo2_note: LfoNote
   lfo2_rate: number
+  lfo2_sync: boolean
   lfo2_target: LfoTarget
   // White noise mixed in with the oscillators, 0-1; 0 = off.
   noise_level: number

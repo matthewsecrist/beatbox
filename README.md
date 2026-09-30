@@ -97,7 +97,11 @@ release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
 has its own rate, depth and target: **Filter** (wobbles; depth in octaves),
 **Pitch** (vibrato; depth in cents) or **Amp** (tremolo; depth as a share of the
 level), so a slow filter sweep can run under a fast vibrato. Switching target
-keeps the depth at the same point of the new range. **Glide** slides each note's
+keeps the depth at the same point of the new range. Each LFO's **Speed** is **Hz**
+(free, the default) or **Sync**: one cycle per **Note** (1/1 to 1/32, dotted or
+triplet) at the tempo playing, a section's own included, so it keeps time when the
+tempo changes (Dubstep Wobble, Pulse Pad's gate, Riser's stutter, Auto-Wah Lead,
+Jet Lead). **Glide** slides each note's
 pitch from the last one over its **Time** (up to 1 s; 0 is off): **Legato** only
 into a note played while the last is still held (hold one key, press the next:
 the 303 slide Acid Bass uses), **Always** into every note. Chords don't slide

@@ -1,4 +1,4 @@
-import type { DriveType, LfoTarget, SynthParams, Wave } from '../types.js'
+import type { DriveType, LfoNote, LfoTarget, SynthParams, Wave } from '../types.js'
 
 import { getContext, noiseBuffer } from '../audio.js'
 
@@ -23,10 +23,14 @@ export const DEFAULT_PARAMS: SynthParams = {
   glide: 0,
   glide_mode: 'legato',
   lfo1_depth: 0, // units follow the target (LFO_DEPTH_MAX)
+  lfo1_note: '1/4', // one cycle per beat when synced
   lfo1_rate: 4,
+  lfo1_sync: false,
   lfo1_target: 'filter',
   lfo2_depth: 0,
+  lfo2_note: '1/4',
   lfo2_rate: 5,
+  lfo2_sync: false,
   lfo2_target: 'pitch',
   // Extra sources, 0 = off: white noise, and a sine one octave below osc 1.
   noise_level: 0,
@@ -51,13 +55,33 @@ export const DEFAULT_PARAMS: SynthParams = {
 // Deepest LFO per target: octaves of cutoff, cents of pitch, share of the level.
 export const LFO_DEPTH_MAX: Record<LfoTarget, number> = { amp: 1, filter: 4, pitch: 100 }
 
+// Synced LFO note values, slowest first.
+export const LFO_NOTES: LfoNote[] = [1, 2, 4, 8, 16, 32].flatMap((d) => [
+  `1/${d}d` as LfoNote,
+  `1/${d}` as LfoNote,
+  `1/${d}t` as LfoNote
+])
+
+// A note value's length in beats (quarter notes): 1/1 is four, dotted is half as
+// long again, a triplet two thirds as long.
+export function noteBeats(note: LfoNote): number {
+  const straight = 4 / Number(note.slice(2).replace(/[dt]$/, ''))
+  return note.endsWith('d') ? straight * 1.5 : note.endsWith('t') ? (straight * 2) / 3 : straight
+}
+
 const LFOS = [1, 2] as const
 
+// `beats` is the synced cycle length, null when the LFO runs free at `rate` Hz.
 const lfoParams = (p: SynthParams, n: 1 | 2) => ({
+  beats: p[`lfo${n}_sync`] ? noteBeats(p[`lfo${n}_note`]) : null,
   depth: p[`lfo${n}_depth`],
   rate: p[`lfo${n}_rate`],
   target: p[`lfo${n}_target`]
 })
+
+// An LFO's speed in Hz: free, or one cycle per `beats` at `bpm`.
+const lfoHz = (rate: number, beats: null | number, bpm: number): number =>
+  beats === null ? rate : bpm / 60 / beats
 
 // Resonance is in dB, as low- and high-pass filters take their Q; band-pass and
 // notch take Q as a plain ratio (how narrow the band is), so it's converted and
@@ -240,6 +264,8 @@ export interface Synth {
   // A loop's changed sound, for its voices already sounding (keys starting `prefix`).
   setOwnParams(prefix: string, own: Partial<SynthParams>): void
   setParams(p: Partial<SynthParams>): void
+  // The tempo playing, for synced LFOs (sounding notes follow it).
+  setTempo(bpm: number): void
 }
 
 export type VoiceKey = number | string
@@ -284,6 +310,8 @@ interface Voice {
 // One of a voice's LFOs: the oscillator, the gain setting its depth, and where
 // that gain is connected.
 interface VoiceLfo {
+  // Synced cycle length in beats; null while running free.
+  beats: null | number
   depth: GainNode
   n: 1 | 2
   osc: OscillatorNode
@@ -302,6 +330,7 @@ export function createSynth(
   output?: () => AudioNode
 ): Synth {
   let params: SynthParams = { ...DEFAULT_PARAMS, ...initialParams }
+  let bpm = 110
   let ctx: BaseAudioContext | null = null
   let master: GainNode | null = null
   const voices = new Map<VoiceKey, Voice>() // key -> voice still held (not yet released)
@@ -448,10 +477,11 @@ export function createSynth(
     const lfos = LFOS.map((n): VoiceLfo => {
       const osc = ctx.createOscillator()
       const depth = ctx.createGain()
-      osc.frequency.value = lfoParams(p, n).rate
+      const { beats, rate, target } = lfoParams(p, n)
+      osc.frequency.value = lfoHz(rate, beats, bpm)
       depth.gain.value = lfoSwing(p, n)
       osc.connect(depth)
-      return { depth, n, osc, target: lfoParams(p, n).target }
+      return { beats, depth, n, osc, target }
     })
     const trem = ctx.createGain()
     const drive = createDrive(ctx, p, filter)
@@ -613,9 +643,10 @@ export function createSynth(
     v.filter.type = p.filter_type
     v.filter.Q.setTargetAtTime(filterQ(p), t, 0.01)
     for (const lfo of v.lfos) {
-      const { rate, target } = lfoParams(p, lfo.n)
+      const { beats, rate, target } = lfoParams(p, lfo.n)
       if (lfo.target !== target) routeLfo(v, lfo, target)
-      lfo.osc.frequency.setTargetAtTime(rate, t, 0.01)
+      lfo.beats = beats
+      lfo.osc.frequency.setTargetAtTime(lfoHz(rate, beats, bpm), t, 0.01)
       lfo.depth.gain.setTargetAtTime(lfoSwing(p, lfo.n), t, 0.01)
     }
     v.trem.gain.setTargetAtTime(tremLevel(p), t, 0.01)
@@ -646,6 +677,19 @@ export function createSynth(
     }
   }
 
+  // Synced LFOs on every sounding note (released ones too, while they ring) speed
+  // up or slow down with the tempo; free ones don't change.
+  function setTempo(next: number): void {
+    bpm = next
+    if (!ctx) return
+    const t = ctx.currentTime
+    for (const v of alive) {
+      for (const lfo of v.lfos) {
+        if (lfo.beats !== null) lfo.osc.frequency.setTargetAtTime(bpm / 60 / lfo.beats, t, 0.01)
+      }
+    }
+  }
+
   // Detach from the shared AudioContext (it outlives this component).
   function close(): void {
     master?.disconnect()
@@ -655,7 +699,17 @@ export function createSynth(
     alive.clear()
   }
 
-  return { allNotesOff, cancelPending, close, noteOff, noteOn, now, setOwnParams, setParams }
+  return {
+    allNotesOff,
+    cancelPending,
+    close,
+    noteOff,
+    noteOn,
+    now,
+    setOwnParams,
+    setParams,
+    setTempo
+  }
 }
 
 function oscSpec(
