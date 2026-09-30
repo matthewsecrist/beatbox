@@ -109,9 +109,11 @@ pitch over its **Decay**, on top of glide and vibrato: a small, fast drop punche
 up an 808 (Dirty 808), a big one makes a laser (Laser) or a zap (Zap). **Sub &
 Noise** (also on the Osc tab) mix two more sources in before the drive: **Sub**,
 a sine an octave below Osc 1 that follows its pitch, detune, glide, vibrato and
-pitch envelope, for weight under a bass (Reese Bass, Hollow Bass); and **Noise**,
-white noise for breath (Flute), air (Airy Pad), risers (Riser) or hi-hats on the
-keys (Noise Hat). Both are off at 0%, and a note only gets them if it starts with
+pitch envelope, for weight under a bass (Reese Bass, Hollow Bass, Sub Pluck Bass,
+Garage Bass, Moog Bass); and **Noise**, white noise for breath (Flute, Breathy
+Lead), air and hiss (Airy Pad, Vinyl Keys), surf and wind (Ocean Pad, Wind), risers
+(Riser) or drums on the keys (Noise Hat, Synth Snare, and Synth Kick, which adds the
+sub and a pitch drop). Both are off at 0%, and a note only gets them if it starts with
 them turned up. Play it
 with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
@@ -227,7 +229,7 @@ end, and then stops; ← and → move a section.
   back to the song tempo. Pads keep their length in beats, so they speed up
   or slow down with the section.
 
-**Loop Browser** (**Loops** in the song bar): 137 premade loops (bass, chords,
+**Loop Browser** (**Loops** in the song bar): 143 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
 house and techno to drill, amapiano and bossa nova (at least 5 loops and 3 beats
 each), in one list. The sidebar searches (name, genre, instrument, synth sound) and
