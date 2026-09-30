@@ -6,9 +6,10 @@
   import { help } from './help.js'
   import Info from './Info.svelte'
 
-  // One part of the song's effects: the shared delay and reverb (`master`), or how
-  // much of one instrument goes to them (its sends). Settings live in the song
-  // store (and its undo history); Workspace keeps the effects bus in step.
+  // One part of the song's effects: the shared delay and reverb and the master
+  // compressor (`master`), or how much of one instrument goes to them (its sends).
+  // Settings live in the song store (and its undo history); Workspace keeps the
+  // effects bus in step.
   let { part, store }: { part: 'master' | Instrument; store: SongStore } = $props()
 
   type NumericSetting = {
@@ -102,6 +103,38 @@
       {@render heading('reverb', 'Reverb')}
       {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
       {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
+    </div>
+    <div id="fx-master" class={[panel, 'sm:col-span-2']}>
+      {@render heading('master', 'Master')}
+      <div class="space-y-1">
+        <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+          >Compressor{@render info('comp_on', 'Compressor')}</span
+        >
+        <div
+          id="fx-comp_on"
+          class="grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+          role="group"
+          aria-label="Compressor"
+        >
+          {#each [false, true] as on (on)}
+            <button
+              type="button"
+              aria-pressed={settings.comp_on === on}
+              disabled={store.readOnly}
+              onclick={() => store.setEffects({ comp_on: on })}
+              class={[
+                'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+                settings.comp_on === on
+                  ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+              ]}
+            >
+              {on ? 'On' : 'Off'}
+            </button>
+          {/each}
+        </div>
+      </div>
+      {@render slider('comp_amount', 'Amount', 1, fmtPct)}
     </div>
   </div>
 {:else}

@@ -21,7 +21,8 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'glide',
       'delay',
       'reverb',
-      'sends'
+      'sends',
+      'master'
     ].map((panel) => 'panel_' + panel),
     // Drum machine controls and step edit buttons
     ...[

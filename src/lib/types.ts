@@ -50,8 +50,12 @@ export interface DrumStep {
 }
 
 // Shared send effects: a tempo-synced delay and a reverb, each fed by a send
-// level per instrument and returned at `*_mix`. Sends and mixes are 0-1.
+// level per instrument and returned at `*_mix`, then the master stage: a glue
+// compressor (`comp_on`, squeezing harder as `comp_amount` goes up) and a fixed
+// limiter. Sends, mixes and the amount are 0-1.
 export interface Effects {
+  comp_amount: number
+  comp_on: boolean
   delay_feedback: number // 0-0.9
   delay_mix: number
   delay_time: DelayTime

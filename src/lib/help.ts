@@ -16,6 +16,10 @@ export const HELP = {
     'How quickly a note gets loud. Short is instant, like hitting a drum; long fades in slowly, like a violin swelling up.',
   chord:
     'Makes one key play a whole chord: several notes that sound good together, built up from the key you press. Major sounds happy and bright, Minor sad or mysterious, and 7ths jazzy. Off plays just the one note.',
+  comp_amount:
+    'How hard the compressor squeezes. A little evens out the song so everything sits together; a lot flattens it into a dense, punchy wall where the quiet bits come up and the loud hits come down.',
+  comp_on:
+    'The compressor evens out how loud the whole song is, turning the loudest moments down and the quiet ones up, so the drums and synth sound "glued" together like a finished record. Off leaves the song as it is.',
   decay: 'After a note reaches its loudest, how quickly it drops down to the Sustain level.',
   delay_feedback:
     'How many echoes you hear. Low gives one or two quick repeats; high keeps them bouncing for a long time.',
@@ -90,6 +94,8 @@ export const HELP = {
     'Glide makes each note slide up or down into the next one, like a trombone or a singer swooping between notes, instead of jumping straight there.',
   panel_lfo:
     'An LFO is like an invisible hand that keeps turning a knob back and forth, slowly or quickly. It makes sounds wobble, wave or shimmer on their own.',
+  panel_master:
+    'The last stop before your speakers, for the whole song: a compressor that glues everything together, then a limiter that is always on and stops the loudest peaks from distorting when lots of sounds, echoes and drive pile up.',
   panel_osc:
     'An oscillator is the part that actually makes the sound: it vibrates really fast, like a guitar string. The synth has two, and you hear them mixed together.',
   panel_pitch_env:
