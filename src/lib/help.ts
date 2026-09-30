@@ -65,6 +65,8 @@ export const HELP = {
   lfo_rate: 'How fast the wobble goes. Low is a slow wave, like breathing; high is a fast flutter.',
   lfo_target:
     'What the LFO moves. Filter makes a "wub wub" wobble. Pitch makes the note wave up and down, like a singer\'s vibrato. Amp makes the volume pulse, like a tremolo.',
+  noise_level:
+    'Mixes in white noise: the "shhh" of a radio between stations. A little adds breath to a flute or air to a pad; a lot makes wind, sweeps and risers. With the oscillators turned down and a short envelope, it plays hi-hats on the keys.',
   osc_detune:
     'Pushes this oscillator a tiny bit out of tune. When the two oscillators are slightly apart, they rub against each other and sound thick and shimmery, like a choir instead of one singer.',
   osc_level: 'How loud this oscillator is. Turn one all the way down to hear the other on its own.',
@@ -92,6 +94,8 @@ export const HELP = {
     'The reverb makes it sound like the music is playing in a room, a hall or a huge cave, with the sound bouncing off the walls and ringing on after each note.',
   panel_sends:
     'Sends choose how much of each instrument goes into the echo and the room sound. Off keeps that instrument dry; turn one up to put it in the effect. The synth sends cover the loop pads too.',
+  panel_sub_noise:
+    'Two more sounds to mix in with the oscillators: a deep sub underneath for weight, and noise on top for breath and hiss. Both are off until you turn them up.',
   pitch_env_amount:
     'How far off each note starts, in semitones (12 is an octave). Above zero it starts high and swoops down; below zero it starts low and swoops up. Off keeps notes on pitch.',
   pitch_env_decay:
@@ -114,6 +118,8 @@ export const HELP = {
     'Squeezes 2, 3 or 4 quick hits into one square instead of one, like a tiny drum roll. Click a lit square to go through them. Great for trap hi-hats and build-ups.',
   step_velocity:
     'How hard each drum is hit: click a lit square to go from 100% (loud) to 75, 50 and 25% (soft). Quiet "ghost" hits between the loud ones make a beat feel groovy and human. Softer squares look dimmer.',
+  sub_level:
+    'Adds a pure, deep tone one octave below Osc 1, following its notes. It makes a bass heavier and fuller, the kind of low end you feel more than hear, without making it any buzzier.',
   sustain:
     'How loud a note stays while you keep holding the key. At 0% it fades out even if you hold on, like a piano or a bell.',
   swing:

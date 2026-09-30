@@ -189,6 +189,25 @@ export const LOOP_SPECS: LoopSpec[] = [
     score: 'A4 . . . E5 . . . C#5 . . . B4 . . . | F#4 . . . E5 . . . C#5 . . . A4 . . .',
     sound: 'Bell'
   },
+  {
+    genre: 'Ambient',
+    instrument: 'Chords',
+    name: 'Tidepool',
+    score: [
+      'D3+A3+E4+F#4 - - - - - - - - - - - - - - -',
+      '- - - - - - - - - - - - - - - -',
+      'B2+F#3+D4+A4 - - - - - - - - - - - - - - -',
+      '- - - - - - - - - - - - . . . .'
+    ].join(' | '),
+    sound: 'Ocean Pad'
+  },
+  {
+    genre: 'Ambient',
+    instrument: 'Chords',
+    name: 'Mountain Wind',
+    score: ['D4+A4 - - - - - - - - - - - - - - -', '- - - - - - - - - - - - - - - -'].join(' | '),
+    sound: 'Wind'
+  },
 
   // Breakbeat
   {
@@ -603,6 +622,13 @@ export const LOOP_SPECS: LoopSpec[] = [
     score: 'D4 . D4 F4 . D4 A4 . D4 . C4 . D4 . F4 G4',
     sound: 'Auto-Wah Lead'
   },
+  {
+    genre: 'Funk',
+    instrument: 'Bass',
+    name: 'Minimoog Funk',
+    score: 'E3 . . E3 G3 . E3 . A3 - . G3 . E3 D3 . | E3 . . E3 G3 . E3 . B3 - . A3 . G3~ A3 .',
+    sound: 'Moog Bass'
+  },
 
   // Hip-hop
   {
@@ -698,6 +724,13 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Db3 Ab3 F3 Db4 . Ab3 F3 Db4 Ab3 . F3 Db4 Ab3 F3 . C4'
     ].join(' | '),
     sound: 'Pluck'
+  },
+  {
+    genre: 'House',
+    instrument: 'Bass',
+    name: 'Deep House Sub Pluck',
+    score: 'A3 . . A3 . . C4 . A3 . . . E3 . G3 . | F3 . . F3 . . A3 . F3 . . . G3 . G3 .',
+    sound: 'Sub Pluck Bass'
   },
 
   // Latin
@@ -803,6 +836,16 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3 . Bb3 . D4 . F4 . A4 . F4 . D4 . Bb3 .'
     ].join(' | '),
     sound: 'Electric Piano'
+  },
+  {
+    genre: 'Lo-fi',
+    instrument: 'Chords',
+    name: 'Tape Hiss Keys',
+    score: [
+      'Bb3+D4+F4+A4 - - - - - . . Bb3+D4+F4+A4 - - - . . . .',
+      'A3+C4+E4+G4 - - - - - - - - - - - . . . .'
+    ].join(' | '),
+    sound: 'Vinyl Keys'
   },
 
   // Pop
@@ -922,6 +965,13 @@ export const LOOP_SPECS: LoopSpec[] = [
     name: 'Dub Echo Pluck',
     score: 'D4 . . D4 . . D4 . . . Bb3 . . Bb3 . . | C4 . . C4 . . C4 . . . G3 . . G3 . .',
     sound: 'Pluck'
+  },
+  {
+    genre: 'Reggae',
+    instrument: 'Lead',
+    name: 'Whistle Dub',
+    score: 'D5 - - - B4 - A4 - G4 - - - . . . . | A4 - B4 - D5 - - - E5 - D5 - B4 - - -',
+    sound: 'Breathy Lead'
   },
 
   // Reggaeton
@@ -1279,7 +1329,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Bass',
     name: 'Garage Sub',
     score: 'G3 - . . . . G3 . . . Bb3 - . . F3 -',
-    sound: 'Deep Sub'
+    sound: 'Garage Bass'
   },
   {
     genre: 'UK Garage',

@@ -12,6 +12,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ...Object.keys(DEFAULT_EFFECTS),
     ...[
       'osc',
+      'sub_noise',
       'pitch_env',
       'drive',
       'filter',

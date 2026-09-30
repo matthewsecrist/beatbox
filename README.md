@@ -72,7 +72,7 @@ and the keys) stays at the bottom whichever track is open.
   drums', are for listening only: they aren't saved with the song.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level)
-with a pitch envelope,
+plus a sub and noise, with a pitch envelope,
 a drive (distortion), a resonant filter (low-pass, high-pass, band-pass or notch) with
 its own envelope, two LFOs, an ADSR envelope and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
 clean; turning it up pushes the wave harder into the **Character**'s curve: **Soft**
@@ -106,11 +106,20 @@ before the next, so it slides only on **Always**) and each loop pad glide
 separately. The **Pitch Envelope** (on the Osc tab) bends each note in from its
 **Amount** away (up to ±48 semitones; negative starts below, 0 is off) onto its
 pitch over its **Decay**, on top of glide and vibrato: a small, fast drop punches
-up an 808 (Dirty 808), a big one makes a laser (Laser) or a zap (Zap). Play it
+up an 808 (Dirty 808), a big one makes a laser (Laser) or a zap (Zap). **Sub &
+Noise** (also on the Osc tab) mix two more sources in before the drive: **Sub**,
+a sine an octave below Osc 1 that follows its pitch, detune, glide, vibrato and
+pitch envelope, for weight under a bass (Reese Bass, Hollow Bass, Sub Pluck Bass,
+Garage Bass, Moog Bass); and **Noise**, white noise for breath (Flute, Breathy
+Lead), air and hiss (Airy Pad, Vinyl Keys), surf and wind (Ocean Pad, Wind), risers
+(Riser) or drums on the keys (Noise Hat, Synth Snare, and Synth Kick, which adds the
+sub and a pitch drop). Both are off at 0%, and a note only gets them if it starts with
+them turned up. Play it
 with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator (with the pitch envelope), filter, envelope (**Amp**),
-LFO (**Mod**), drive and glide controls each have a tab in the synth editor.
+save your own. The oscillator (with sub, noise and the pitch envelope), filter,
+envelope (**Amp**), LFO (**Mod**), drive and glide controls each have a tab in the
+synth editor.
 
 **ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
 drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet), the
@@ -220,7 +229,7 @@ end, and then stops; ← and → move a section.
   back to the song tempo. Pads keep their length in beats, so they speed up
   or slow down with the section.
 
-**Loop Browser** (**Loops** in the song bar): 137 premade loops (bass, chords,
+**Loop Browser** (**Loops** in the song bar): 143 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
 house and techno to drill, amapiano and bossa nova (at least 5 loops and 3 beats
 each), in one list. The sidebar searches (name, genre, instrument, synth sound) and

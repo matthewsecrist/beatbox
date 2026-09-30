@@ -8,3 +8,18 @@ export function getContext(): AudioContext {
   if (ctx.state === 'suspended') void ctx.resume()
   return ctx
 }
+
+const noises = new WeakMap<BaseAudioContext, AudioBuffer>()
+
+// A second of white noise, made once per context and shared by every instrument
+// (drum hits, the synth's noise source).
+export function noiseBuffer(ctx: BaseAudioContext): AudioBuffer {
+  let noise = noises.get(ctx)
+  if (!noise) {
+    noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
+    const data = noise.getChannelData(0)
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
+    noises.set(ctx, noise)
+  }
+  return noise
+}

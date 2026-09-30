@@ -1,6 +1,6 @@
-import type { DriveType, LfoTarget, SynthParams } from '../types.js'
+import type { DriveType, LfoTarget, SynthParams, Wave } from '../types.js'
 
-import { getContext } from '../audio.js'
+import { getContext, noiseBuffer } from '../audio.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
@@ -28,6 +28,8 @@ export const DEFAULT_PARAMS: SynthParams = {
   lfo2_depth: 0,
   lfo2_rate: 5,
   lfo2_target: 'pitch',
+  // Extra sources, 0 = off: white noise, and a sine one octave below osc 1.
+  noise_level: 0,
   osc1_detune: 0,
   osc1_level: 0.6,
   osc1_octave: 0,
@@ -41,6 +43,7 @@ export const DEFAULT_PARAMS: SynthParams = {
   pitch_env_amount: 0,
   pitch_env_decay: 0.1,
   release: 0.5,
+  sub_level: 0,
   sustain: 0.6,
   volume: 0.7
 }
@@ -145,14 +148,14 @@ interface LastNote {
   t0: number
 }
 
-// Gains around the curves: `level` sets the oscillators' loudest peak at 1, `push`
+// Gains around the curves: `level` sets the sources' loudest peak at 1, `push`
 // drives them into the curve, and `wet`/`dry` set the driven and clean copies'
 // share. `wet` brings the driven copy's loudest peak back to where it was clean.
 // Pushed into soft, tube or hard, a note becomes a fuller, squarer wave, so it also
 // comes down a little more (push ** -0.1, about 3 dB at full drive) to stay about as
 // loud as the clean sound; fold doesn't fill out, so it doesn't.
 function driveGains(p: SynthParams): { dry: number; level: number; push: number; wet: number } {
-  const peak = Math.max(p.osc1_level + p.osc2_level, 0.01)
+  const peak = Math.max(p.osc1_level + p.osc2_level + p.sub_level + p.noise_level, 0.01)
   const push = DRIVE_MAX ** p.drive
   const shape = DRIVE_SHAPES[p.drive_type]
   const top = Math.max(1, Math.abs(shape(push)), Math.abs(shape(-push)))
@@ -263,11 +266,15 @@ interface Voice {
   key: VoiceKey
   lfos: VoiceLfo[]
   midi: number
+  // The noise's level; null when the note started without noise.
+  noise: GainNode | null
   osc1: OscillatorNode
   osc2: OscillatorNode
   own: boolean
   release: number
   srcs: AudioScheduledSourceNode[]
+  // The sub oscillator and its level; null when the note started without one.
+  sub: null | { gain: GainNode; osc: OscillatorNode }
   sustain: number
   t0: number
   // Tremolo stage after the envelope; the LFO drives its gain when targeting amp.
@@ -285,6 +292,9 @@ interface VoiceLfo {
 
 const freq = (midi: number, octave: number): number => 440 * 2 ** ((midi - 69) / 12) * 2 ** octave
 
+// An oscillator's settings: osc 1 or 2's own, or the sub's (a sine an octave
+// below osc 1, detuned with it).
+type OscId = 1 | 2 | 'sub'
 // `output` is where the synth plays into (an effects channel); the speakers by default.
 export function createSynth(
   initialParams: null | Partial<SynthParams>,
@@ -314,30 +324,29 @@ export function createSynth(
     t: number,
     osc: OscillatorNode,
     gain: GainNode,
-    n: 1 | 2,
+    n: OscId,
     midi: number,
     smooth: boolean,
     p = params,
     from?: number
   ) {
-    osc.type = p[`osc${n}_wave`]
-    const f = freq(midi, p[`osc${n}_octave`])
-    const d = p[`osc${n}_detune`]
-    const l = p[`osc${n}_level`]
+    const { detune, level, octave, wave } = oscSpec(p, n)
+    osc.type = wave
+    const f = freq(midi, octave)
     if (smooth) {
       osc.frequency.setTargetAtTime(f, t, 0.01)
-      osc.detune.setTargetAtTime(d, t, 0.01)
-      gain.gain.setTargetAtTime(l, t, 0.01)
+      osc.detune.setTargetAtTime(detune, t, 0.01)
+      gain.gain.setTargetAtTime(level, t, 0.01)
       return
     }
     if (from === undefined) {
       osc.frequency.value = f
     } else {
-      osc.frequency.setValueAtTime(freq(from, p[`osc${n}_octave`]), t)
+      osc.frequency.setValueAtTime(freq(from, octave), t)
       osc.frequency.exponentialRampToValueAtTime(f, t + p.glide)
     }
-    osc.detune.value = d
-    gain.gain.value = l
+    osc.detune.value = detune
+    gain.gain.value = level
   }
 
   // Which note a new one glides from, remembering it with the source's last
@@ -388,6 +397,7 @@ export function createSynth(
     else {
       lfo.depth.connect(v.osc1.detune)
       lfo.depth.connect(v.osc2.detune)
+      if (v.sub) lfo.depth.connect(v.sub.osc.detune)
     }
   }
 
@@ -455,6 +465,24 @@ export function createSynth(
 
     osc1.connect(g1).connect(drive.level)
     osc2.connect(g2).connect(drive.level)
+    // The sub and the noise join only notes that start with them turned up, so
+    // a sound without them costs no extra nodes.
+    let sub: Voice['sub'] = null
+    if (p.sub_level) {
+      sub = { gain: ctx.createGain(), osc: ctx.createOscillator() }
+      applyOsc(t, sub.osc, sub.gain, 'sub', midi, false, p, from)
+      sub.osc.connect(sub.gain).connect(drive.level)
+    }
+    let noise: GainNode | null = null
+    let hiss: AudioBufferSourceNode | null = null
+    if (p.noise_level) {
+      noise = ctx.createGain()
+      noise.gain.value = p.noise_level
+      hiss = ctx.createBufferSource()
+      hiss.buffer = noiseBuffer(ctx)
+      hiss.loop = true
+      hiss.connect(noise).connect(drive.level)
+    }
     filter.connect(amp).connect(trem).connect(master)
     trem.gain.value = tremLevel(p)
 
@@ -480,16 +508,18 @@ export function createSynth(
       )
     }
 
-    // The pitch envelope: an offset on both oscillators' detune, falling in a
+    // The pitch envelope: an offset on the oscillators' detune, falling in a
     // straight line of cents (a curve in pitch) from the amount to nothing.
     // Pitch LFOs and glide work on top of it.
     const srcs: AudioScheduledSourceNode[] = [osc1, osc2, ...lfos.map((l) => l.osc)]
+    if (sub) srcs.push(sub.osc)
     if (p.pitch_env_amount) {
       const penv = ctx.createConstantSource()
       penv.offset.setValueAtTime(p.pitch_env_amount * 100, t)
       penv.offset.linearRampToValueAtTime(0, t + p.pitch_env_decay)
       penv.connect(osc1.detune)
       penv.connect(osc2.detune)
+      if (sub) penv.connect(sub.osc.detune)
       srcs.push(penv)
     }
     const v: Voice = {
@@ -504,11 +534,13 @@ export function createSynth(
       key,
       lfos,
       midi,
+      noise,
       osc1,
       osc2,
       own: !!own,
       release: p.release,
       srcs,
+      sub,
       sustain,
       t0: t,
       trem
@@ -520,6 +552,8 @@ export function createSynth(
         ...srcs,
         g1,
         g2,
+        ...(sub ? [sub.gain] : []),
+        ...(noise ? [noise] : []),
         drive.level,
         drive.push,
         drive.shaper,
@@ -534,6 +568,12 @@ export function createSynth(
       ].forEach((n) => n.disconnect())
     }
     for (const s of srcs) s.start(t)
+    if (hiss) {
+      // From a random point in the shared second, so notes played together don't
+      // hiss in step (which would comb-filter them).
+      hiss.start(t, Math.random() * (hiss.buffer?.duration ?? 0))
+      srcs.push(hiss)
+    }
 
     alive.add(v)
     voices.set(key, v)
@@ -582,6 +622,8 @@ export function createSynth(
     updateDrive(v.drive, p, t)
     applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
     applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
+    if (v.sub) applyOsc(t, v.sub.osc, v.sub.gain, 'sub', v.midi, true, p)
+    v.noise?.gain.setTargetAtTime(p.noise_level, t, 0.01)
   }
 
   function setParams(p: Partial<SynthParams>): void {
@@ -614,4 +656,19 @@ export function createSynth(
   }
 
   return { allNotesOff, cancelPending, close, noteOff, noteOn, now, setOwnParams, setParams }
+}
+
+function oscSpec(
+  p: SynthParams,
+  n: OscId
+): { detune: number; level: number; octave: number; wave: Wave } {
+  if (n === 'sub') {
+    return { detune: p.osc1_detune, level: p.sub_level, octave: p.osc1_octave - 1, wave: 'sine' }
+  }
+  return {
+    detune: p[`osc${n}_detune`],
+    level: p[`osc${n}_level`],
+    octave: p[`osc${n}_octave`],
+    wave: p[`osc${n}_wave`]
+  }
 }

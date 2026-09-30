@@ -205,6 +205,8 @@ export interface SynthParams {
   lfo2_depth: number
   lfo2_rate: number
   lfo2_target: LfoTarget
+  // White noise mixed in with the oscillators, 0-1; 0 = off.
+  noise_level: number
   osc1_detune: number
   osc1_level: number
   osc1_octave: number
@@ -218,6 +220,8 @@ export interface SynthParams {
   pitch_env_amount: number
   pitch_env_decay: number
   release: number
+  // A sine one octave below osc 1 (following its pitch and detune), 0-1; 0 = off.
+  sub_level: number
   sustain: number
   volume: number
 }
