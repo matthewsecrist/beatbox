@@ -149,7 +149,8 @@ test('a channel plays dry and into each effect at its send level', () => {
 
   const input = bus.channel('synth') as unknown as FakeNode
   expect(bus.channel('synth')).toBe(input) // one channel per instrument
-  const [dry, delaySend, reverbSend] = input.outputs
+  // Past the mute, the ducking gain feeds the dry path and both sends.
+  const [dry, delaySend, reverbSend] = input.outputs[0]?.outputs ?? []
   expect(dry?.outputs).toStrictEqual([find(nodes, 'compressor')]) // the master stage
   expect([delaySend?.gain.value, reverbSend?.gain.value]).toStrictEqual([0.25, 0.5])
   expect(delaySend?.outputs).toStrictEqual([find(nodes, 'delay')])
@@ -229,6 +230,38 @@ test('muting silences only that instrument, even before its channel exists', () 
   bus.mute('drums', false)
   bus.mute('synth', true)
   expect([drums.gain.value, synth.gain.value]).toStrictEqual([1, 0])
+})
+
+test('a kick ducks the synth (dry and sends) by the amount and it recovers over the release', () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  // The gain after each channel's mute: its ducking gain.
+  const duckCalls = (instrument: 'drums' | 'synth') => {
+    const duck = (bus.channel(instrument) as unknown as FakeNode).outputs[0]
+    if (!duck) throw new Error('no ducking gain')
+    return vi.mocked(duck.gain.setTargetAtTime).mock.calls
+  }
+  const calls = () => duckCalls('synth')
+
+  bus.duck(1, 1) // off by default
+  expect(calls()).toStrictEqual([])
+
+  // 1/8 at 120 BPM is 0.25 s: back 95% of the way after three time constants.
+  bus.set({ ...DEFAULT_EFFECTS, duck_amount: 0.8, duck_release: '1/8' }, 120)
+  bus.duck(1, 1.3) // an accented kick ducks no deeper than the amount
+  bus.duck(2, 0.5) // a soft kick, half as deep
+  expect(calls()).toStrictEqual([
+    [0.19999999999999996, 1, 0.003],
+    [1, 1.01, 0.25 / 3],
+    [0.6, 2, 0.003],
+    [1, 2.01, 0.25 / 3]
+  ])
+  expect(duckCalls('drums')).toStrictEqual([]) // only the synth
+
+  // Muted drums don't pump the synth.
+  bus.mute('drums', true)
+  bus.duck(3, 1)
+  expect(calls()).toHaveLength(4)
 })
 
 test('tempo changes move the delay time; the reverb impulse is only remade for a new size', () => {

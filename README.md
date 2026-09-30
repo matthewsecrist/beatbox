@@ -59,7 +59,7 @@ removes a song for good, along with its link, views and likes.
 
 **Layout**: the song bar (Play song, name, Save, **Tempo**, undo/redo, Loops, **Song
 settings**, New, Open) sits on top; **Song settings** opens the master delay,
-reverb and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
+reverb, sidechain and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
 next to the arrangement: a column per section. Pick
 a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
 Amp, Mod, Drive & Glide** and **Effects** tabs, the drums' **Steps, Kit** and
@@ -241,6 +241,14 @@ little darker. **Bounce** keeps the repeats in the middle (**Straight**) or send
 them from side to side (**Ping-pong**: the first from the left, the next from the
 right, and so on, each a delay time apart). The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
 Browser previews play through the same effects.
+
+**Sidechain** (also in Song settings) ducks the synth, dry and sends, every time
+the kick plays, for the pumping house and trance sound. **Amount** is how far it
+drops (off in a new song; a softer kick ducks it less) and **Release** how long it
+takes to come back, as a note value at the tempo playing (1/4 swells back just as
+the next four-on-the-floor kick lands). It follows the kick track wherever it
+plays: the drums' own Play, the arrangement and Loop Browser beat previews. A
+muted kick track, or muted drums, don't duck it.
 
 Everything (both instruments dry and both effect returns) then goes through the
 **Master** stage on its way to the speakers: a glue **Compressor** (off in a new

@@ -162,18 +162,21 @@ const performance = z.object({
     .exactOptional()
 })
 
-// Shared delay and reverb, how much of each instrument is sent to them, and the
-// master compressor.
+// Shared delay and reverb, how much of each instrument is sent to them, the
+// kick's sidechain ducking, and the master compressor.
 const level = z.number().min(0).max(1).exactOptional()
+const noteValue = z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16']).exactOptional()
 const effects = z.object({
   comp_amount: level,
   comp_on: z.boolean().exactOptional(),
   delay_feedback: z.number().min(0).max(0.9).exactOptional(),
   delay_mix: level,
   delay_pingpong: z.boolean().exactOptional(),
-  delay_time: z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16']).exactOptional(),
+  delay_time: noteValue,
   drums_delay: level,
   drums_reverb: level,
+  duck_amount: level,
+  duck_release: noteValue,
   reverb_mix: level,
   reverb_size: z.number().min(0.3).max(6).exactOptional(),
   synth_delay: level,

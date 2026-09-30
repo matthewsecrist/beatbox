@@ -116,6 +116,37 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
   expect(kicks).toStrictEqual([0.2, 0.25, 2.2, 2.25, 2.55])
 })
 
+test('every kick hit is reported for the sidechain, with its level; other drums are not', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // 16th = 0.125 s; grid starts at 0.05 s
+  const kicks: [number, number][] = []
+  const drums = createDrums({
+    getCtx,
+    onKick: (at, level) => kicks.push([+at.toFixed(3), level]),
+    onStep: vi.fn(),
+    transport
+  })
+  const kick = Array.from({ length: 16 }, () => STEP)
+  kick[0] = { ...STEP, on: true, velocity: 0.5 }
+  kick[4] = { ...STEP, on: true, ratchet: 2 }
+  const snare = Array.from({ length: 16 }, (_, i) => ({ ...STEP, on: i === 2 }))
+
+  drums.start(() => ({ kick, snare }), 0)
+  clock.currentTime = 1.9
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  expect(kicks).toStrictEqual([
+    [0.05, 0.5],
+    [0.55, 1], // a ratchet ducks on each of its hits
+    [0.613, 1]
+  ])
+})
+
 test('humanize moves each hit by up to 20 ms at full amount, a ratchet as one', () => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   vi.stubGlobal('requestAnimationFrame', () => 0)

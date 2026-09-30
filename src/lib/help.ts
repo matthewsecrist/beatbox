@@ -45,6 +45,10 @@ export const HELP = {
     'Which drum sound this track plays. Each kit starts every track with its own, but you can pick any sound from any kit, like an 808 kick with a 909 snare, or a bongo on the Tom track. Changing it plays the new sound so you can hear it.',
   drums_tracks:
     'More drums to play: rim shot, snap, shaker, conga, cowbell, wood block, ride and crash. Adding one gives it a row in the grid; it stays once you give it some hits, and the × hides it again while it has none.',
+  duck_amount:
+    'How far the synth drops each time the kick hits. Off leaves it alone; a little gently makes room for the kick; a lot makes the synth nearly vanish on every kick for a big, obvious pump. Softer kicks duck it less.',
+  duck_release:
+    'How long the synth takes to come back after each kick, as a note length at the song tempo: 1/16 is a quick flick, 1/4 swells back just as the next four-on-the-floor kick lands, for the deepest pump.',
   filter_attack:
     'How quickly the filter opens at the start of each note. Short gives a snappy "blip"; long gives a slow "wooow".',
   filter_cutoff:
@@ -90,6 +94,8 @@ export const HELP = {
     'The delay is an echo: it plays back what you hear a little later, again and again, like shouting in a canyon. The echoes line up with the beat.',
   panel_drive:
     'Drive is distortion: it crunches the sound from the oscillators before it reaches the filter, adding a rough, buzzing edge. It makes basses growl and cut through, even on small speakers.',
+  panel_duck:
+    "Sidechain makes the synth duck out of the way every time the kick drum hits, then swell back up, so the whole song pumps and breathes with the beat. It's the classic house and trance sound, and it keeps the kick punchy instead of buried under pads and bass. It follows the drums' kick wherever it plays: the drums' own Play, the song, and beats you preview in the Loop Browser.",
   panel_envelope:
     'The envelope shapes how loud each note is over time: how it starts, how it holds while you keep the key down, and how it fades away when you let go.',
   panel_filter:

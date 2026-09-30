@@ -104,6 +104,7 @@
       // Previews play through the song's effects, so they sound as they will in it.
       const drums = (previewDrums ??= createDrums({
         id: 'preview-drums',
+        onKick: (at, level) => effects.duck(at, level),
         onStep: () => undefined,
         output: () => effects.channel('drums')
       }))
