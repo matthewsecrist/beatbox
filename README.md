@@ -86,7 +86,10 @@ sound, so presets and loop pads keep their own. The
 filter's **Type** picks what it keeps: **Low** (low-pass, the usual), **High**
 (high-pass, thin and airy), **Band** (band-pass, nasal, a wah as it sweeps) or
 **Notch** (cuts a slice out, phasey as it moves); the envelope and LFOs move the
-cutoff whatever the type, and **Resonance** feels the same for each. The
+cutoff whatever the type, and **Resonance** feels the same for each. Presets show
+off each type: Airy Pad, Glass Pluck and Riser (high), Wah Clav, Auto-Wah Lead and
+Radio Keys (band), Phaser Pad, Jet Lead and Hollow Bass (notch), with loops built
+on them in the Loop Browser. The
 filter envelope sweeps the cutoff from each note's start: **Env amount** sets how
 far (up to ±4 octaves; negative sweeps down, 0 is off), with its own attack, decay, sustain and
 release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
@@ -207,7 +210,7 @@ end, and then stops; ← and → move a section.
   back to the song tempo. Pads keep their length in beats, so they speed up
   or slow down with the section.
 
-**Loop Browser** (**Loops** in the song bar): 120 premade loops (bass, chords,
+**Loop Browser** (**Loops** in the song bar): 137 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
 house and techno to drill, amapiano and bossa nova (at least 5 loops and 3 beats
 each), in one list. The sidebar searches (name, genre, instrument, synth sound) and

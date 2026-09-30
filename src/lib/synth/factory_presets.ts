@@ -41,6 +41,81 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // High-pass: a thin, shimmering pad that leaves the low end to the bass.
+    name: 'Airy Pad',
+    params: {
+      attack: 0.8,
+      decay: 1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 500,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 3,
+      filter_sustain: 0,
+      filter_type: 'highpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0.6, // the cut drifts, so the air breathes
+      lfo1_rate: 0.15,
+      lfo1_target: 'filter',
+      lfo2_depth: 6,
+      lfo2_rate: 4.5,
+      lfo2_target: 'pitch',
+      osc1_detune: -10,
+      osc1_level: 0.55,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 10,
+      osc2_level: 0.4,
+      osc2_octave: 1,
+      osc2_wave: 'triangle',
+      release: 2,
+      sustain: 0.8
+    }
+  },
+  {
+    // Band-pass swept by an LFO: a wah pedal rocking on its own, driven to keep
+    // the narrow band loud.
+    name: 'Auto-Wah Lead',
+    params: {
+      attack: 0.01,
+      decay: 0.2,
+      drive: 0.35,
+      drive_mix: 0.7,
+      drive_type: 'tube',
+      filter_attack: 0.005,
+      filter_cutoff: 700,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 10,
+      filter_sustain: 0,
+      filter_type: 'bandpass',
+      glide: 0.04,
+      glide_mode: 'legato',
+      lfo1_depth: 1.5,
+      lfo1_rate: 2.5,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 8,
+      osc2_level: 0.5,
+      osc2_octave: 0,
+      osc2_wave: 'square',
+      release: 0.25,
+      sustain: 0.85
+    }
+  },
+  {
     name: 'Bell',
     params: {
       attack: 0.001,
@@ -446,6 +521,81 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // High-pass with a sharp peak that zaps down to the cutoff on each note.
+    name: 'Glass Pluck',
+    params: {
+      attack: 0.001,
+      decay: 0.35,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.001,
+      filter_cutoff: 700,
+      filter_decay: 0.15,
+      filter_env_amount: 1.5,
+      filter_release: 0.2,
+      filter_resonance: 12,
+      filter_sustain: 0,
+      filter_type: 'highpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.6,
+      osc1_octave: 0,
+      osc1_wave: 'square',
+      osc2_detune: 0,
+      osc2_level: 0.35,
+      osc2_octave: 1,
+      osc2_wave: 'sine',
+      release: 0.2,
+      sustain: 0
+    }
+  },
+  {
+    // A wide notch scoops the middle out of a saw bass: deep and bright, hollow
+    // between, and it opens a little on each note.
+    name: 'Hollow Bass',
+    params: {
+      attack: 0.005,
+      decay: 0.3,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 350,
+      filter_decay: 0.4,
+      filter_env_amount: 0.8,
+      filter_release: 0.15,
+      filter_resonance: 2,
+      filter_sustain: 0.3,
+      filter_type: 'notch',
+      glide: 0.06,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: -1,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 5,
+      osc2_level: 0.4,
+      osc2_octave: -1,
+      osc2_wave: 'square',
+      release: 0.15,
+      sustain: 0.8
+    }
+  },
+  {
     name: 'Hoover',
     params: {
       attack: 0.02,
@@ -481,6 +631,43 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       release: 0.5,
       sustain: 0.9
+    }
+  },
+  {
+    // A notch swept deep and fast enough to roar like a flanger's jet.
+    name: 'Jet Lead',
+    params: {
+      attack: 0.01,
+      decay: 0.3,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 1200,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 8,
+      filter_sustain: 0,
+      filter_type: 'notch',
+      glide: 0.03,
+      glide_mode: 'legato',
+      lfo1_depth: 2.5,
+      lfo1_rate: 0.5,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: -7,
+      osc1_level: 0.6,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 7,
+      osc2_level: 0.6,
+      osc2_octave: 0,
+      osc2_wave: 'sawtooth',
+      release: 0.4,
+      sustain: 0.8
     }
   },
   {
@@ -557,6 +744,43 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // A slow, wide notch sweep: the swirl of a phaser pedal.
+    name: 'Phaser Pad',
+    params: {
+      attack: 0.6,
+      decay: 1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 900,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 4,
+      filter_sustain: 0,
+      filter_type: 'notch',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 2,
+      lfo1_rate: 0.12,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: -8,
+      osc1_level: 0.5,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 8,
+      osc2_level: 0.5,
+      osc2_octave: 0,
+      osc2_wave: 'sawtooth',
+      release: 2,
+      sustain: 0.8
+    }
+  },
+  {
     name: 'Pluck',
     params: {
       attack: 0.001,
@@ -630,6 +854,43 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
     }
   },
   {
+    // Keys through a wide band and a little crunch: an old radio or a phone line.
+    name: 'Radio Keys',
+    params: {
+      attack: 0.002,
+      decay: 1,
+      drive: 0.4,
+      drive_mix: 0.6,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 1400,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      filter_type: 'bandpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.9,
+      osc1_octave: 0,
+      osc1_wave: 'triangle',
+      osc2_detune: 3,
+      osc2_level: 0.5,
+      osc2_octave: 0,
+      osc2_wave: 'square',
+      release: 0.4,
+      sustain: 0.4
+    }
+  },
+  {
     name: 'Reese Bass',
     params: {
       attack: 0.01,
@@ -664,6 +925,44 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       release: 0.3,
       sustain: 0.9
+    }
+  },
+  {
+    // The build-up: over two seconds the high-pass climbs four octaves and drains
+    // the low end away while a fast tremolo stutters.
+    name: 'Riser',
+    params: {
+      attack: 0.5,
+      decay: 0.1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 2,
+      filter_cutoff: 80,
+      filter_decay: 2,
+      filter_env_amount: 4,
+      filter_release: 1,
+      filter_resonance: 6,
+      filter_sustain: 1,
+      filter_type: 'highpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0.3,
+      lfo1_rate: 8,
+      lfo1_target: 'amp',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: -15,
+      osc1_level: 0.55,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 15,
+      osc2_level: 0.55,
+      osc2_octave: 0,
+      osc2_wave: 'sawtooth',
+      release: 1,
+      sustain: 1
     }
   },
   {
@@ -811,6 +1110,44 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       release: 0.3,
       sustain: 0.8
+    }
+  },
+  {
+    // Band-pass opened by each note's envelope: the funk clavinet through a wah
+    // (an envelope follower), "wow" on every hit.
+    name: 'Wah Clav',
+    params: {
+      attack: 0.001,
+      decay: 0.3,
+      drive: 0.3,
+      drive_mix: 0.6,
+      drive_type: 'tube',
+      filter_attack: 0.02,
+      filter_cutoff: 450,
+      filter_decay: 0.25,
+      filter_env_amount: 2.5,
+      filter_release: 0.1,
+      filter_resonance: 8,
+      filter_sustain: 0.2,
+      filter_type: 'bandpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 1,
+      osc1_octave: 0,
+      osc1_wave: 'sawtooth',
+      osc2_detune: 4,
+      osc2_level: 0.6,
+      osc2_octave: 1,
+      osc2_wave: 'square',
+      release: 0.1,
+      sustain: 0.45
     }
   },
   {
