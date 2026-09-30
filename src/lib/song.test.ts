@@ -109,6 +109,30 @@ test('step settings survive switching off and saving; plain steps save as on/off
   })
 })
 
+test("only an empty pattern's grid changes; the grid saves and undoes", () => {
+  const store = new SongStore(song)
+  // Pattern A has the song's kick: its grid stays, with every hit where it was.
+  store.setGrid(0, 12)
+  expect(store.drums.patterns[0]?.kick).toHaveLength(16)
+  expect(store.canUndo).toBe(false)
+
+  // Pattern B is empty: it moves to 8th triplets, 12 steps a row.
+  store.setGrid(1, 12)
+  expect(store.drums.patterns[1]?.kick).toStrictEqual(Array<unknown>(12).fill(STEP))
+  store.setStep(1, 'kick', 3, { on: true })
+
+  const saved = store.toSongDoc().drums
+  expect(saved?.grids).toStrictEqual([16, 12, 16, 16])
+  const reopened = new SongStore({ ...song, drums: saved ?? null })
+  expect(reopened.drums.patterns[1]?.kick).toHaveLength(12)
+  expect(reopened.drums.patterns[1]?.kick[3]?.on).toBe(true)
+
+  store.undo() // the hit
+  store.undo() // the grid
+  expect(store.drums.patterns[1]?.kick).toHaveLength(16)
+  expect(store.toSongDoc().drums?.grids).toBe(undefined) // all 16ths: saved as before
+})
+
 test('a step keeps its locks through saving; clearing one gives it back, undoably', () => {
   const store = new SongStore(song)
   store.setLocks(0, 'tom', 5, { tune: 7 })

@@ -116,6 +116,56 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
   expect(kicks).toStrictEqual([0.2, 0.25, 2.2, 2.25, 2.55])
 })
 
+test('a triplet grid spaces its steps in thirds of the beat, unswung; a grid change moves to its next line', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // a beat is 0.5 s; grid starts at 0.05 s
+  const drums = createDrums({ getCtx, onStep: vi.fn(), transport })
+  drums.setSwing(75) // straight 16ths only: triplets stay even
+  const row = (steps: number, on: number[]) =>
+    Array.from({ length: steps }, (_, i) => ({ ...STEP, on: on.includes(i) }))
+  // 16th triplets: six a beat. Steps 0-3 are the first beat's first four.
+  let kick = row(24, [0, 1, 2, 3])
+  drums.start(() => ({ kick }), 0)
+  clock.currentTime = 0.3
+  vi.advanceTimersByTime(25)
+  expect(kicks).toStrictEqual([0.05, 0.133, 0.217, 0.3])
+  // Scheduled so far: up to 5/6 of the first beat. The pattern turns to 8th
+  // triplets (three a beat, lines at 0, 1/3, 2/3, 1…): the next step is the
+  // first line after that, the second beat (step 3, 0.55 s).
+  kick = row(12, [2, 3, 4, 5, 6])
+  clock.currentTime = 1.05
+  vi.advanceTimersByTime(25)
+  drums.stop()
+  expect(kicks.slice(4)).toStrictEqual([0.55, 0.717, 0.883, 1.05])
+})
+
+test('silencing every track keeps a triplet pattern on its grid, so unmuting lands on it', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // a beat is 0.5 s; grid starts at 0.05 s
+  let heard = false
+  const drums = createDrums({ audible: () => heard, getCtx, onStep: vi.fn(), transport })
+  // 8th triplets, a kick on every step: 1/6 s apart.
+  const kick = Array.from({ length: 12 }, () => ({ ...STEP, on: true }))
+
+  drums.start(() => ({ kick }), 0)
+  clock.currentTime = 0.2 // scheduled up to 0.3 s: steps at 0.05 and 0.217 pass silently
+  vi.advanceTimersByTime(25)
+  heard = true
+  clock.currentTime = 0.5
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  expect(kicks).toStrictEqual([0.383, 0.55]) // still thirds of a beat, not 16ths
+})
+
 test('every kick hit is reported for the sidechain, with its level; other drums are not', () => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   vi.stubGlobal('requestAnimationFrame', () => 0)

@@ -40,6 +40,8 @@ export const HELP = {
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
   drums_euclid:
     'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
+  drums_grid:
+    'How many squares a bar has in this pattern. 1/16 is 16, four to a beat, for most beats. 1/16 triplets fits six in a beat, for rolling trap hi-hats and fast drum rolls; 1/8 triplets fits three, for a shuffle, a 12/8 blues or a swung, loping groove. Pick it before you start: it only changes while the pattern is empty, so no hit ever moves. To switch a pattern with hits, Clear it first.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',
@@ -149,7 +151,7 @@ export const HELP = {
   sustain:
     'How loud a note stays while you keep holding the key. At 0% it fades out even if you hold on, like a piano or a bell.',
   swing:
-    'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz.',
+    'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz. It only swings patterns on the 1/16 grid: triplets already bounce.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
   synth_filter:
     'Opens or closes the filter on every synth sound at once, the keys and all the loop pads, by up to 4 octaves each way. 0 leaves each sound as it is; below 0 makes them darker and more muffled, above 0 brighter. Ramp it up over a section for a build-up that opens the sound, or down for a breakdown.',

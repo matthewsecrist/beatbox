@@ -1,11 +1,29 @@
 import type { Transport } from '../transport.js'
-import type { DrumStep, InstrumentId, KitId, StepLocks, TrackId, VoiceTweak } from '../types.js'
+import type {
+  DrumGrid,
+  DrumStep,
+  InstrumentId,
+  KitId,
+  StepLocks,
+  TrackId,
+  VoiceTweak
+} from '../types.js'
 
 import { getContext, noiseBuffer } from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
 import { KIT_SOUNDS, TRACKS } from './kits.js'
 
+// The straight 16th grid. A pattern can also be on 16th triplets (24 steps a
+// bar) or 8th triplets (12): its rows then have that many steps.
 export const STEPS = 16
+export const GRIDS: DrumGrid[] = [16, 24, 12]
+
+// A pattern's grid, from how many steps its rows have (none: 16ths).
+export function gridOf(pattern: Partial<Record<TrackId, DrumStep[]>>): DrumGrid {
+  const steps = Object.values(pattern).find((row) => row.length)?.length
+  return GRIDS.find((grid) => grid === steps) ?? STEPS
+}
+
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.1
 const ACCENT = 1.4 // gain boost on accented steps
@@ -51,6 +69,9 @@ interface Output {
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
 // so timing stays tight even when the main thread stutters.
 export function createDrums({
+  // Which tracks are heard (mute and solo). Checked on every step; the pattern
+  // itself stays whole, so its grid is known even with every track silenced.
+  audible = () => true,
   getCtx = getContext,
   // Name it holds the transport under; a second engine (a preview) needs its own.
   id = 'drums',
@@ -64,6 +85,7 @@ export function createDrums({
   random = Math.random,
   transport = sharedTransport
 }: {
+  audible?: (track: TrackId) => boolean
   getCtx?: () => BaseAudioContext
   id?: string
   onKick?: (at: number, level: number) => void
@@ -83,8 +105,8 @@ export function createDrums({
   let swing = 50
   let humanize = 0
   let running = false
-  let nextStep = 0
-  let nextBeat = 0 // step times come from the shared transport grid (4 steps per beat)
+  let nextBeat = 0 // step times come from the shared transport grid, 4 beats a bar
+  let origin = 0 // the beat it started on: bars (and each grid's steps) count from it
   let endBeat = Infinity // set by stopAt(): no steps from this beat on
   let getPattern: PatternFn = () => ({})
   // Pattern switch waiting for its beat.
@@ -358,8 +380,10 @@ export function createDrums({
   // humanize on, so it leaves `random` alone for Chance otherwise.
   const drift = (max: number) => (random() * 2 - 1) * humanize * max
 
-  // Beats after the straight grid that `step` lands: swing delays every second 16th.
-  const late = (step: number) => (step % 2 ? ((swing - 50) / 100) * (8 / STEPS) : 0)
+  // Beats after the straight grid that `step` lands: swing delays every second
+  // 16th, on the 16th grid only.
+  const late = (step: number, steps: number) =>
+    steps === STEPS && step % 2 ? ((swing - 50) / 100) * (8 / STEPS) : 0
 
   function schedule() {
     const { ctx } = ensureContext()
@@ -376,26 +400,38 @@ export function createDrums({
         queued = null
       }
       const pattern = getPattern()
+      // Which step of the pattern's grid this is, counted from its bar line. After
+      // the grid changes mid-bar, the next beat may sit between the new grid's
+      // lines: it moves on to the next one.
+      const steps = gridOf(pattern)
+      const bar = origin + Math.floor((nextBeat - origin) / 4 + 1e-9) * 4
+      const exact = ((nextBeat - bar) * steps) / 4
+      const step = Math.round(exact)
+      if (Math.abs(exact - step) > 1e-6) {
+        nextBeat = bar + (Math.ceil(exact) * 4) / steps
+        continue
+      }
       // A ratcheted step spreads its hits up to where the next step lands.
-      const from = nextBeat + late(nextStep)
-      const span = nextBeat + 4 / STEPS + late(nextStep + 1) - from
+      const from = nextBeat + late(step, steps)
+      const span = nextBeat + 4 / steps + late(step + 1, steps) - from
       for (const { id } of TRACKS) {
-        const step = pattern[id]?.[nextStep]
-        if (!step?.on || step.velocity <= 0 || random() >= step.probability) continue
-        const gain = step.velocity * (step.accent ? ACCENT : 1)
+        const hitStep = pattern[id]?.[step]
+        if (!hitStep?.on || !audible(id) || hitStep.velocity <= 0) continue
+        if (random() >= hitStep.probability) continue
+        const gain = hitStep.velocity * (hitStep.accent ? ACCENT : 1)
         // A step's ratchet hits drift together so they stay in order, never
         // earlier than now; each has its own velocity.
         const dt = humanize ? Math.max(drift(HUMANIZE_TIME), Math.min(0, ctx.currentTime - t)) : 0
-        for (let r = 0; r < step.ratchet; r++) {
-          const at = transport.timeAt(from + (span * r) / step.ratchet) + dt
+        for (let r = 0; r < hitStep.ratchet; r++) {
+          const at = transport.timeAt(from + (span * r) / hitStep.ratchet) + dt
           const level = humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain
-          hit(id, at, level, step)
+          hit(id, at, level, hitStep)
           if (id === 'kick') onKick(at, level)
         }
       }
-      queue.push({ step: nextStep, time: t })
-      nextBeat += 4 / STEPS
-      nextStep = (nextStep + 1) % STEPS
+      queue.push({ step, time: t })
+      // From the bar line, so a triplet grid's thirds don't add up rounding errors.
+      nextBeat = bar + ((step + 1) * 4) / steps
     }
   }
 
@@ -424,8 +460,8 @@ export function createDrums({
     getPattern = patternFn
     queued = null
     onPattern(tag)
-    nextStep = 0
     nextBeat = atBeat ?? transport.nextBar()
+    origin = nextBeat
     schedule()
     timer = setInterval(schedule, LOOKAHEAD_MS)
     raf = requestAnimationFrame(draw)

@@ -74,7 +74,7 @@ const steps = z
       })
     ])
   )
-  .max(16)
+  .max(24)
 
 const voice = z.object({
   decay: z.number().min(0.25).max(2).exactOptional(),
@@ -102,37 +102,48 @@ const voices = z.object({
 
 const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 
-// Drum machine state: tempo, feel, kit, level and patterns A-D of 16 steps.
-const drums = z.object({
-  bpm: z.int().min(60).max(200),
-  humanize: z.number().min(0).max(1).exactOptional(),
-  kit: kit.exactOptional(),
-  // Patterns A-D (index 0-3); arrangement sections pick one by index.
-  patterns: z
-    .array(
-      z.object({
-        chat: steps.exactOptional(),
-        clap: steps.exactOptional(),
-        conga: steps.exactOptional(),
-        cowbell: steps.exactOptional(),
-        crash: steps.exactOptional(),
-        kick: steps.exactOptional(),
-        ohat: steps.exactOptional(),
-        ride: steps.exactOptional(),
-        rim: steps.exactOptional(),
-        shaker: steps.exactOptional(),
-        snap: steps.exactOptional(),
-        snare: steps.exactOptional(),
-        tom: steps.exactOptional(),
-        woodblock: steps.exactOptional()
-      })
-    )
-    .min(1)
-    .max(4),
-  swing: z.number().min(50).max(75).exactOptional(),
-  voices: voices.exactOptional(),
-  volume: z.number().min(0).max(1)
-})
+// Drum machine state: tempo, feel, kit, level and patterns A-D, each on its own
+// grid (16ths, 16th or 8th triplets) with no more steps a bar than it has.
+const drums = z
+  .object({
+    bpm: z.int().min(60).max(200),
+    grids: z
+      .array(z.union([z.literal(12), z.literal(16), z.literal(24)]))
+      .max(4)
+      .exactOptional(),
+    humanize: z.number().min(0).max(1).exactOptional(),
+    kit: kit.exactOptional(),
+    // Patterns A-D (index 0-3); arrangement sections pick one by index.
+    patterns: z
+      .array(
+        z.object({
+          chat: steps.exactOptional(),
+          clap: steps.exactOptional(),
+          conga: steps.exactOptional(),
+          cowbell: steps.exactOptional(),
+          crash: steps.exactOptional(),
+          kick: steps.exactOptional(),
+          ohat: steps.exactOptional(),
+          ride: steps.exactOptional(),
+          rim: steps.exactOptional(),
+          shaker: steps.exactOptional(),
+          snap: steps.exactOptional(),
+          snare: steps.exactOptional(),
+          tom: steps.exactOptional(),
+          woodblock: steps.exactOptional()
+        })
+      )
+      .min(1)
+      .max(4),
+    swing: z.number().min(50).max(75).exactOptional(),
+    voices: voices.exactOptional(),
+    volume: z.number().min(0).max(1)
+  })
+  .refine(
+    ({ grids, patterns }) =>
+      patterns.every((p, i) => Object.values(p).every((row) => row.length <= (grids?.[i] ?? 16))),
+    { message: 'a pattern has more steps than its grid', path: ['patterns'] }
+  )
 
 // One recorded loop pad.
 const loop = z.object({

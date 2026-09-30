@@ -145,7 +145,7 @@ every key stops it. Recording a loop keeps the notes that played, so a loop
 doesn't need the arp or chord to sound the same. Both settings are saved with the
 song (not with presets, which leave them alone).
 
-**Drum machine**: kick, snare, clap, closed and open hat, and tom on a 16-step
+**Drum machine**: kick, snare, clap, closed and open hat, and tom on a step
 grid, plus eight percussion tracks (rim shot, snap, shaker, conga, cowbell, wood
 block, ride and crash), with four patterns (**A–D**). Copy/Paste lets you build
 variations, and Randomize, Clear and Reset act on the pattern you're editing.
@@ -158,12 +158,21 @@ run of taps is one undo step.
 - The grid shows the six core tracks and any percussion the pattern uses. **Add
   track** gives another one a row to write into; the **×** on an empty percussion
   row hides it again. Which rows show is a view setting, not saved with the song.
+- **Grid** sets how many steps a bar has in the pattern you're editing: **1/16**
+  (16, as before), **1/16 triplets** (24, six a beat, for trap rolls) or **1/8
+  triplets** (12, three a beat, for shuffles and 12/8). Each pattern keeps its
+  own, so a song can switch grids from one section to the next. The grid only
+  changes while the pattern is empty (the menu is greyed out otherwise; Clear it
+  first), so no hit is ever moved or lost; it's one undo step. Euclid works over
+  the grid's steps, and Loop Browser beats, Reset and songs saved before grids
+  are 1/16.
 - **Euclid** spreads a number of hits as evenly as possible over a cycle of steps
   (Bjorklund's algorithm: 3 over 8 is the tresillo, 5 over 8 the cinquillo),
   turned **Rotate** steps later and repeated to fill the bar. Pick a track, and
   **Apply** writes the rhythm into it in the pattern you're editing, as one undo
   step; each step keeps its velocity, accent and other settings.
 - **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.
+  It only swings patterns on the 1/16 grid.
 - **Humanize** (off to 100%) nudges every hit a little early or late (up to 20 ms)
   and a little softer or louder (up to 30%), different each time round, so a
   programmed beat feels played. It's saved with the song but changes no steps.

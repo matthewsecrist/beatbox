@@ -37,18 +37,24 @@ export type DelayTime = '1/2' | '1/4' | '1/4d' | '1/8' | '1/8d' | '1/8t' | '1/16
 // bottom differently (warmer), hard cuts it flat, fold flips it back on itself.
 export type DriveType = 'fold' | 'hard' | 'soft' | 'tube'
 
-// One drum pattern: 16 steps per track.
+// Steps per bar: 16ths (16), 16th triplets (24) or 8th triplets (12).
+export type DrumGrid = 12 | 16 | 24
+
+// One drum pattern: a row of steps per track, as many as its grid has in a bar.
 export type DrumPattern = Record<TrackId, DrumStep[]>
 
 export interface Drums {
   bpm: number
+  // Each pattern's grid, A-D; absent (or a pattern left out) is 16ths.
+  grids?: DrumGrid[]
   // 0-1: how far each hit drifts, at random, from its time and velocity (0 = exact).
   humanize?: number
   // Absent in songs saved before kits: 'classic'.
   kit?: KitId
   // Patterns A-D; saved songs may omit tracks, and store plain on/off steps.
   patterns: Partial<Record<TrackId, SavedStep[]>>[]
-  // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing.
+  // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing
+  // (on the 16th grid only).
   swing?: number
   voices?: Voices
   volume: number

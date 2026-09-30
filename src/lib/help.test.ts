@@ -35,6 +35,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'kit',
       'drums_sound',
       'drums_tracks',
+      'drums_grid',
       'drums_euclid'
     ],
     ...[

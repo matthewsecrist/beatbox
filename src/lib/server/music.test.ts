@@ -121,7 +121,14 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
         pattern: 1
       }
     ],
-    drums: { ...drums(140), patterns: [{ tom: [false, { decay: 0.5, on: true, tune: -5 }] }] },
+    drums: {
+      ...drums(140),
+      grids: [16, 24],
+      patterns: [
+        { tom: [false, { decay: 0.5, on: true, tune: -5 }] },
+        { chat: Array<boolean>(24).fill(true) }
+      ]
+    },
     effects: { delay_time: '1/8d', drums_reverb: 0.2, evil: 'x' },
     loops: [{ ...loop, params: { evil: 'x', osc1_wave: 'sine' } }],
     name: 'Jam',
@@ -133,6 +140,8 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
   expect(saved.synth).toStrictEqual({ filter_cutoff: 300 })
   expect(saved.drums?.bpm).toBe(140)
   expect(saved.drums?.patterns[0]?.tom).toStrictEqual([false, { decay: 0.5, on: true, tune: -5 }])
+  expect(saved.drums?.grids).toStrictEqual([16, 24])
+  expect(saved.drums?.patterns[1]?.chat).toHaveLength(24)
   expect(saved.loops[0]?.params).toStrictEqual({ osc1_wave: 'sine' })
   expect(saved.performance).toStrictEqual({ arp: 'updown', arp_rate: '1/8t', chord: 'min7' })
   expect(saved.effects).toStrictEqual({ delay_time: '1/8d', drums_reverb: 0.2 })
@@ -157,6 +166,8 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { arrangement: [{ automation: { master_filter: [0] }, bars: 4, pads: [] }] },
     { drums: { ...drums(120), patterns: Array<object>(5).fill({}) } },
     { drums: { ...drums(120), patterns: [{ kick: [{ on: true, ratchet: 5 }] }] } },
+    { drums: { ...drums(120), patterns: [{ chat: Array<boolean>(24).fill(true) }] } },
+    { drums: { ...drums(120), grids: [20], patterns: [{}] } },
     { drums: { ...drums(120), patterns: [{ tom: [{ on: true, tune: 13 }] }] } },
     { drums: { ...drums(120), patterns: [{ ohat: [{ decay: 0.1, on: true }] }] } },
     { drums: { ...drums(120), swing: 90 } },
