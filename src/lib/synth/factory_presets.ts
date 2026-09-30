@@ -28,6 +28,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: -1,
@@ -39,6 +40,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.08,
+      sub_level: 0,
       sustain: 0.3
     }
   },
@@ -67,6 +69,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 6,
       lfo2_rate: 4.5,
       lfo2_target: 'pitch',
+      noise_level: 0.08, // a breath of air on top
       osc1_detune: -10,
       osc1_level: 0.55,
       osc1_octave: 0,
@@ -78,6 +81,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 2,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -107,6 +111,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -118,6 +123,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.25,
+      sub_level: 0,
       sustain: 0.85
     }
   },
@@ -145,6 +151,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -156,6 +163,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 1.8,
+      sub_level: 0,
       sustain: 0
     }
   },
@@ -184,6 +192,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -4,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -195,6 +204,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.2,
+      sub_level: 0,
       sustain: 0.75
     }
   },
@@ -225,6 +235,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.9,
       osc1_octave: -1,
@@ -236,6 +247,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.08,
+      sub_level: 0,
       sustain: 0.85
     }
   },
@@ -263,6 +275,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -274,6 +287,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.05,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -302,6 +316,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.9,
       osc1_octave: -1,
@@ -313,6 +328,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.15,
+      sub_level: 0,
       sustain: 0.9
     }
   },
@@ -342,6 +358,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.9,
       osc1_octave: -1,
@@ -353,6 +370,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 7,
       pitch_env_decay: 0.08,
       release: 0.3,
+      sub_level: 0,
       sustain: 0.6
     }
   },
@@ -380,6 +398,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0.4, // pumps in step with the filter
       lfo2_rate: 4.7,
       lfo2_target: 'amp',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: -1,
@@ -391,6 +410,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.15,
+      sub_level: 0,
       sustain: 1
     }
   },
@@ -419,6 +439,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -430,6 +451,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.5,
+      sub_level: 0,
       sustain: 0.2
     }
   },
@@ -457,6 +479,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 12, // player vibrato
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0.06, // breath
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -468,6 +491,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.15,
+      sub_level: 0,
       sustain: 0.9
     }
   },
@@ -496,6 +520,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: -1,
@@ -507,6 +532,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.1,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -535,6 +561,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 15,
       lfo2_rate: 5.5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -546,6 +573,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.2,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -574,6 +602,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -585,6 +614,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.2,
+      sub_level: 0,
       sustain: 0
     }
   },
@@ -614,6 +644,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: -1,
@@ -625,6 +656,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.15,
+      sub_level: 0.4, // weight under the scooped middle
       sustain: 0.8
     }
   },
@@ -653,6 +685,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       // Wide but in tune: the saws beat against each other without going sour.
       osc1_detune: -12,
       osc1_level: 0.6,
@@ -665,6 +698,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.5,
+      sub_level: 0,
       sustain: 0.9
     }
   },
@@ -693,6 +727,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -7,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -704,6 +739,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.4,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -732,6 +768,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -743,7 +780,50 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 36,
       pitch_env_decay: 0.3,
       release: 0.1,
+      sub_level: 0,
       sustain: 0
+    }
+  },
+  {
+    // Noise alone, high-passed and cut short: hi-hats on the keys (every key the
+    // same hat; hold it for an open one).
+    name: 'Noise Hat',
+    params: {
+      attack: 0.001,
+      decay: 0.06,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 7000,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 2,
+      filter_sustain: 0,
+      filter_type: 'highpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      noise_level: 0.9,
+      osc1_detune: 0,
+      osc1_level: 0,
+      osc1_octave: 0,
+      osc1_wave: 'square',
+      osc2_detune: 0,
+      osc2_level: 0,
+      osc2_octave: 0,
+      osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
+      release: 0.08,
+      sub_level: 0,
+      sustain: 0.15
     }
   },
   {
@@ -770,6 +850,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 6,
       lfo2_rate: 6.5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -781,6 +862,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.08,
+      sub_level: 0,
       sustain: 1
     }
   },
@@ -809,6 +891,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 6,
       lfo2_rate: 6.5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -820,6 +903,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.08,
+      sub_level: 0,
       sustain: 1
     }
   },
@@ -848,6 +932,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -8,
       osc1_level: 0.5,
       osc1_octave: 0,
@@ -859,6 +944,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 2,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -887,6 +973,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -898,6 +985,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.3,
+      sub_level: 0,
       sustain: 0
     }
   },
@@ -925,6 +1013,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0.7, // …a fast gate-like pulse
       lfo2_rate: 4,
       lfo2_target: 'amp',
+      noise_level: 0,
       osc1_detune: -7,
       osc1_level: 0.5,
       osc1_octave: 0,
@@ -936,6 +1025,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 1.5,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -964,6 +1054,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.9,
       osc1_octave: 0,
@@ -975,6 +1066,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.4,
+      sub_level: 0,
       sustain: 0.4
     }
   },
@@ -1003,6 +1095,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -15,
       osc1_level: 0.6,
       osc1_octave: -1,
@@ -1014,6 +1107,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.3,
+      sub_level: 0.5, // a clean sine under the detuned saws
       sustain: 0.9
     }
   },
@@ -1043,6 +1137,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0.2, // the white-noise wash that rises with it
       osc1_detune: -15,
       osc1_level: 0.55,
       osc1_octave: 0,
@@ -1054,6 +1149,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 1,
+      sub_level: 0,
       sustain: 1
     }
   },
@@ -1081,6 +1177,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -6,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -1092,6 +1189,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.2,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -1120,6 +1218,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 8, // section vibrato
       lfo2_rate: 5.5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -9,
       osc1_level: 0.5,
       osc1_octave: 0,
@@ -1131,6 +1230,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 1.2,
+      sub_level: 0,
       sustain: 0.85
     }
   },
@@ -1159,6 +1259,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -12,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -1170,6 +1271,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.4,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -1198,6 +1300,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 25, // wide singer-style vibrato
       lfo2_rate: 6,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -1209,6 +1312,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.3,
+      sub_level: 0,
       sustain: 0.8
     }
   },
@@ -1238,6 +1342,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 1,
       osc1_octave: 0,
@@ -1249,6 +1354,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 0.1,
+      sub_level: 0,
       sustain: 0.45
     }
   },
@@ -1277,6 +1383,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: -5,
       osc1_level: 0.6,
       osc1_octave: 0,
@@ -1288,6 +1395,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
       release: 2,
+      sub_level: 0,
       sustain: 0.7
     }
   },
@@ -1316,6 +1424,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       lfo2_depth: 0,
       lfo2_rate: 5,
       lfo2_target: 'pitch',
+      noise_level: 0,
       osc1_detune: 0,
       osc1_level: 0.7,
       osc1_octave: 0,
@@ -1327,6 +1436,7 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       pitch_env_amount: 48,
       pitch_env_decay: 0.05,
       release: 0.05,
+      sub_level: 0,
       sustain: 0
     }
   }

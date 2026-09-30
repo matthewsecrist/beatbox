@@ -678,6 +678,11 @@
   {@render slider('pitch_env_decay', 'Decay', 0.001, 2, 0.001, fmtSec)}
 {/snippet}
 
+{#snippet subNoise()}
+  {@render slider('sub_level', 'Sub', 0, 1, 0.01, fmtPctOrOff)}
+  {@render slider('noise_level', 'Noise', 0, 1, 0.01, fmtPctOrOff)}
+{/snippet}
+
 {#snippet drive()}
   {@render caption('drive_type', 'Character')}
   <div
@@ -1029,8 +1034,9 @@
         <div class="grid gap-4 sm:grid-cols-2">
           {@render panel('Osc 1', osc1, 'osc')}
           {@render panel('Osc 2', osc2, 'osc')}
+          {@render panel('Sub & Noise', subNoise, 'sub_noise')}
+          {@render panel('Pitch Envelope', pitchEnv, 'pitch_env')}
         </div>
-        {@render panel('Pitch Envelope', pitchEnv, 'pitch_env', 'sm:grid-cols-2')}
       {:else if tab === 'filter'}
         {@render panel('Filter', filter, 'filter', 'sm:grid-cols-2 lg:grid-cols-4')}
       {:else if tab === 'amp'}

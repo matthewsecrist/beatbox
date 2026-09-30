@@ -5,6 +5,7 @@ import type { SynthParams } from '../types.js'
 import { createSynth } from './engine.js'
 
 interface FakeNode {
+  buffer?: unknown
   connect(next: FakeNode | FakeParam): FakeNode | FakeParam
   curve?: Float32Array
   detune: FakeParam
@@ -12,6 +13,7 @@ interface FakeNode {
   frequency: FakeParam
   gain: FakeParam
   kind: string
+  loop?: boolean
   offset: FakeParam
   outputs: (FakeNode | FakeParam)[]
   Q: FakeParam
@@ -62,12 +64,19 @@ function fakeAudio() {
   }
   const ctx = {
     createBiquadFilter: () => node('filter'),
+    createBuffer: (_channels: number, length: number, rate: number) => ({
+      duration: length / rate,
+      getChannelData: () => new Float32Array(length)
+    }),
+    createBufferSource: () =>
+      Object.assign(node('noise'), { buffer: null, loop: false, start: vi.fn(), stop: vi.fn() }),
     createConstantSource: () => Object.assign(node('const'), { start: vi.fn(), stop: vi.fn() }),
     createGain: () => node('gain'),
     createOscillator: () => Object.assign(node('osc'), { start: vi.fn(), stop: vi.fn() }),
     createWaveShaper: () => node('shaper'),
     currentTime: 0,
-    destination: {}
+    destination: {},
+    sampleRate: 100
   }
   // `clock` is the same context, to move its time.
   return { clock: ctx, ctx: ctx as unknown as BaseAudioContext, nodes }
@@ -133,6 +142,66 @@ test('the pitch envelope starts a note its amount off and falls onto its pitch o
   )
   synth.noteOn(64, undefined, 'pad1:64', { pitch_env_amount: 0 })
   expect(nodes.filter((n) => n.kind === 'const')).toHaveLength(2)
+})
+
+test('the sub is a sine an octave below osc 1 that glides, bends and wobbles with it', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth(
+    {
+      glide: 0.1,
+      lfo2_depth: 20,
+      osc1_detune: 5,
+      osc1_octave: 1,
+      pitch_env_amount: 3,
+      sub_level: 0.5
+    },
+    () => ctx
+  )
+  synth.noteOn(57, undefined, 1) // A3: osc 1 at 440 Hz, the sub at 220
+  clock.currentTime = 1
+  synth.noteOn(69, undefined, 2) // A4 a beat later, gliding while A3 is held
+
+  const oscs = nodes.filter((n) => n.kind === 'osc')
+  // Second voice: osc1, osc2, two LFOs, then the sub.
+  const sub = oscs[9]
+  expect(sub?.type).toBe('sine')
+  expect(sub?.detune.value).toBe(5)
+  expect(sub?.frequency.setValueAtTime).toHaveBeenCalledWith(220, 1)
+  expect(sub?.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(440, 1.1)
+  const [penv] = nodes.filter((n) => n.kind === 'const').slice(1)
+  expect(penv?.outputs).toContain(sub?.detune)
+  expect(lfoDepth(nodes, 2).outputs).toHaveLength(3) // first voice: both oscillators and its sub
+  const subGain = sub?.outputs[0]
+  expect(subGain && 'gain' in subGain ? subGain.gain.value : null).toBe(0.5)
+
+  // Turning the sub down follows on the sounding note.
+  synth.setParams({ sub_level: 0.2 })
+  expect(subGain && 'gain' in subGain ? subGain.gain.setTargetAtTime : null).toHaveBeenCalledWith(
+    0.2,
+    1,
+    0.01
+  )
+})
+
+test('noise loops one shared buffer, from its own point in it for each note', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ noise_level: 0.3 }, () => ctx)
+  synth.noteOn(60)
+  synth.noteOn(64)
+
+  const [a, b] = nodes.filter((n) => n.kind === 'noise')
+  expect(a?.buffer).toBeDefined()
+  expect(a?.buffer).toBe(b?.buffer)
+  expect(a?.loop).toBe(true)
+  const level = a?.outputs[0]
+  expect(level && 'gain' in level ? level.gain.value : null).toBe(0.3)
+
+  // Off: a note gets no noise or sub nodes at all.
+  const before = nodes.length
+  createSynth(null, () => ctx).noteOn(67)
+  const added = nodes.slice(before)
+  expect(added.filter((n) => n.kind === 'noise')).toStrictEqual([])
+  expect(added.filter((n) => n.kind === 'osc')).toHaveLength(4)
 })
 
 // What a signal `x` from the oscillators comes out of the drive stage as: the

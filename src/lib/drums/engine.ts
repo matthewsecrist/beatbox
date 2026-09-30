@@ -1,7 +1,7 @@
 import type { Transport } from '../transport.js'
 import type { DrumStep, InstrumentId, KitId, TrackId, VoiceTweak } from '../types.js'
 
-import { getContext } from '../audio.js'
+import { getContext, noiseBuffer } from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
 import { KIT_SOUNDS, TRACKS } from './kits.js'
 
@@ -95,10 +95,7 @@ export function createDrums({
       const master = ctx.createGain()
       master.gain.value = volume
       master.connect(output?.() ?? ctx.destination)
-      const noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate)
-      const data = noise.getChannelData(0)
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-      out = { ctx, master, noise }
+      out = { ctx, master, noise: noiseBuffer(ctx) }
     }
     return out
   }
