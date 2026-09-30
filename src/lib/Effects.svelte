@@ -3,13 +3,14 @@
   import type { SongStore } from './song.svelte.js'
   import type { DelayTime, Effects } from './types.js'
 
+  import { masterFilterHz } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
 
-  // One part of the song's effects: the shared delay and reverb and the master
-  // compressor (`master`), or how much of one instrument goes to them (its sends).
-  // Settings live in the song store (and its undo history); Workspace keeps the
-  // effects bus in step.
+  // One part of the song's effects: the shared delay and reverb, the sidechain
+  // and the master stage (`master`), or how much of one instrument goes to them
+  // (its sends). Settings live in the song store (and its undo history); Workspace
+  // keeps the effects bus in step.
   let { part, store }: { part: 'master' | Instrument; store: SongStore } = $props()
 
   type NumericSetting = {
@@ -31,6 +32,11 @@
   const fmtPct = (v: number) => Math.round(v * 100) + '%'
   const fmtSend = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   const fmtSec = (v: number) => v.toFixed(1) + ' s'
+  const fmtHz = (hz: number) =>
+    hz >= 1000 ? (hz / 1000).toFixed(1) + ' kHz' : Math.round(hz) + ' Hz'
+  // The DJ filter: which side and where its cutoff is.
+  const fmtFilter = (v: number) =>
+    v === 0 ? 'off' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${fmtHz(masterFilterHz(v))}`
   const panel = 'space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4'
 </script>
 
@@ -151,6 +157,7 @@
       {@render heading('master', 'Master')}
       {@render toggle('comp_on', 'Compressor', ['Off', 'On'])}
       {@render slider('comp_amount', 'Amount', 1, fmtPct)}
+      {@render slider('master_filter', 'Filter', 1, fmtFilter, -1)}
     </div>
   </div>
 {:else}

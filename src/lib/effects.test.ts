@@ -15,6 +15,8 @@ interface FakeNode {
   outputs: FakeNode[]
   // Which input of each output it feeds (a channel merger's side).
   ports: number[]
+  // Q: a filter's resonance.
+  Q: FakeParam
   ratio: FakeParam
   release: FakeParam
   threshold: FakeParam
@@ -52,6 +54,7 @@ function fakeAudio() {
       knee: param(),
       outputs: [],
       ports: [],
+      Q: param(),
       ratio: param(),
       release: param(),
       threshold: param()
@@ -217,6 +220,26 @@ test('the compressor is transparent until switched on; the amount lowers its thr
   expect([comp.threshold.value, comp.ratio.value]).toStrictEqual([-12, 3])
   bus.set({ ...DEFAULT_EFFECTS, comp_amount: 1, comp_on: true }, 110)
   expect(comp.threshold.value).toBe(-24)
+})
+
+test('the DJ filter passes everything in the middle; left sweeps a low-pass down, right a high-pass up', () => {
+  const { getCtx, nodes } = fakeAudio() // 1 kHz sample rate: Nyquist is 500 Hz
+  const bus = createEffects(getCtx)
+  bus.channel('synth')
+  // Straight after the compressor, before the limiter.
+  const lowpass = find(nodes, 'compressor').outputs[0]
+  const highpass = lowpass?.outputs[0]
+  expect([lowpass?.type, highpass?.type]).toStrictEqual(['lowpass', 'highpass'])
+  const cutoffs = (x: number) => {
+    bus.set({ ...DEFAULT_EFFECTS, master_filter: x }, 110)
+    return [lowpass?.frequency.value, highpass?.frequency.value]
+  }
+
+  expect(cutoffs(0)).toStrictEqual([500, 0]) // both at their pass-through ends
+  expect(cutoffs(-1)).toStrictEqual([100, 0])
+  expect(cutoffs(-0.5)[0]).toBeCloseTo(1414.21) // halfway in pitch between 20 kHz and 100 Hz
+  expect(cutoffs(0.5)).toStrictEqual([500, 400]) // halfway between 20 Hz and 8 kHz
+  expect(cutoffs(1)).toStrictEqual([500, 8000])
 })
 
 test('muting silences only that instrument, even before its channel exists', () => {

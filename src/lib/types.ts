@@ -71,6 +71,8 @@ export interface Effects {
   duck_amount: number
   // A note value at the tempo playing, like the delay time.
   duck_release: DelayTime
+  // DJ filter, -1 to 1: left sweeps a low-pass down, right a high-pass up; 0 is off.
+  master_filter: number
   reverb_mix: number
   reverb_size: number // decay in seconds, 0.3-6
   synth_delay: number

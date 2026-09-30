@@ -26,6 +26,7 @@ export const DEFAULT_EFFECTS: Effects = {
   drums_reverb: 0,
   duck_amount: 0,
   duck_release: '1/8',
+  master_filter: 0,
   reverb_mix: 0.6,
   reverb_size: 2,
   synth_delay: 0,
@@ -73,6 +74,10 @@ const CLIP_POINTS = 4097 // odd, so 0 falls on a point
 
 let clipCurve: Float32Array<ArrayBuffer> | null = null
 
+// DJ filter: `master_filter` from -1 to 1. Left of centre sweeps a low-pass down
+// from 20 kHz to 100 Hz, right sweeps a high-pass up from 20 Hz to 8 kHz, both
+// evenly in pitch; 0 is off. A little resonance at the cutoff, as on a DJ mixer.
+const FILTER_Q = 4 // dB
 export interface EffectsBus {
   // The node an instrument plays into (created on first use).
   channel(instrument: Instrument): AudioNode
@@ -101,7 +106,10 @@ interface Bus {
   delayR: DelayNode
   // Straight feedback: the left line into itself.
   feedback: GainNode
+  // The DJ filter: one low-pass and one high-pass in a row.
+  highpass: BiquadFilterNode
   inputs: Partial<Record<Instrument, GainNode>>
+  lowpass: BiquadFilterNode
   // Where the channels and effect returns meet, before the compressor.
   master: GainNode
   reverb: ConvolverNode
@@ -118,7 +126,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
 
   function build(): Bus {
     const ctx = getCtx()
-    // master -> compressor -> limiter -> trim -> clipper -> speakers.
+    // master -> compressor -> DJ filter -> limiter -> trim -> clipper -> speakers.
     const master = ctx.createGain()
     const comp = ctx.createDynamicsCompressor()
     comp.knee.value = 6
@@ -137,7 +145,20 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     // No oversampling: its filter would ring past the ceiling on the sharp edges
     // the clipper makes. The aliasing that costs only happens while it's bending.
     clip.oversample = 'none'
-    master.connect(comp).connect(limiter).connect(trim).connect(clip).connect(ctx.destination)
+    // DJ filter after the compressor, so the limiter still catches its resonance.
+    const lowpass = ctx.createBiquadFilter()
+    const highpass = ctx.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    highpass.type = 'highpass'
+    lowpass.Q.value = highpass.Q.value = FILTER_Q
+    master
+      .connect(comp)
+      .connect(lowpass)
+      .connect(highpass)
+      .connect(limiter)
+      .connect(trim)
+      .connect(clip)
+      .connect(ctx.destination)
 
     // Two delay lines, each with a damping filter so every repeat comes back a
     // little darker. The sends feed the left one. Straight, it feeds itself back
@@ -180,7 +201,9 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       delayOut,
       delayR,
       feedback,
+      highpass,
       inputs: {},
+      lowpass,
       master,
       reverb,
       reverbOut,
@@ -211,6 +234,11 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     // Off is a ratio of 1 at 0 dB: nothing is squeezed and the makeup gain is 1.
     to(b.comp.threshold, settings.comp_on ? COMP_RANGE * settings.comp_amount : 0)
     to(b.comp.ratio, settings.comp_on ? COMP_RATIO : 1)
+    // The filter not in use rests where it passes everything (low-pass at the
+    // Nyquist frequency, high-pass at 0 Hz), so the centre is truly off.
+    const x = settings.master_filter
+    to(b.lowpass.frequency, x < 0 ? masterFilterHz(x) : b.ctx.sampleRate / 2)
+    to(b.highpass.frequency, x > 0 ? masterFilterHz(x) : 0)
     for (const [instrument, sends] of Object.entries(b.channels)) {
       to(sends.delay.gain, settings[`${instrument as Instrument}_delay`])
       to(sends.reverb.gain, settings[`${instrument as Instrument}_reverb`])
@@ -274,6 +302,10 @@ export function impulse(ctx: BaseAudioContext, seconds: number, random = Math.ra
     for (let i = 0; i < length; i++) data[i] = (random() * 2 - 1) * (1 - i / length) ** 3
   }
   return buffer
+}
+
+export function masterFilterHz(x: number): number {
+  return x < 0 ? 20000 * (100 / 20000) ** -x : 20 * (8000 / 20) ** x
 }
 
 function clipper(): Float32Array<ArrayBuffer> {
