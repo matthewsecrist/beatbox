@@ -1,6 +1,9 @@
 {
   "arrangement": [
     {
+      "automation": {
+        "synth_filter": [-2, 0]
+      },
       "bars": 8,
       "drums": true,
       "name": "Intro",
@@ -22,6 +25,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "master_filter": [0, 0.5]
+      },
       "bars": 4,
       "drums": true,
       "name": "Build",
@@ -36,6 +42,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "synth_filter": [0, -1.5]
+      },
       "bars": 8,
       "drums": true,
       "name": "Breakdown",
@@ -43,6 +52,9 @@
       "pattern": 2
     },
     {
+      "automation": {
+        "master_filter": [0, 0.5]
+      },
       "bars": 4,
       "drums": true,
       "name": "Build 2",
@@ -65,6 +77,9 @@
       "pattern": 0
     },
     {
+      "automation": {
+        "master_filter": [0, -0.9]
+      },
       "bars": 4,
       "drums": true,
       "name": "Fade",

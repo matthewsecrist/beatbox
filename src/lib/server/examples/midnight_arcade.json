@@ -1,6 +1,9 @@
 {
   "arrangement": [
     {
+      "automation": {
+        "synth_filter": [-1.5, 0]
+      },
       "bars": 4,
       "drums": false,
       "name": "Intro",
@@ -15,6 +18,9 @@
       "pattern": 0
     },
     {
+      "automation": {
+        "master_filter": [0, 0.6]
+      },
       "bars": 4,
       "drums": true,
       "name": "Build",
@@ -36,6 +42,9 @@
       "pattern": 0
     },
     {
+      "automation": {
+        "synth_filter": [0, -2]
+      },
       "bars": 4,
       "drums": false,
       "name": "Breakdown",
@@ -64,6 +73,9 @@
       "pattern": 0
     },
     {
+      "automation": {
+        "master_filter": [0, -0.8]
+      },
       "bars": 4,
       "bpm": 116,
       "drums": true,
