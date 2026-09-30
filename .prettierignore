@@ -4,3 +4,6 @@ package-lock.json
 # Generated
 /drizzle/
 /static/
+
+# Vendored Svelte agent skills (upstream copies; some examples aren't valid code)
+/.claude/skills/

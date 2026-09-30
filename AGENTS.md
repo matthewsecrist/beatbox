@@ -3,9 +3,9 @@ See README.md for layout and commands.
 
 ## Project guidelines
 
-- Before finishing, run `npm run validate` (ESLint + Prettier, svelte-check, Vitest)
-  and fix everything it reports. `npm run format` fixes formatting; `npx eslint . --fix`
-  fixes import/key ordering.
+- Before finishing, run `npm run validate` and fix everything it reports. It formats
+  (Prettier) and applies ESLint's fixes (import/key ordering) first, then lints,
+  type-checks (svelte-check) and tests (Vitest), so there's no separate format step.
 - Never silence the linter or type checker (`eslint-disable`, `@ts-ignore`, `any`,
   non-null `!`) to get green; fix the types instead.
 - Use Svelte 5 runes (`$state`, `$derived`, `$effect`, `$props`) and event

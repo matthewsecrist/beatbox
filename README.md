@@ -256,16 +256,17 @@ Keys are ignored while you're typing in a text field.
 ## Development
 
 ```sh
-npm run validate # everything CI runs: lint, type check, tests
-npm run lint     # ESLint, including Prettier formatting (npm run format to fix)
+npm run validate # fix what can be fixed (Prettier, ESLint --fix), then lint, type check, tests
+npm run lint     # ESLint, including Prettier formatting, without changing anything
 npm run check    # svelte-check (strict TypeScript)
 npm test         # Vitest: audio timing, looper, arranger, song/preset store, sign-in
 npm run build && npm run preview   # production build (Cloudflare adapter)
 ```
 
 The code is strict TypeScript. ESLint runs type-aware `typescript-eslint` rules,
-the Svelte plugin (runes only), Perfectionist sorting and Prettier. CI should
-run `npm run validate` and `npm run build`, failing on any lint, type or test error.
+the Svelte plugin (runes only), Perfectionist sorting and Prettier. `validate` rewrites
+files, so CI runs the read-only steps instead: `npm run lint`, `npm run check`,
+`npm test` and `npm run build`, failing on any lint, type or test error.
 
 ### Database
 
