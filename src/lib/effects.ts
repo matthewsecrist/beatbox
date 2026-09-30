@@ -4,11 +4,11 @@ import { getContext } from './audio.js'
 
 // Shared send effects on the page's AudioContext: every instrument plays into a
 // channel that goes to the master stage dry and, through a send level per effect,
-// into one tempo-synced delay and one reverb, whose returns join it there. The
-// master stage is a glue compressor (off by default) and then a fixed limiter, so
-// stacked sends and drive don't clip. Nothing is built until an instrument first
-// asks for its channel (after a user gesture); settings made before then are
-// kept and applied when it is.
+// into one tempo-synced delay (straight or ping-pong) and one reverb, whose
+// returns join it there. The master stage is a glue compressor (off by default)
+// and then a fixed limiter, so stacked sends and drive don't clip. Nothing is
+// built until an instrument first asks for its channel (after a user gesture);
+// settings made before then are kept and applied when it is.
 
 export type Instrument = 'drums' | 'synth'
 
@@ -19,6 +19,7 @@ export const DEFAULT_EFFECTS: Effects = {
   comp_on: false,
   delay_feedback: 0.35,
   delay_mix: 0.6,
+  delay_pingpong: false,
   delay_time: '1/8d',
   drums_delay: 0,
   drums_reverb: 0,
@@ -75,11 +76,19 @@ export interface EffectsBus {
 }
 
 interface Bus {
+  // Gain putting the left delay line on the right side too (straight delay).
+  bothSides: GainNode
   channels: Partial<Record<Instrument, { delay: GainNode; reverb: GainNode }>>
   comp: DynamicsCompressorNode
+  // Ping-pong feedback: each delay line into the other.
+  crossLR: GainNode
+  crossRL: GainNode
   ctx: BaseAudioContext
+  // The left delay line, which the sends feed, and the right one.
   delay: DelayNode
   delayOut: GainNode
+  delayR: DelayNode
+  // Straight feedback: the left line into itself.
   feedback: GainNode
   inputs: Partial<Record<Instrument, GainNode>>
   // Where the channels and effect returns meet, before the compressor.
@@ -119,26 +128,46 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     clip.oversample = 'none'
     master.connect(comp).connect(limiter).connect(trim).connect(clip).connect(ctx.destination)
 
+    // Two delay lines, each with a damping filter so every repeat comes back a
+    // little darker. The sends feed the left one. Straight, it feeds itself back
+    // and plays on both sides. Ping-pong, each line feeds the other instead and
+    // plays on its own side, so the repeats bounce left, right, left…
     const delay = ctx.createDelay(MAX_DELAY)
+    const delayR = ctx.createDelay(MAX_DELAY)
     const damping = ctx.createBiquadFilter()
-    const feedback = ctx.createGain()
+    const dampingR = ctx.createBiquadFilter()
+    for (const d of [damping, dampingR]) {
+      d.type = 'lowpass'
+      d.frequency.value = DAMPING
+    }
+    const feedback = ctx.createGain() // left into left (straight)
+    const crossLR = ctx.createGain() // left into right (ping-pong)
+    const crossRL = ctx.createGain() // right into left (ping-pong)
+    const bothSides = ctx.createGain() // the left line on the right too (straight)
+    const sides = ctx.createChannelMerger(2)
     const delayOut = ctx.createGain()
-    damping.type = 'lowpass'
-    damping.frequency.value = DAMPING
-    // delay -> damping -> feedback -> delay: each repeat quieter and darker.
     delay.connect(damping).connect(feedback).connect(delay)
-    damping.connect(delayOut).connect(master)
+    damping.connect(crossLR).connect(delayR)
+    delayR.connect(dampingR).connect(crossRL).connect(delay)
+    damping.connect(sides, 0, 0)
+    damping.connect(bothSides).connect(sides, 0, 1)
+    dampingR.connect(sides, 0, 1)
+    sides.connect(delayOut).connect(master)
 
     const reverb = ctx.createConvolver()
     const reverbOut = ctx.createGain()
     reverb.connect(reverbOut).connect(master)
 
     const created: Bus = {
+      bothSides,
       channels: {},
       comp,
+      crossLR,
+      crossRL,
       ctx,
       delay,
       delayOut,
+      delayR,
       feedback,
       inputs: {},
       master,
@@ -158,8 +187,14 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       if (now) param.value = value
       else param.setTargetAtTime(value, t, SMOOTH)
     }
-    to(b.delay.delayTime, Math.min(MAX_DELAY, (DELAY_BEATS[settings.delay_time] * 60) / bpm))
-    to(b.feedback.gain, settings.delay_feedback)
+    const time = Math.min(MAX_DELAY, (DELAY_BEATS[settings.delay_time] * 60) / bpm)
+    to(b.delay.delayTime, time)
+    to(b.delayR.delayTime, time)
+    const { delay_feedback: fb, delay_pingpong: pingPong } = settings
+    to(b.feedback.gain, pingPong ? 0 : fb)
+    to(b.crossLR.gain, pingPong ? fb : 0)
+    to(b.crossRL.gain, pingPong ? fb : 0)
+    to(b.bothSides.gain, pingPong ? 0 : 1)
     to(b.delayOut.gain, settings.delay_mix)
     to(b.reverbOut.gain, settings.reverb_mix)
     // Off is a ratio of 1 at 0 dB: nothing is squeezed and the makeup gain is 1.

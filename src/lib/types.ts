@@ -58,6 +58,8 @@ export interface Effects {
   comp_on: boolean
   delay_feedback: number // 0-0.9
   delay_mix: number
+  // Repeats bounce between left and right instead of staying in the middle.
+  delay_pingpong: boolean
   delay_time: DelayTime
   drums_delay: number
   drums_reverb: number

@@ -76,6 +76,38 @@
   </h3>
 {/snippet}
 
+<!-- A two-way switch for an on/off setting; `labels` name its off and on sides. -->
+{#snippet toggle(key: 'comp_on' | 'delay_pingpong', label: string, labels: [string, string])}
+  <div class="space-y-1">
+    <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+      >{label}{@render info(key, label)}</span
+    >
+    <div
+      id={'fx-' + key}
+      class="grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+      role="group"
+      aria-label={label}
+    >
+      {#each [false, true] as on (on)}
+        <button
+          type="button"
+          aria-pressed={settings[key] === on}
+          disabled={store.readOnly}
+          onclick={() => store.setEffects({ [key]: on })}
+          class={[
+            'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+            settings[key] === on
+              ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+              : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+          ]}
+        >
+          {labels[on ? 1 : 0]}
+        </button>
+      {/each}
+    </div>
+  </div>
+{/snippet}
+
 {#if part === 'master'}
   <div id="effects" class="grid gap-4 sm:grid-cols-2">
     <div class={panel}>
@@ -96,6 +128,7 @@
           {/each}
         </select>
       </label>
+      {@render toggle('delay_pingpong', 'Bounce', ['Straight', 'Ping-pong'])}
       {@render slider('delay_feedback', 'Feedback', 0.9, fmtPct)}
       {@render slider('delay_mix', 'Mix', 1, fmtPct)}
     </div>
@@ -106,34 +139,7 @@
     </div>
     <div id="fx-master" class={[panel, 'sm:col-span-2']}>
       {@render heading('master', 'Master')}
-      <div class="space-y-1">
-        <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
-          >Compressor{@render info('comp_on', 'Compressor')}</span
-        >
-        <div
-          id="fx-comp_on"
-          class="grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
-          role="group"
-          aria-label="Compressor"
-        >
-          {#each [false, true] as on (on)}
-            <button
-              type="button"
-              aria-pressed={settings.comp_on === on}
-              disabled={store.readOnly}
-              onclick={() => store.setEffects({ comp_on: on })}
-              class={[
-                'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
-                settings.comp_on === on
-                  ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
-                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
-              ]}
-            >
-              {on ? 'On' : 'Off'}
-            </button>
-          {/each}
-        </div>
-      </div>
+      {@render toggle('comp_on', 'Compressor', ['Off', 'On'])}
       {@render slider('comp_amount', 'Amount', 1, fmtPct)}
     </div>
   </div>
