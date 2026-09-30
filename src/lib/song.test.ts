@@ -358,3 +358,22 @@ test("a section's own tempo saves with it; cleared, the section follows the song
   store.undo()
   expect(store.toSongDoc().arrangement.map((s) => s.bpm)).toStrictEqual([90, 70])
 })
+
+test('a run of taps is one undo step, however slow; the next run is another', () => {
+  vi.useFakeTimers()
+  const store = new SongStore(null, vi.fn())
+  store.tapTempo(90, true)
+  for (const bpm of [92, 91]) {
+    vi.advanceTimersByTime(700) // longer than a slider drag's undo step
+    store.tapTempo(bpm, false)
+  }
+  vi.advanceTimersByTime(3000)
+  store.tapTempo(140, true)
+
+  expect(store.drums.bpm).toBe(140)
+  store.undo()
+  expect(store.drums.bpm).toBe(91)
+  store.undo()
+  expect(store.drums.bpm).toBe(110)
+  vi.useRealTimers()
+})

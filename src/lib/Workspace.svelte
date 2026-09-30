@@ -41,6 +41,7 @@
   import { keepPendingSong, takePendingSong } from './pending_song.js'
   import { SongStore } from './song.svelte.js'
   import Synth from './Synth.svelte'
+  import { createTapTempo } from './tap_tempo.js'
   import { transport } from './transport.js'
 
   // The music workspace: synth, loop pads and drum machine, saved together as a song.
@@ -92,6 +93,8 @@
   $effect(() => transport.setBpm(store.drums.bpm))
   $effect(() => effects.set($state.snapshot(store.effects), sectionBpm ?? store.drums.bpm))
 
+  // Tap along to set the song tempo; each tap's event time, so a busy page doesn't skew it.
+  const tapper = createTapTempo()
   // Ctrl/Cmd+Z undoes, Shift+Ctrl/Cmd+Z or Ctrl+Y redoes, except while typing in a
   // field (which keeps the browser's own text undo).
   function onUndoKey(e: KeyboardEvent) {
@@ -172,6 +175,11 @@
     // Just saved a new song: show its URL without remounting, so the live state stays.
     const path = resolve('/songs/[id]', { id: reply.song.id })
     if (location.pathname !== path) replaceState(path, {})
+  }
+
+  function tapTempo(e: MouseEvent) {
+    const tapped = tapper.tap(e.timeStamp)
+    if (tapped) store.tapTempo(tapped.bpm, tapped.first)
   }
 
   const loadPreset = (id: string): Promise<LoadPresetReply> =>
@@ -351,6 +359,19 @@
     />
     <span class="w-8 font-mono text-amber-300 tabular-nums">{store.drums.bpm}</span>
   </label>
+  {#if !readOnly}
+    <div class="-ml-2 flex items-center gap-1">
+      <button
+        id="tap-tempo"
+        type="button"
+        onclick={tapTempo}
+        class="rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wider text-zinc-300 ring-1 ring-zinc-700 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
+      >
+        Tap
+      </button>
+      <InfoTip label="Tap tempo" text={help('tap_tempo') ?? ''} />
+    </div>
+  {/if}
   {#if !readOnly}
     <div class="flex items-center" role="group" aria-label="History">
       <button
