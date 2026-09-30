@@ -151,9 +151,12 @@ const performance = z.object({
     .exactOptional()
 })
 
-// Shared delay and reverb, and how much of each instrument is sent to them.
+// Shared delay and reverb, how much of each instrument is sent to them, and the
+// master compressor.
 const level = z.number().min(0).max(1).exactOptional()
 const effects = z.object({
+  comp_amount: level,
+  comp_on: z.boolean().exactOptional(),
   delay_feedback: z.number().min(0).max(0.9).exactOptional(),
   delay_mix: level,
   delay_time: z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16']).exactOptional(),

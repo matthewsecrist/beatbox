@@ -411,7 +411,7 @@
     </button>
   {/if}
 
-  <!-- Settings for the whole song: the master delay and reverb. -->
+  <!-- Settings for the whole song: the master delay, reverb and compressor. -->
   <details id="song-settings" class="group relative">
     <summary
       class="flex cursor-pointer list-none items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 group-open:border-amber-400/60"

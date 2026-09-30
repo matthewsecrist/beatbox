@@ -58,8 +58,8 @@ removes a song for good, along with its link, views and likes.
 - Opening your own song's link shows it as others see it, with an **Edit it** link.
 
 **Layout**: the song bar (Play song, name, Save, **Tempo**, undo/redo, Loops, **Song
-settings**, New, Open) sits on top; **Song settings** opens the master delay and
-reverb. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
+settings**, New, Open) sits on top; **Song settings** opens the master delay,
+reverb and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
 next to the arrangement: a column per section. Pick
 a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
 Amp, Mod, Drive & Glide** and **Effects** tabs, the drums' **Steps, Kit** and
@@ -220,6 +220,15 @@ the song tempo, with **Feedback** for how many repeats; each repeat comes back a
 little darker. The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
 Browser previews play through the same effects.
 
+Everything (both instruments dry and both effect returns) then goes through the
+**Master** stage on its way to the speakers: a glue **Compressor** (off in a new
+song; **Amount** lowers its threshold from 0 to −24 dB at 3:1, and its built-in
+makeup gain keeps a typical mix about as loud: quiet parts up, peaks down), then a
+fixed limiter at −1 dB and a clipper that bends smoothly from 0.95 and never lets
+a sample past 0.984, so stacked sends, feedback and drive can't clip, however hot.
+Below the limiter the master stage leaves the sound untouched; the two compressors
+look ahead, which delays everything by about 12 ms together.
+
 **Arrangement** (the columns next to the tracks): a list of sections, each with a
 length in bars, a drum pattern (or none) on the drums' row, and a toggle on each
 pad's row. **Play song** plays the sections in order, and every change lands on the
@@ -358,7 +367,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                                  |
 | `src/lib/DrumMachine.svelte`                                                   | Drums editor: step sequencer, kit, saved kits                                                                               |
 | `src/lib/Arranger.svelte`                                                      | Track list (level, mute, solo) and the arrangement grid                                                                     |
-| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Master effects and per-instrument sends, and the shared delay/reverb bus every instrument plays into                        |
+| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Master effects and per-instrument sends, and the shared delay/reverb bus and master stage every instrument plays into       |
 | `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                                       |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                            |
 | `src/lib/transport.ts`, `src/lib/tap_tempo.ts`                                 | Tempo, beat grid and metronome shared by every instrument; tap tempo                                                        |
