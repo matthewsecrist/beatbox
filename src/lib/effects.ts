@@ -129,8 +129,9 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
   let bpm = 110
   let bus: Bus | null = null
   const muted = new Set<Instrument>()
-  // Settings the arrangement is ramping; edits to them wait until it lets go.
-  const automated = new Set<EffectTarget>()
+  // Settings the arrangement owns, with the audio time it lets go of each
+  // (Infinity while ramping). Until then song edits wait and Stop cancels them.
+  const automated = new Map<EffectTarget, number>()
 
   function build(): Bus {
     const ctx = getCtx()
@@ -242,7 +243,9 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     to(b.comp.ratio, settings.comp_on ? COMP_RATIO : 1)
     // Mixes, sends and the master filter, unless the arrangement is moving them.
     for (const target of EFFECT_TARGETS) {
-      if (automated.has(target)) continue
+      const release = automated.get(target)
+      if (release !== undefined && release > b.ctx.currentTime) continue
+      automated.delete(target)
       for (const [param, value] of drives(b, target)) to(param, value(settings[target]))
     }
     // A new impulse is only worth making when the size changes.
@@ -257,9 +260,10 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       if (!bus) return
       for (const target of EFFECT_TARGETS) {
         const ramp = ramps[target]
-        if (ramp) automated.add(target)
+        const release = automated.get(target)
         // A section that leaves it alone gets the song's setting back from its first beat.
-        else if (!automated.delete(target)) continue
+        if (!ramp && (release === undefined || release <= bus.ctx.currentTime)) continue
+        automated.set(target, ramp ? Infinity : t0)
         for (const [param, value] of drives(bus, target)) {
           if (!ramp) param.setValueAtTime(value(settings[target]), t0)
           else rampThrough(param, rampPoints(ramp, target).map(value), t0, t1)
@@ -307,7 +311,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     },
     stopAutomation(): void {
       if (!bus) return
-      for (const target of automated) {
+      for (const target of automated.keys()) {
         for (const [param, value] of drives(bus, target)) {
           settle(param, bus.ctx.currentTime, value(settings[target]))
         }

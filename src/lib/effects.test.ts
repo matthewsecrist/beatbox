@@ -264,12 +264,31 @@ test("a section's ramp moves a send in a line; song edits wait, and its setting 
   bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.4 }, 120)
   expect(gain.setTargetAtTime).not.toHaveBeenCalled()
 
-  // The next section leaves it alone: the song's setting is back on its first beat,
-  // and edits apply again.
+  // The next section leaves it alone (announced early): the song's setting is
+  // back on its first beat, but until that beat passes the ramp still owns it.
   bus.automate({}, 10, 18)
   expect(gain.setValueAtTime.mock.calls.at(-1)).toStrictEqual([0.4, 10])
   bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.3 }, 120)
+  expect(gain.setTargetAtTime).not.toHaveBeenCalled()
+  const clock = getCtx() as unknown as { currentTime: number }
+  clock.currentTime = 10
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.3 }, 120)
   expect(gain.value).toBe(0.3)
+})
+
+test('stopping just before a section that lets go still cancels the ramp and its reset', () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  const reverbSend = (bus.channel('synth') as unknown as FakeNode).outputs[0]?.outputs[2]
+  if (!reverbSend) throw new Error('no reverb send')
+  const clock = getCtx() as unknown as { currentTime: number }
+
+  bus.automate({ synth_reverb: [0, 0.6] }, 0, 10)
+  clock.currentTime = 9.95
+  bus.automate({}, 10, 18) // the next section, announced 50 ms early
+  bus.stopAutomation()
+  expect(reverbSend.gain.cancelScheduledValues).toHaveBeenCalledWith(9.95)
+  expect(reverbSend.gain.value).toBe(DEFAULT_EFFECTS.synth_reverb)
 })
 
 test('the master filter ramps evenly in pitch, and stopping the song glides it back', () => {
