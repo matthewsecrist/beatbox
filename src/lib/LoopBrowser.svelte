@@ -115,21 +115,22 @@
       drums.start(() => steps)
       return () => drums.stop()
     }
-    previewSynth ??= createSynth(
+    const synth = (previewSynth ??= createSynth(
       { volume: store.synth.volume ?? DEFAULT_PARAMS.volume },
       undefined,
       () => effects.channel('synth')
-    )
-    // The loop plays at the song tempo, so its synced LFOs do too.
-    previewSynth.setTempo(transport.bpm)
-    const player = createPlayer(
-      previewSynth,
-      'preview:',
-      libraryLoop(item, 0, transport.bpm),
-      transport
-    )
+    ))
+    // The loop plays at the tempo playing, and its synced LFOs keep up with it: a
+    // song left playing behind the browser can reach a section with its own tempo,
+    // and undo can change the song tempo.
+    let bpm = transport.bpm
+    synth.setTempo(bpm)
+    const player = createPlayer(synth, 'preview:', libraryLoop(item, 0, bpm), transport)
     player.start()
-    const timer = setInterval(() => player.tick(), 25)
+    const timer = setInterval(() => {
+      if (transport.bpm !== bpm) synth.setTempo((bpm = transport.bpm))
+      player.tick()
+    }, 25)
     return () => {
       clearInterval(timer)
       player.stop()
