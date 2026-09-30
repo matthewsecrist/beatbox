@@ -39,9 +39,10 @@ function fakeAudio() {
   const node = (kind: string): FakeNode => {
     const n: FakeNode = {
       attack: param(),
-      connect(next, _output = 0, input = 0) {
+      // connect(next, output, input): only the input (a merger's side) matters here.
+      connect(next, ...ports) {
         n.outputs.push(next)
-        n.ports.push(input)
+        n.ports.push(ports[1] ?? 0)
         return next
       },
       delayTime: param(),
