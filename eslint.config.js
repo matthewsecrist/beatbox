@@ -26,7 +26,10 @@ export default defineConfig(
       parserOptions: {
         // vite.config.ts and drizzle.config.ts are in the TS project via
         // .svelte-kit/tsconfig.json (see kit.typescript.config in svelte.config.js).
-        // Only the root JS config files need allowDefaultProject.
+        // Only the root JS config files need allowDefaultProject. extraFileExtensions
+        // is set here, for every file, not just in the Svelte block below:
+        // projectService reloads the whole project whenever it changes between files.
+        extraFileExtensions: ['.svelte'],
         projectService: {
           allowDefaultProject: ['*.config.js']
         }
@@ -65,7 +68,6 @@ export default defineConfig(
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
       parserOptions: {
-        extraFileExtensions: ['.svelte'],
         parser: ts.parser,
         projectService: {
           allowDefaultProject: ['*.config.js']
