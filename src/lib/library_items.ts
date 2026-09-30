@@ -160,6 +160,18 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
   {
     genre: 'Ambient',
+    instrument: 'Chords',
+    name: 'Thin Air',
+    score: [
+      'A3+E4+B4+C#5 - - - - - - - - - - - - - - -',
+      '- - - - - - - - - - - - - - - -',
+      'F#3+C#4+E4+A4 - - - - - - - - - - - - - - -',
+      '- - - - - - - - - - - - . . . .'
+    ].join(' | '),
+    sound: 'Airy Pad'
+  },
+  {
+    genre: 'Ambient',
     instrument: 'Lead',
     name: 'Tidal Drift Melody',
     score: [
@@ -309,7 +321,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       '. . C4+Eb4+G4+Bb4 . . . C4+Eb4+G4+Bb4 - . . C4+Eb4+G4+Bb4 . C4+Eb4+G4+Bb4 . . .',
       '. . F3+A3+C4+Eb4 . . . F3+A3+C4+Eb4 - . . F3+A3+C4+Eb4 . F3+A3+C4+Eb4 . . .'
     ].join(' | '),
-    sound: 'Organ'
+    sound: 'Wah Clav'
   },
   {
     genre: 'Disco',
@@ -572,7 +584,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       '. . G#3+D4+F#4 . G#3+D4+F#4 . . G#3+D4+F#4 . . G#3+D4+F#4 . G#3+D4+F#4 . . .',
       '. . G3+C#4+F#4 . G3+C#4+F#4 . . G3+C#4+F#4 . . G#3+D4+F#4 . G#3+D4+F#4 . G#3+D4+F#4 .'
     ].join(' | '),
-    sound: 'Pluck'
+    sound: 'Wah Clav'
   },
   {
     genre: 'Funk',
@@ -589,7 +601,7 @@ export const LOOP_SPECS: LoopSpec[] = [
     instrument: 'Arp',
     name: 'Wah Guitar Scratch',
     score: 'D4 . D4 F4 . D4 A4 . D4 . C4 . D4 . F4 G4',
-    sound: 'Pluck'
+    sound: 'Auto-Wah Lead'
   },
 
   // Hip-hop
@@ -618,7 +630,7 @@ export const LOOP_SPECS: LoopSpec[] = [
       'Ab3+C4+Eb4+G4 - - - - - - - - - . . Ab3+C4+Eb4+G4 - . .',
       'Ab3+Db4+F4+C4 - - - - - - - - - . . G3+Bb3+Db4+F4 - - -'
     ].join(' | '),
-    sound: 'Electric Piano'
+    sound: 'Radio Keys'
   },
   {
     genre: 'Hip-hop',
@@ -645,6 +657,13 @@ export const LOOP_SPECS: LoopSpec[] = [
     name: 'Offbeat Bass',
     score: '. . A3 - . . A3 - . . A3 - . . A3 - | . . A3 - . . A3 - . . G3~ - - - C4 -',
     sound: 'Acid Bass'
+  },
+  {
+    genre: 'House',
+    instrument: 'Bass',
+    name: 'Hollow Deep Bass',
+    score: 'A3 - . A3 . . C4 . . A3 . . G3 - E3 . | F3 - . F3 . . A3 . . F3 . . G3 - . .',
+    sound: 'Hollow Bass'
   },
   {
     genre: 'House',
@@ -760,6 +779,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
   {
     genre: 'Lo-fi',
+    instrument: 'Chords',
+    name: 'AM Radio Chords',
+    score: [
+      'D3+F3+A3+C4 - - - . . D3+F3+A3+C4 - . . . . D3+F3+A3+C4 - . .',
+      'G3+B3+D4+F4 - - - . . G3+B3+D4+F4 - . . . . G3+B3+D4+F4 - - -'
+    ].join(' | '),
+    sound: 'Radio Keys'
+  },
+  {
+    genre: 'Lo-fi',
     instrument: 'Lead',
     name: 'Sleepy Kalimba',
     score: 'A4 . C5 . . . A4 G4 . . F4 . . . . . | D4 . F4 . G4 . . A4 - - - . . . . .',
@@ -840,6 +869,16 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3 . D4 G4 . B3 . D4 G3 . D4 G4 . B3 . D4'
     ].join(' | '),
     sound: 'Pluck'
+  },
+  {
+    genre: 'Pop',
+    instrument: 'Arp',
+    name: 'Crystal Pluck Arp',
+    score: [
+      'E4 . B4 . G4 E5 . B4 E4 . B4 . G4 E5 . B4',
+      'C4 . G4 . E4 C5 . G4 C4 . G4 . E4 C5 . G4'
+    ].join(' | '),
+    sound: 'Glass Pluck'
   },
 
   // Reggae
@@ -1038,10 +1077,27 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
   {
     genre: 'Synthwave',
+    instrument: 'Chords',
+    name: 'Phaser Sunset',
+    score: [
+      'A3+C4+E4+G4 - - - - - - - - - - - - - - -',
+      'F3+A3+C4+E4 - - - - - - - - - - - - - - -'
+    ].join(' | '),
+    sound: 'Phaser Pad'
+  },
+  {
+    genre: 'Synthwave',
     instrument: 'Lead',
     name: 'Synth Brass',
     score: 'E4 - - - . . G4 - A4 - - - - - . . | C5 - - - B4 - - - G4 - - - A4 - - -',
     sound: 'Brass'
+  },
+  {
+    genre: 'Synthwave',
+    instrument: 'Lead',
+    name: 'Jet Stream Lead',
+    score: 'A4 - - - E5 - - - D5 - C5 - B4 - - - | C5 - - - B4 - - - G4 - - - A4 - - -',
+    sound: 'Jet Lead'
   },
   {
     genre: 'Synthwave',
@@ -1127,6 +1183,15 @@ export const LOOP_SPECS: LoopSpec[] = [
       'G3+B3+D4 - - - - - - - - - - - - - - -'
     ].join(' | '),
     sound: 'Pulse Pad'
+  },
+  {
+    genre: 'Trance',
+    instrument: 'Chords',
+    name: 'Build-Up Riser',
+    score: ['A3+E4+A4 - - - - - - - - - - - - - - -', '- - - - - - - - - - - - - - - -'].join(
+      ' | '
+    ),
+    sound: 'Riser'
   },
   {
     genre: 'Trance',

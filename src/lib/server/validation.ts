@@ -19,6 +19,7 @@ const params = z.object({
   filter_release: z.number().exactOptional(),
   filter_resonance: z.number().exactOptional(),
   filter_sustain: z.number().exactOptional(),
+  filter_type: z.enum(['bandpass', 'highpass', 'lowpass', 'notch']).exactOptional(),
   glide: z.number().min(0).max(1).exactOptional(),
   glide_mode: z.enum(['always', 'legato']).exactOptional(),
   lfo1_depth: z.number().exactOptional(),

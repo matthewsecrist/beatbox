@@ -61,6 +61,10 @@ export interface Effects {
   synth_reverb: number
 }
 
+// The synth filter's shape: lowpass keeps what's below the cutoff, highpass what's
+// above, bandpass a band around it, and notch cuts that band out.
+export type FilterType = 'bandpass' | 'highpass' | 'lowpass' | 'notch'
+
 // When the synth glides: into every note, or only into one played while the
 // last is still held.
 export type GlideMode = 'always' | 'legato'
@@ -187,6 +191,7 @@ export interface SynthParams {
   filter_release: number
   filter_resonance: number
   filter_sustain: number
+  filter_type: FilterType
   // Seconds to slide from the last note's pitch; 0 = off.
   glide: number
   glide_mode: GlideMode
