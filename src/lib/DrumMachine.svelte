@@ -57,30 +57,41 @@
   }))
 
   // What a click on a step changes. Outside Hits, a click on an off step switches it
-  // on; on an on step it steps through the values.
-  type Mode = 'accent' | 'hits' | 'probability' | 'ratchet' | 'velocity'
+  // on; on an on step it steps through the values. In Lock, it picks the step whose
+  // tune and decay the lock sliders set (and plays it).
+  type Mode = 'accent' | 'hits' | 'lock' | 'probability' | 'ratchet' | 'velocity'
   const MODES: { id: Mode; label: string }[] = [
     { id: 'hits', label: 'Hits' },
     { id: 'velocity', label: 'Velocity' },
     { id: 'accent', label: 'Accent' },
     { id: 'probability', label: 'Chance' },
-    { id: 'ratchet', label: 'Ratchet' }
+    { id: 'ratchet', label: 'Ratchet' },
+    { id: 'lock', label: 'Lock' }
   ]
   const LEVELS = [1, 0.75, 0.5, 0.25]
   const next = (values: number[], v: number) => values[(values.indexOf(v) + 1) % values.length] ?? v
   const pct = (v: number) => `${Math.round(v * 100)}%`
+  const semis = (v: number) => (v > 0 ? `+${v}` : String(v))
+  const isLocked = (step: DrumStep) => step.tune !== undefined || step.decay !== undefined
 
-  // Text shown on an on step: the edited value, or in Hits mode any ratchet.
+  // Text shown on an on step: the edited value (in Lock, a locked tune), or in Hits
+  // mode any ratchet.
   function badge(step: DrumStep): string {
     if (mode === 'velocity') return pct(step.velocity)
     if (mode === 'probability') return pct(step.probability)
+    if (mode === 'lock') return step.tune === undefined ? '' : semis(step.tune)
     return step.ratchet > 1 ? `×${step.ratchet}` : ''
   }
 
   function click(track: keyof DrumPattern, i: number, step: DrumStep) {
+    if (mode === 'lock') {
+      lockStep = { step: i, track }
+      drums?.trigger(track, step)
+    }
     let patch: Partial<DrumStep>
     if (mode === 'hits') patch = { on: !step.on }
     else if (!step.on) patch = { on: true }
+    else if (mode === 'lock') return
     else if (mode === 'accent') patch = { accent: !step.accent }
     else if (mode === 'ratchet') patch = { ratchet: next([1, 2, 3, 4], step.ratchet) }
     else patch = { [mode]: next(LEVELS, step[mode]) }
@@ -95,7 +106,9 @@
       `velocity ${pct(step.velocity)}`,
       step.accent && 'accent',
       step.probability < 1 && `chance ${pct(step.probability)}`,
-      step.ratchet > 1 && `ratchet ${step.ratchet}`
+      step.ratchet > 1 && `ratchet ${step.ratchet}`,
+      step.tune !== undefined && `tune locked ${semis(step.tune)}`,
+      step.decay !== undefined && `decay locked ${pct(step.decay)}`
     ]
       .filter(Boolean)
       .join(', ')
@@ -137,6 +150,19 @@
   let editing = $state(0) // tab shown in the grid
   let mode: Mode = $state('hits')
   const shown = $derived(patterns[editing] ?? empty())
+  // The step the lock sliders edit (UI-only), with its settings and its voice.
+  let lockStep: null | { step: number; track: TrackId } = $state(null)
+  const locking = $derived.by(() => {
+    if (!lockStep) return null
+    const step = shown[lockStep.track][lockStep.step]
+    const track = TRACKS.find((t) => t.id === lockStep?.track)
+    if (!step || !track) return null
+    return { ...lockStep, label: track.label, value: step, voice: store.drums.voices[track.id] }
+  })
+  // Plays the step being locked, as it now sounds.
+  const audition = () => locking && drums?.trigger(locking.track, locking.value)
+  const setLock = (patch: Partial<Record<'decay' | 'tune', null | number>>) =>
+    locking && store.setLocks(editing, locking.track, locking.step, patch)
   let playingPattern = $state(-1) // pattern currently sounding, -1 when stopped
   // Raw: its steps go back into the song document, which can't take state proxies.
   let clipboard: DrumPattern | null = $state.raw(null)
@@ -488,6 +514,76 @@
             </span>
           {/each}
         </div>
+        {#if mode === 'lock'}
+          <div
+            id="drum-locks"
+            class="flex w-fit max-w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-zinc-900 px-3 py-2"
+            role="group"
+            aria-label="Step locks"
+          >
+            {#if locking}
+              {@const { value, voice } = locking}
+              <span
+                id="drums-lock-target"
+                class="text-xs font-semibold uppercase tracking-wider text-zinc-400"
+                >{locking.label} step {locking.step + 1}</span
+              >
+              <label class="flex items-center gap-2 text-xs text-zinc-400">
+                Tune
+                <input
+                  id="drums-lock-tune"
+                  type="range"
+                  min="-12"
+                  max="12"
+                  step="1"
+                  value={value.tune ?? voice.tune}
+                  oninput={(e) => setLock({ tune: Number(e.currentTarget.value) })}
+                  onchange={audition}
+                  class="w-28 cursor-pointer accent-sky-400"
+                />
+                <span
+                  class={[
+                    'w-12 font-mono tabular-nums',
+                    value.tune === undefined ? 'text-zinc-500' : 'text-sky-300'
+                  ]}>{value.tune === undefined ? 'Voice' : semis(value.tune)}</span
+                >
+              </label>
+              <label class="flex items-center gap-2 text-xs text-zinc-400">
+                Decay
+                <input
+                  id="drums-lock-decay"
+                  type="range"
+                  min="0.25"
+                  max="2"
+                  step="0.05"
+                  value={value.decay ?? voice.decay}
+                  oninput={(e) => setLock({ decay: Number(e.currentTarget.value) })}
+                  onchange={audition}
+                  class="w-28 cursor-pointer accent-sky-400"
+                />
+                <span
+                  class={[
+                    'w-12 font-mono tabular-nums',
+                    value.decay === undefined ? 'text-zinc-500' : 'text-sky-300'
+                  ]}>{value.decay === undefined ? 'Voice' : pct(value.decay)}</span
+                >
+              </label>
+              <button
+                id="drums-lock-clear"
+                type="button"
+                class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
+                disabled={!isLocked(value)}
+                onclick={() => setLock({ decay: null, tune: null })}
+              >
+                Clear
+              </button>
+            {:else}
+              <span class="text-xs text-zinc-500"
+                >Click a step to lock its tune and decay for that hit.</span
+              >
+            {/if}
+          </div>
+        {/if}
         <div
           id="drum-euclid"
           class="flex w-fit max-w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-lg bg-zinc-900 px-3 py-2"
@@ -625,13 +721,21 @@
                     step.on &&
                       step.probability < 1 &&
                       'outline-dashed outline-2 -outline-offset-4 outline-zinc-900/70',
-                    current === i && editing === playingPattern && 'ring-2 ring-zinc-100/80'
+                    current === i && editing === playingPattern && 'ring-2 ring-zinc-100/80',
+                    mode === 'lock' &&
+                      locking?.track === track.id &&
+                      locking.step === i &&
+                      'ring-2 ring-sky-400'
                   ]}
                 >
                   {#if step.on}
                     {badge(step)}
                     {#if step.accent}
                       <span class="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-rose-600"
+                      ></span>
+                    {/if}
+                    {#if isLocked(step)}
+                      <span class="absolute bottom-0.5 left-0.5 size-1.5 rounded-full bg-sky-700"
                       ></span>
                     {/if}
                   {/if}

@@ -1,5 +1,5 @@
 import type { Transport } from '../transport.js'
-import type { DrumStep, InstrumentId, KitId, TrackId, VoiceTweak } from '../types.js'
+import type { DrumStep, InstrumentId, KitId, StepLocks, TrackId, VoiceTweak } from '../types.js'
 
 import { getContext, noiseBuffer } from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
@@ -25,7 +25,8 @@ export interface Drums {
   start(patternFn: PatternFn, atBeat?: number, tag?: number): void
   stop(): void
   stopAt(beat: number): void
-  trigger(id: TrackId): void
+  // Plays a track now, with a step's locks if given.
+  trigger(id: TrackId, locks?: StepLocks): void
 }
 
 const noop = (): void => undefined
@@ -338,13 +339,14 @@ export function createDrums({
     }
   }
 
-  // The track's own library pick, or else its kit's sound.
-  function hit(id: TrackId, t: number, gain: number) {
+  // The track's own library pick, or else its kit's sound. A step's locks replace
+  // its voice's tune and decay for this hit.
+  function hit(id: TrackId, t: number, gain: number, locks: StepLocks = {}) {
     const v = voices[id]
     SOUNDS[v?.sound ?? KIT_SOUNDS[kit][id]]({
       gain,
-      len: v?.decay ?? 1,
-      pitch: 2 ** ((v?.tune ?? 0) / 12),
+      len: locks.decay ?? v?.decay ?? 1,
+      pitch: 2 ** ((locks.tune ?? v?.tune ?? 0) / 12),
       t
     })
   }
@@ -383,7 +385,7 @@ export function createDrums({
         const dt = humanize ? Math.max(drift(HUMANIZE_TIME), Math.min(0, ctx.currentTime - t)) : 0
         for (let r = 0; r < step.ratchet; r++) {
           const at = transport.timeAt(from + (span * r) / step.ratchet) + dt
-          hit(id, at, humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain)
+          hit(id, at, humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain, step)
         }
       }
       queue.push({ step: nextStep, time: t })
@@ -442,8 +444,8 @@ export function createDrums({
     onStop()
   }
 
-  function trigger(id: TrackId): void {
-    hit(id, ensureContext().ctx.currentTime, 1)
+  function trigger(id: TrackId, locks?: StepLocks): void {
+    hit(id, ensureContext().ctx.currentTime, 1, locks)
   }
 
   function setKit(next: KitId, tweaks: Partial<Record<TrackId, VoiceTweak>>): void {

@@ -40,11 +40,15 @@ export interface Drums {
 // One step of a drum track. Settings stay when the step is switched off.
 export interface DrumStep {
   accent: boolean
+  // Parameter lock: this hit's decay (0.25-2) in place of its voice's; absent follows the voice.
+  decay?: number
   on: boolean
   // 0-1: chance the step plays each time round.
   probability: number
   // 1-4 hits spread over the step.
   ratchet: number
+  // Parameter lock: this hit's tune (-12 to 12 semitones) in place of its voice's.
+  tune?: number
   // 0-1
   velocity: number
 }
@@ -187,6 +191,9 @@ export interface StateDetail {
   playing: boolean
   source: string
 }
+
+// A step's parameter locks.
+export type StepLocks = Pick<DrumStep, 'decay' | 'tune'>
 
 export interface SynthParams {
   attack: number

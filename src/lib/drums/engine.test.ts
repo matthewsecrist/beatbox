@@ -6,10 +6,12 @@ import { STEP } from '../song.svelte.js'
 import { createTransport } from '../transport.js'
 import { createDrums, isAudible } from './engine.js'
 
-// AudioContext stand-in: records when each kick (a 150 Hz sweep) starts.
+// AudioContext stand-in: records when each kick (a 150 Hz sweep) starts, and every
+// oscillator's starting pitch and how long it sounds.
 function fakeAudio() {
   const clock = { currentTime: 0 }
   const kicks: number[] = []
+  const tones: [hz: number, seconds: number][] = []
   const param = (onSet: (v: number) => void = vi.fn()) => ({
     exponentialRampToValueAtTime: vi.fn(),
     setTargetAtTime: vi.fn(),
@@ -29,11 +31,15 @@ function fakeAudio() {
     createGain: node,
     createOscillator() {
       let hz = 0
+      let from = 0
       return {
         ...node(),
         frequency: param((v) => (hz ||= v)),
-        start: (t: number) => hz === 150 && kicks.push(+t.toFixed(3)),
-        stop: vi.fn()
+        start: (t: number) => {
+          from = t
+          if (hz === 150) kicks.push(+t.toFixed(3))
+        },
+        stop: (t: number) => tones.push([+hz.toFixed(2), +(t - from).toFixed(3)])
       }
     },
     get currentTime() {
@@ -42,7 +48,7 @@ function fakeAudio() {
     destination: {},
     sampleRate: 100
   }
-  return { clock, getCtx: () => ctx as unknown as BaseAudioContext, kicks }
+  return { clock, getCtx: () => ctx as unknown as BaseAudioContext, kicks, tones }
 }
 
 afterEach(() => {
@@ -166,4 +172,34 @@ test("a track plays the library instrument picked for it instead of its kit's", 
   drums.trigger('kick')
   drums.trigger('rim')
   expect(kicks).toHaveLength(2)
+})
+
+test("a step's locks replace its voice's tune and decay for that hit only", () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, tones } = fakeAudio()
+  const transport = createTransport(getCtx)
+  const drums = createDrums({ getCtx, onStep: vi.fn(), transport })
+  // The Classic kick: a 150 Hz sweep lasting 0.45 s (plus 0.05 s to let it ring out).
+  drums.setKit('classic', { kick: { decay: 1, tune: -12 } })
+  const kick = Array.from({ length: 16 }, () => STEP)
+  kick[0] = { ...STEP, on: true }
+  kick[4] = { ...STEP, decay: 2, on: true, tune: 7 }
+  kick[8] = { ...STEP, on: true, tune: 0 } // locked to the kit's pitch, not the voice's
+
+  drums.start(() => ({ kick }), 0)
+  clock.currentTime = 1.9
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  expect(tones).toStrictEqual([
+    [75, 0.5], // the voice: an octave down
+    [224.75, 0.95], // 7 semitones up, twice as long
+    [150, 0.5]
+  ])
+
+  // Auditioning a step plays its locks too.
+  drums.trigger('kick', { tune: 12 })
+  expect(tones.at(-1)).toStrictEqual([300, 0.5])
 })

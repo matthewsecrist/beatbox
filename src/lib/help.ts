@@ -126,6 +126,8 @@ export const HELP = {
     'Click a lit square to make that hit extra loud and punchy (it gets a red dot). Accents on the big beats help the rhythm stand out.',
   step_hits:
     'Click a square to turn a drum hit on or off. The lit squares play when the beat reaches them, from left to right.',
+  step_lock:
+    "Gives one hit its own Tune and Decay, just for that square: click a square to pick it (it plays), then move the sliders. Tune the toms on each step to play a melody, give a long 808 kick a different note on each hit for a bassline, or cut a single open hi-hat short. Locked squares get a blue dot; Clear gives the hit back its track's own settings from the Kit tab.",
   step_probability:
     "The chance that a hit plays each time round: click a lit square to go from 100% (always) to 75, 50 and 25%. Lower chances make the beat change a little every time, like a real drummer who doesn't play exactly the same thing twice.",
   step_ratchet:

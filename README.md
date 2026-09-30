@@ -173,6 +173,13 @@ run of taps is one undo step.
   values; **Accent** makes it louder. Outside Hits, clicking an off step turns
   it on. A step keeps its settings when switched off. Quieter steps look dimmer,
   a chance below 100% shows a dashed outline, accents a red dot.
+- **Lock** gives one step its own **Tune** and **Decay** (parameter locks, as on
+  an Elektron): click a step to pick it (it plays, and an off step turns on), then
+  set the sliders, which start from the track's own values in the Kit tab.
+  The hit plays with those in place of the track's, for melodic toms, an 808 kick
+  bassline or one short open hat. **Clear** gives it back the track's settings.
+  Locked steps get a blue dot (and show their tune in Lock), keep their locks when
+  switched off, and save with the song; each slider drag is one undo step.
 - **M** mutes a track and **S** solos it. With any track soloed only the soloed
   ones play (solo wins over mute; several can be soloed); otherwise every unmuted
   track plays. Silenced tracks look dimmer. It applies to the drums' own Play and

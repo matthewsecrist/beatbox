@@ -13,6 +13,7 @@ import type {
   SavedStep,
   Section,
   SongDoc,
+  StepLocks,
   SynthParams,
   TrackId,
   Voices,
@@ -284,6 +285,36 @@ export class SongStore {
     )
   }
 
+  // Sets one step's parameter locks (tune, decay); null clears one, so the hit
+  // follows its voice again. A slider drag is one undo step, clearing its own.
+  setLocks(
+    index: number,
+    track: TrackId,
+    step: number,
+    patch: Partial<Record<keyof StepLocks, null | number>>
+  ): void {
+    const map = this.patternsArray.get(index)
+    const steps = this.drums.patterns[index]?.[track]
+    if (!map || !steps) return
+    this.edit(
+      () =>
+        map.set(
+          track,
+          steps.map((s, i) => {
+            if (i !== step) return s
+            const next = { ...s }
+            for (const key of ['decay', 'tune'] as const) {
+              const value = patch[key]
+              if (value === null) delete next[key]
+              else if (value !== undefined) next[key] = value
+            }
+            return next
+          })
+        ),
+      Object.values(patch).includes(null)
+    )
+  }
+
   setLoop(loop: Loop): void {
     this.edit(() => this.loopsMap.set(String(loop.slot), plain(loop)), true)
   }
@@ -296,12 +327,12 @@ export class SongStore {
   ): void {
     this.writeSound(slot, { [key]: value }, false)
   }
-
   // Replaces every synth setting (a preset, or Reset) as one undo step. `slot` as
   // for setParam.
   setParams(params: SynthParams, slot: null | number = null): void {
     this.writeSound(slot, params, true)
   }
+
   setPattern(index: number, pattern: DrumPattern): void {
     const map = this.patternsArray.get(index)
     if (!map) return
@@ -377,13 +408,20 @@ export class SongStore {
       })),
       drums: {
         ...this.drums,
-        // Steps with default settings save as plain on/off.
+        // Steps with default settings and no locks save as plain on/off.
         patterns: this.drums.patterns.map((p) =>
           Object.fromEntries(
             TRACKS.map(({ id }) => [
               id,
               p[id].map((s): SavedStep =>
-                s.accent || s.probability !== 1 || s.ratchet !== 1 || s.velocity !== 1 ? s : s.on
+                s.accent ||
+                s.probability !== 1 ||
+                s.ratchet !== 1 ||
+                s.velocity !== 1 ||
+                s.decay !== undefined ||
+                s.tune !== undefined
+                  ? s
+                  : s.on
               )
             ])
           )
