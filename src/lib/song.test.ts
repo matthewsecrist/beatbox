@@ -119,6 +119,13 @@ test("changing a pattern's grid moves each hit to the nearest step; the grid sav
   )
   store.setStep(0, 'chat', 1, { velocity: 0.5 })
   store.setStep(0, 'chat', 3, { accent: true })
+  // Kick: a full hit and an accented soft one (0.6 × 1.4 = 0.84) meet on one step.
+  store.setHits(
+    0,
+    'kick',
+    Array.from({ length: 16 }, (_, i) => i === 1 || i === 2)
+  )
+  store.setStep(0, 'kick', 2, { accent: true, velocity: 0.6 })
 
   // 8th triplets (three a beat): the beat stays; 16ths 2 and 3 (a quarter and half
   // a beat in) both move to the first triplet, where the louder one wins; the
@@ -127,6 +134,7 @@ test("changing a pattern's grid moves each hit to the nearest step; the grid sav
   const hats = store.drums.patterns[0]?.chat ?? []
   expect(hats.map((s) => (s.on ? (s.accent ? 'X' : 'x') : '.')).join('')).toBe('xxX.x.......')
   expect(hats[1]?.velocity).toBe(1)
+  expect(store.drums.patterns[0]?.kick[1]).toMatchObject({ accent: false, on: true, velocity: 1 })
 
   const saved = store.toSongDoc().drums
   expect(saved?.grids).toStrictEqual([12, 16, 16, 16])

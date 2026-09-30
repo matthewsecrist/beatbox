@@ -26,7 +26,7 @@ export function gridOf(pattern: Partial<Record<TrackId, DrumStep[]>>): DrumGrid 
 
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.1
-const ACCENT = 1.4 // gain boost on accented steps
+export const ACCENT = 1.4 // gain boost on accented steps
 // At full humanize a hit lands up to this many seconds early or late, and up to
 // this share softer or louder.
 const HUMANIZE_TIME = 0.02

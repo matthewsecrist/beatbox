@@ -24,7 +24,7 @@ import type {
   VoiceTweak
 } from './types.js'
 
-import { gridOf, STEPS } from './drums/engine.js'
+import { ACCENT, gridOf, STEPS } from './drums/engine.js'
 import { KIT_SOUNDS, TRACKS } from './drums/kits.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
@@ -270,7 +270,8 @@ export class SongStore {
     const map = this.patternsArray.get(index)
     const pattern = this.drums.patterns[index]
     if (!map || !pattern || gridOf(pattern) === grid) return
-    const strength = (s: DrumStep) => s.velocity * (s.accent ? 2 : 1)
+    // How loud a hit plays, as the engine plays it.
+    const strength = (s: DrumStep) => s.velocity * (s.accent ? ACCENT : 1)
     this.edit(() => {
       for (const { id } of TRACKS) {
         const row = pattern[id]
