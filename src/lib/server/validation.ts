@@ -88,6 +88,7 @@ const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 // Drum machine state: tempo, feel, kit, level and patterns A-D of 16 steps.
 const drums = z.object({
   bpm: z.int().min(60).max(200),
+  humanize: z.number().min(0).max(1).exactOptional(),
   kit: kit.exactOptional(),
   // Patterns A-D (index 0-3); arrangement sections pick one by index.
   patterns: z

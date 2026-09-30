@@ -34,7 +34,7 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 //   synth        Y.Map      param -> number | wave (missing = default)
 //   performance  Y.Map      arp, arp_rate, chord (missing = default)
 //   effects      Y.Map      delay/reverb settings and send levels (missing = default)
-//   drums        Y.Map      bpm, volume, swing, kit, voices (track -> VoiceTweak: tune,
+//   drums        Y.Map      bpm, volume, swing, humanize, kit, voices (track -> VoiceTweak: tune,
 //                           decay and any library instrument in place of the kit's; plain JSON)
 //   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
@@ -85,6 +85,7 @@ export class SongStore {
   canUndo = $state(false)
   drums: DrumState = $state.raw({
     bpm: 0,
+    humanize: 0,
     kit: 'classic',
     patterns: [],
     swing: 50,
@@ -229,8 +230,8 @@ export class SongStore {
     this.canRedo = false
   }
 
-  // Drum tempo (also the song tempo), swing and level.
-  setDrums(patch: Partial<Pick<Drums, 'bpm' | 'swing' | 'volume'>>): void {
+  // Drum tempo (also the song tempo), swing, humanize and level.
+  setDrums(patch: Partial<Pick<Drums, 'bpm' | 'humanize' | 'swing' | 'volume'>>): void {
     this.edit(() => {
       for (const [key, value] of Object.entries(patch)) this.drumsMap.set(key, value)
     })
@@ -421,6 +422,7 @@ export class SongStore {
       (this.drumsMap.get(key) as T | undefined) ?? fallback
     this.drums = {
       bpm: get('bpm', 0),
+      humanize: get('humanize', 0),
       kit: get<KitId>('kit', 'classic'),
       patterns: this.patternsArray.map((p) => p.toJSON() as DrumPattern),
       swing: get('swing', 50),
@@ -467,6 +469,7 @@ export class SongStore {
     this.drumsMap.set('bpm', drums?.bpm ?? 110)
     this.drumsMap.set('volume', drums?.volume ?? 0.8)
     this.drumsMap.set('swing', drums?.swing ?? 50)
+    this.drumsMap.set('humanize', drums?.humanize ?? 0)
     this.drumsMap.set('kit', drums?.kit ?? 'classic')
     this.drumsMap.set('voices', fillVoices(drums?.voices))
     const source = drums ? drums.patterns : [DEFAULT_PATTERN]

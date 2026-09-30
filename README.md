@@ -140,6 +140,9 @@ own; see **Arrangement**).
   **Apply** writes the rhythm into it in the pattern you're editing, as one undo
   step; each step keeps its velocity, accent and other settings.
 - **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.
+- **Humanize** (off to 100%) nudges every hit a little early or late (up to 20 ms)
+  and a little softer or louder (up to 30%), different each time round, so a
+  programmed beat feels played. It's saved with the song but changes no steps.
 - The step edit buttons pick what a click on a step does: **Hits** turns it on
   or off; **Velocity** (100/75/50/25%), **Chance** (the odds it plays each time
   round, same steps) and **Ratchet** (1–4 hits in the step) cycle through their
@@ -218,7 +221,7 @@ filters by type, genre, instrument and length: ticked labels in one filter widen
 the list, different filters narrow it. **+** puts a loop on a pad (the first empty
 one, or the one picked under **Add to**; it follows the song tempo) or writes a
 beat into the picked drum pattern; either is one undo step. ▶ previews an item in
-time with anything already playing (beats with the song's kit and swing); press
+time with anything already playing (beats with the song's kit, swing and humanize); press
 it again, close the browser or press Stop to stop. To add more, add to
 `LOOP_SPECS` or `BEAT_SPECS` in `src/lib/library_items.ts`: loops are written as a
 16-step-per-bar score (`A3+C4+E4 - - . G3 …`) and beats as one `x..x` string per
@@ -234,7 +237,7 @@ every recorded pad instead. **Stop** stops whatever is playing.
 
 **Undo / Redo** (the arrows in the song bar, or Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z)
 cover every edit to the song: synth settings and presets, chord and arp, drum steps, kit, tuning, effects,
-tempo, swing and level, recording or clearing a pad, piano-roll edits and the arrangement. A
+tempo, swing, humanize and level, recording or clearing a pad, piano-roll edits and the arrangement. A
 slider drag or a burst of typing is one step. The history lasts until you open
 another song; the song name keeps the browser's own text undo.
 

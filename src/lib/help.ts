@@ -57,6 +57,8 @@ export const HELP = {
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:
     'Legato only slides when you press the next key while still holding the last one, so you choose when it slides. Always slides into every note.',
+  humanize:
+    'Makes the drums sound played by a person instead of a machine: every hit lands a tiny bit early or late, and a little softer or harder, different each time round. A little loosens the beat up; a lot sounds like a sloppy drummer. Off keeps every hit exactly on the grid.',
   kit: "Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit gives every track that kit's sound again, and resets the Tune and Decay knobs on each drum. Made your own mix? Name it and press Save kit, and it shows under Saved, ready for any song.",
   lfo_depth:
     'How big the wobble is. Off means nothing moves; turn it up for a bigger wave. What the number means depends on what it moves.',

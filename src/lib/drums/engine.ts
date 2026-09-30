@@ -9,11 +9,16 @@ export const STEPS = 16
 const LOOKAHEAD_MS = 25
 const SCHEDULE_AHEAD = 0.1
 const ACCENT = 1.4 // gain boost on accented steps
+// At full humanize a hit lands up to this many seconds early or late, and up to
+// this share softer or louder.
+const HUMANIZE_TIME = 0.02
+const HUMANIZE_GAIN = 0.3
 // Square-wave pitches mixed for the 808's metallic hats and cymbals.
 const METAL = [205.3, 304.4, 369.6, 522.7, 540, 800]
 
 export interface Drums {
   close(): void
+  setHumanize(amount: number): void
   setKit(kit: KitId, voices: Partial<Record<TrackId, VoiceTweak>>): void
   setSwing(swing: number): void
   setVolume(v: number): void
@@ -72,6 +77,7 @@ export function createDrums({
   let kit: KitId = 'classic'
   let voices: Partial<Record<TrackId, VoiceTweak>> = {}
   let swing = 50
+  let humanize = 0
   let running = false
   let nextStep = 0
   let nextBeat = 0 // step times come from the shared transport grid (4 steps per beat)
@@ -346,6 +352,10 @@ export function createDrums({
     })
   }
 
+  // A random amount between -max and max, scaled by humanize. Only called with
+  // humanize on, so it leaves `random` alone for Chance otherwise.
+  const drift = (max: number) => (random() * 2 - 1) * humanize * max
+
   // Beats after the straight grid that `step` lands: swing delays every second 16th.
   const late = (step: number) => (step % 2 ? ((swing - 50) / 100) * (8 / STEPS) : 0)
 
@@ -371,8 +381,12 @@ export function createDrums({
         const step = pattern[id]?.[nextStep]
         if (!step?.on || step.velocity <= 0 || random() >= step.probability) continue
         const gain = step.velocity * (step.accent ? ACCENT : 1)
+        // A step's ratchet hits drift together so they stay in order, never
+        // earlier than now; each has its own velocity.
+        const dt = humanize ? Math.max(drift(HUMANIZE_TIME), Math.min(0, ctx.currentTime - t)) : 0
         for (let r = 0; r < step.ratchet; r++) {
-          hit(id, transport.timeAt(from + (span * r) / step.ratchet), gain)
+          const at = transport.timeAt(from + (span * r) / step.ratchet) + dt
+          hit(id, at, humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain)
         }
       }
       queue.push({ step: nextStep, time: t })
@@ -440,6 +454,10 @@ export function createDrums({
     voices = tweaks
   }
 
+  function setHumanize(amount: number): void {
+    humanize = amount
+  }
+
   function setSwing(value: number): void {
     swing = value
   }
@@ -456,7 +474,7 @@ export function createDrums({
     out = null
   }
 
-  return { close, setKit, setSwing, setVolume, start, stop, stopAt, trigger }
+  return { close, setHumanize, setKit, setSwing, setVolume, start, stop, stopAt, trigger }
 }
 
 // Whether a track (a drum, or a whole instrument) sounds: with any track soloed

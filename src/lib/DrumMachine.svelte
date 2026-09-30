@@ -133,6 +133,7 @@
   const patterns = $derived(store.drums.patterns)
   const volume = $derived(store.drums.volume)
   const swing = $derived(store.drums.swing)
+  const humanize = $derived(store.drums.humanize)
   let editing = $state(0) // tab shown in the grid
   let mode: Mode = $state('hits')
   const shown = $derived(patterns[editing] ?? empty())
@@ -212,6 +213,7 @@
     // `drums` isn't reactive, so don't rely on the effects below to pick up the loaded song.
     engine.setVolume(volume)
     engine.setSwing(swing)
+    engine.setHumanize(humanize)
     engine.setKit(store.drums.kit, store.drums.voices)
     // Song-bar Play (with no arrangement) / Stop, and its state reports.
     const onTransport = (e: CustomEvent<TransportDetail>) => {
@@ -254,6 +256,7 @@
 
   $effect(() => drums?.setVolume(volume))
   $effect(() => drums?.setSwing(swing))
+  $effect(() => drums?.setHumanize(humanize))
   $effect(() => drums?.setKit(store.drums.kit, store.drums.voices))
 
   // Pick the tab to edit; when playing on its own, also switch to it on the next bar.
@@ -344,7 +347,7 @@
 
   <Tabs id="drum-tabs" label="Drums editor" tabs={TABS} bind:value={tab}>
     {#if tab === 'steps'}
-      <div id="drum-controls" class="max-w-xs">
+      <div id="drum-controls" class="grid max-w-xl gap-x-6 gap-y-2 sm:grid-cols-2">
         <label
           class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
           for="drums-swing"
@@ -364,6 +367,28 @@
             class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
           />
           <span class="w-8 font-mono text-amber-300 tabular-nums">{swing}%</span>
+        </label>
+        <label
+          class="flex items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
+          for="drums-humanize"
+        >
+          <span class="flex items-center gap-1"
+            >Humanize<Info label="Humanize" text={help('humanize') ?? ''} /></span
+          >
+          <input
+            id="drums-humanize"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={humanize}
+            disabled={store.readOnly}
+            oninput={(e) => store.setDrums({ humanize: Number(e.currentTarget.value) })}
+            class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
+          />
+          <span class="w-8 font-mono text-amber-300 tabular-nums"
+            >{humanize ? `${Math.round(humanize * 100)}%` : 'off'}</span
+          >
         </label>
       </div>
       <div class="flex flex-wrap items-center gap-2">
