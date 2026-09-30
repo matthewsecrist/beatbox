@@ -1,6 +1,8 @@
 import * as Y from 'yjs'
 
 import type {
+  Automation,
+  AutomationTarget,
   DrumPattern,
   Drums,
   DrumStep,
@@ -10,6 +12,7 @@ import type {
   LfoTarget,
   Loop,
   Performance,
+  Ramp,
   SavedStep,
   Section,
   SongDoc,
@@ -182,6 +185,18 @@ export class SongStore {
     }, true)
   }
 
+  // Takes a lane out of every section, as one undo step.
+  clearLane(target: AutomationTarget): void {
+    this.edit(() => {
+      this.arrangement.forEach((section, i) => {
+        if (!section.automation?.[target]) return
+        const automation: Automation = { ...section.automation }
+        delete automation[target]
+        this.writeAutomation(i, automation)
+      })
+    }, true)
+  }
+
   deleteLoop(slot: number): void {
     this.edit(() => this.loopsMap.delete(String(slot)), true)
   }
@@ -318,7 +333,6 @@ export class SongStore {
   setLoop(loop: Loop): void {
     this.edit(() => this.loopsMap.set(String(loop.slot), plain(loop)), true)
   }
-
   // One synth setting: of the keyboard's sound, or (`slot`) of that loop pad's own.
   setParam<K extends keyof SynthParams>(
     key: K,
@@ -327,6 +341,7 @@ export class SongStore {
   ): void {
     this.writeSound(slot, { [key]: value }, false)
   }
+
   // Replaces every synth setting (a preset, or Reset) as one undo step. `slot` as
   // for setParam.
   setParams(params: SynthParams, slot: null | number = null): void {
@@ -346,6 +361,17 @@ export class SongStore {
     this.edit(() => {
       for (const [key, value] of Object.entries(patch)) this.performanceMap.set(key, value)
     }, true)
+  }
+
+  // Sets one section's ramp for a lane; null takes the lane out of it (it keeps
+  // the song's own setting there).
+  setRamp(index: number, target: AutomationTarget, ramp: null | Ramp): void {
+    const section = this.arrangement[index]
+    if (!section) return
+    const automation: Automation = { ...section.automation }
+    if (ramp) automation[target] = [ramp[0], ramp[1]]
+    else delete automation[target]
+    this.edit(() => this.writeAutomation(index, automation), true)
   }
 
   // Plays `sound` from the instrument library on `track`. Picking the kit's own
@@ -397,15 +423,19 @@ export class SongStore {
     const performance = this.performanceMap.toJSON() as Partial<Performance>
     const effects = this.effectsMap.toJSON() as Partial<Effects>
     return {
-      arrangement: this.arrangement.map(({ bars, bpm, drums, name, pads, pattern }) => ({
-        bars,
-        // Saved only when the section has its own tempo.
-        ...(bpm ? { bpm } : {}),
-        drums,
-        name,
-        pads,
-        pattern
-      })),
+      arrangement: this.arrangement.map(
+        ({ automation, bars, bpm, drums, name, pads, pattern }) => ({
+          // Saved only when the section automates something.
+          ...(automation && Object.keys(automation).length ? { automation } : {}),
+          bars,
+          // Saved only when the section has its own tempo.
+          ...(bpm ? { bpm } : {}),
+          drums,
+          name,
+          pads,
+          pattern
+        })
+      ),
       drums: {
         ...this.drums,
         // Steps with default settings and no locks save as plain on/off.
@@ -510,6 +540,13 @@ export class SongStore {
     this.arrangementArray.push((song?.arrangement ?? []).map(sectionMap))
   }
 
+  // A section's automation; none left removes the key, so it saves as before.
+  private writeAutomation(index: number, automation: Automation) {
+    const map = this.arrangementArray.get(index)
+    if (Object.keys(automation).length) map.set('automation', automation)
+    else map.delete('automation')
+  }
+
   private writeDrums(drums: Drums | null) {
     this.drumsMap.set('bpm', drums?.bpm ?? 110)
     this.drumsMap.set('volume', drums?.volume ?? 0.8)
@@ -568,5 +605,8 @@ function sectionMap(section: Section): Y.Map<unknown> {
   if (section.bpm) map.set('bpm', section.bpm)
   map.set('pattern', section.pattern)
   map.set('pads', [...section.pads])
+  if (section.automation && Object.keys(section.automation).length) {
+    map.set('automation', plain(section.automation))
+  }
   return map
 }

@@ -23,3 +23,21 @@ export function noiseBuffer(ctx: BaseAudioContext): AudioBuffer {
   }
   return noise
 }
+
+// Arranger automation: moves `param` through `values`, evenly spaced from `t0`
+// to `t1`, in straight lines (two values: one straight ramp).
+export function rampThrough(param: AudioParam, values: number[], t0: number, t1: number): void {
+  values.forEach((v, i) => {
+    if (i === 0) param.setValueAtTime(v, t0)
+    else param.linearRampToValueAtTime(v, t0 + ((t1 - t0) * i) / (values.length - 1))
+  })
+}
+
+// Drops `param`'s scheduled changes from `t` and holds it where it is, then glides
+// to `value` (automation ending early: the song stopped).
+export function settle(param: AudioParam, t: number, value: number): void {
+  const now = param.value
+  param.cancelScheduledValues(t)
+  param.setValueAtTime(now, t)
+  param.setTargetAtTime(value, t, 0.02)
+}

@@ -338,6 +338,33 @@ test("a loop's new sound reaches only that loop's sounding notes", () => {
   expect(moved[0]).toBeLessThan(2 / 3)
 })
 
+test("the arranger's filter lane shifts every note's cutoff, sounding and new, in octaves", () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({}, () => ctx)
+  synth.automateFilter(null, 0, 1) // nothing to undo yet: nothing is made
+  expect(nodes.filter((n) => n.kind === 'const')).toStrictEqual([])
+
+  synth.noteOn(60) // already sounding when the lane starts
+  synth.automateFilter([-2, 1], 1, 5)
+  synth.noteOn(64, undefined, 'pad0:64', {}) // a pad's note started during it
+  const shift = nodes.find((n) => n.kind === 'const')
+  expect(shift?.outputs.map((o) => ('name' in o ? o.name : o.kind))).toStrictEqual([
+    'filter.detune',
+    'filter.detune'
+  ])
+  expect(shift?.offset.setValueAtTime).toHaveBeenCalledWith(-2400, 1) // cents
+  expect(shift?.offset.linearRampToValueAtTime).toHaveBeenCalledWith(1200, 5)
+
+  // A section without the lane: back to no shift on its first beat.
+  synth.automateFilter(null, 5, 9)
+  expect(shift?.offset.setValueAtTime).toHaveBeenLastCalledWith(0, 5)
+  // The song stopped mid-ramp: it glides back from where it is, now.
+  clock.currentTime = 3
+  synth.stopAutomation()
+  expect(shift?.offset.cancelScheduledValues).toHaveBeenCalledWith(3)
+  expect(shift?.offset.setTargetAtTime).toHaveBeenLastCalledWith(0, 3, 0.02)
+})
+
 test('the filter envelope sweeps the cutoff in octaves, and releases from where it is', () => {
   const { clock, ctx, nodes } = fakeAudio()
   const synth = createSynth(

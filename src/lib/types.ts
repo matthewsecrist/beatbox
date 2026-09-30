@@ -6,6 +6,23 @@ export type ArpMode = 'down' | 'off' | 'random' | 'up' | 'updown'
 // Arpeggiator step: a note value locked to the song tempo ('t' = triplet).
 export type ArpRate = '1/4' | '1/8' | '1/8t' | '1/16' | '1/16t' | '1/32'
 
+// A section's automation: per target, its value at the section's first beat and
+// at its end, ramped in a straight line between. Targets left out keep the
+// song's own setting.
+export type Automation = Partial<Record<AutomationTarget, Ramp>>
+
+// What an arranger lane can move: the synth's filter (an offset in octaves on
+// every sound's own cutoff), the effect sends and mixes, and the master filter.
+export type AutomationTarget =
+  | 'delay_mix'
+  | 'drums_delay'
+  | 'drums_reverb'
+  | 'master_filter'
+  | 'reverb_mix'
+  | 'synth_delay'
+  | 'synth_filter'
+  | 'synth_reverb'
+
 // Chord one key plays, built up from that key; 'off' plays the key alone.
 export type ChordShape =
   '5' | '7' | 'aug' | 'dim' | 'maj7' | 'maj' | 'min7' | 'min' | 'off' | 'sus2' | 'sus4'
@@ -157,15 +174,20 @@ export interface PresetSummary {
   name: string
 }
 
+export type Ramp = [start: number, end: number]
+
 // A saved step: plain on/off when it has default settings.
 export type SavedStep = boolean | Partial<DrumStep>
-
 // Announced by the arranger ahead of each section boundary.
 export interface Scene {
+  // The section's ramps (none on the final, empty scene).
+  automation: Automation
   beat: number
   // The section's own tempo; null plays it at the song tempo.
   bpm: null | number
   drums: boolean
+  // The beat the section ends on (the same as `beat` on the final scene).
+  end: number
   index: number
   pads: number[]
   pattern: number
@@ -173,6 +195,7 @@ export interface Scene {
 
 // One section of the arrangement.
 export interface Section {
+  automation?: Automation
   bars: number
   // Its own tempo; absent or null plays it at the song tempo.
   bpm?: null | number

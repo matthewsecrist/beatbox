@@ -12,7 +12,7 @@ export interface Arranger {
   tick(): null | Position
 }
 
-export type ArrangerSection = Partial<Pick<Section, 'bpm' | 'drums' | 'pattern'>> &
+export type ArrangerSection = Partial<Pick<Section, 'automation' | 'bpm' | 'drums' | 'pattern'>> &
   Pick<Section, 'bars' | 'pads'>
 
 const noop = (): void => undefined
@@ -25,8 +25,9 @@ export interface Position {
 
 // Plays an arrangement: a list of sections ({ bars, pads, drums }) back to back on
 // the shared transport. Each section boundary is announced LOOKAHEAD seconds early
-// as a scene ({ index, beat, pads, drums }) so the instruments can start and stop
-// exactly on `beat`. After the last section, a final empty scene stops everything
+// as a scene ({ index, beat, end, pads, drums, automation }) so the instruments can
+// start and stop exactly on `beat`, and ramp anything the section automates up to
+// `end`. After the last section, a final empty scene stops everything
 // on the end beat and `onEnd` fires once that beat has passed. A section with a
 // `bpm` of its own plays at that tempo: the transport's tempo map changes on its
 // boundary beats, set up front so every instrument's timing already knows it.
@@ -86,9 +87,11 @@ export function createArranger({
     while (next < boundaries.length && transport.timeAt(at(boundaries, next)) < now + LOOKAHEAD) {
       const s = sections[next]
       onScene({
+        automation: s?.automation ?? {},
         beat: at(boundaries, next),
         bpm: s?.bpm ?? null,
         drums: s?.drums ?? false,
+        end: at(boundaries, s ? next + 1 : next),
         index: s ? next : -1,
         pads: s?.pads ?? [],
         pattern: s?.pattern ?? 0

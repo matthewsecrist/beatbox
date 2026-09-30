@@ -131,6 +131,38 @@ test('a step keeps its locks through saving; clearing one gives it back, undoabl
   expect(store.drums.patterns[0]?.tom[5]).toStrictEqual(STEP)
 })
 
+test("a section's ramps save with it; removing a lane takes it out of every section at once", () => {
+  const store = new SongStore(song)
+  store.addSection()
+  store.addSection()
+  store.setRamp(0, 'master_filter', [0, 0.8])
+  store.setRamp(1, 'master_filter', [0.8, 0])
+  store.setRamp(1, 'synth_filter', [-2, 0])
+  store.duplicateSection(1) // copies its ramps
+
+  const saved = store.toSongDoc().arrangement
+  expect(saved.map((s) => s.automation)).toStrictEqual([
+    { master_filter: [0, 0.8] },
+    { master_filter: [0.8, 0], synth_filter: [-2, 0] },
+    { master_filter: [0.8, 0], synth_filter: [-2, 0] },
+    undefined // a section without automation saves as before
+  ])
+  const reopened = new SongStore({ ...song, arrangement: saved })
+  expect(reopened.arrangement[1]?.automation).toStrictEqual(saved[1]?.automation)
+
+  store.clearLane('master_filter')
+  expect(store.arrangement.map((s) => s.automation)).toStrictEqual([
+    undefined,
+    { synth_filter: [-2, 0] },
+    { synth_filter: [-2, 0] },
+    undefined
+  ])
+  store.undo()
+  expect(store.arrangement[0]?.automation).toStrictEqual({ master_filter: [0, 0.8] })
+  store.setRamp(1, 'synth_filter', null)
+  expect(store.arrangement[1]?.automation).toStrictEqual({ master_filter: [0.8, 0] })
+})
+
 test("writing a track's hits keeps each step's settings, and undoes as one step", () => {
   const store = new SongStore(song)
   store.setStep(0, 'rim', 3, { accent: true, velocity: 0.5 })

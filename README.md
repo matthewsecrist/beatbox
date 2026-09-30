@@ -275,6 +275,20 @@ end, and then stops; ← and → move a section.
   the song tempo after it, including when its ▶ plays it alone. Stopping goes
   back to the song tempo. Pads keep their length in beats, so they speed up
   or slow down with the section.
+- **Automate** (under the tracks) adds a lane for a setting to move while the song
+  plays: **Synth filter** (shifts every synth sound's cutoff, keys and pads, by
+  up to ±4 octaves), **Master filter** (−100 low-pass to +100 high-pass), the
+  synth's and drums' sends to the delay and reverb, and the delay and reverb
+  **Mix** (in %). **+** in a section gives it a start and an end value (both
+  starting at the song's own setting), and the setting ramps in a straight line
+  from the section's first beat to its end (the master filter evenly in pitch).
+  A section without a value plays the song's own setting from its first beat, so
+  a build-up can close the filter and the drop snaps it open. Automation only
+  runs in the arrangement (the song, or a section's ▶): a pad or the drums
+  played on their own use the song's settings, and stopping the song glides
+  everything back to them. While a setting is being ramped, moving its own
+  slider waits until the ramp lets go. ✕ on a cell or on a lane removes it
+  (the lane from every section, as one undo step); ramps are saved with the song.
 
 **Loop Browser** (**Loops** in the song bar): 143 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from

@@ -14,6 +14,8 @@ export const HELP = {
     'How fast the arpeggiator plays its notes, in note lengths: 1/4 is one note per beat, 1/8 two, 1/16 four, 1/32 eight. T (triplet) fits three notes where there would be two, for a rolling, galloping feel.',
   attack:
     'How quickly a note gets loud. Short is instant, like hitting a drum; long fades in slowly, like a violin swelling up.',
+  automation:
+    "Lets a setting change by itself while the song plays. Add a lane, then press + in a section and type where the setting starts and where it ends up: it slides smoothly from one to the other over that section, like turning a knob during a build-up. Sections without a value keep the song's own setting. It only moves when the song (or one section) plays, not a pad or the drums on their own.",
   chord:
     'Makes one key play a whole chord: several notes that sound good together, built up from the key you press. Major sounds happy and bright, Minor sad or mysterious, and 7ths jazzy. Off plays just the one note.',
   comp_amount:
@@ -149,6 +151,8 @@ export const HELP = {
   swing:
     'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
+  synth_filter:
+    'Opens or closes the filter on every synth sound at once, the keys and all the loop pads, by up to 4 octaves each way. 0 leaves each sound as it is; below 0 makes them darker and more muffled, above 0 brighter. Ramp it up over a section for a build-up that opens the sound, or down for a breakdown.',
   synth_reverb: 'How much of the synth (and the loop pads) goes into the room sound (the reverb).',
   tap_tempo:
     'Tap this button along with the beat, four or more times, and the song tempo follows your taps. Stop for two seconds and the next tap starts counting again. Handy when you know how fast a song should feel but not its number.',

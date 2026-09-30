@@ -1,6 +1,6 @@
-import type { DriveType, LfoNote, LfoTarget, SynthParams, Wave } from '../types.js'
+import type { DriveType, LfoNote, LfoTarget, Ramp, SynthParams, Wave } from '../types.js'
 
-import { getContext, noiseBuffer } from '../audio.js'
+import { getContext, noiseBuffer, rampThrough, settle } from '../audio.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
@@ -257,6 +257,9 @@ const source = (key: VoiceKey): string =>
 
 export interface Synth {
   allNotesOff(): void
+  // Arranger automation: shifts every note's cutoff (octaves) along `ramp` from
+  // audio time t0 to t1; null puts it back to none at t0.
+  automateFilter(ramp: null | Ramp, t0: number, t1: number): void
   // Silences scheduled-but-unstarted voices whose key matches.
   cancelPending(match: (key: VoiceKey) => boolean): void
   close(): void
@@ -275,6 +278,8 @@ export interface Synth {
   setParams(p: Partial<SynthParams>): void
   // The tempo playing, for synced LFOs (sounding notes follow it).
   setTempo(bpm: number): void
+  // The song stopped: any cutoff shift glides back to none now.
+  stopAutomation(): void
 }
 
 export type VoiceKey = number | string
@@ -348,6 +353,8 @@ export function createSynth(
   const alive = new Set<Voice>() // every voice until its oscillators end, released or not
   // The last note each source played (see `source`), for glide.
   const lastNotes = new Map<string, LastNote>()
+  // The arranger's cutoff shift (cents) on every note's filter; made on first use.
+  let shift: ConstantSourceNode | null = null
 
   function ensureContext(): { ctx: BaseAudioContext; master: GainNode } {
     ctx = getCtx()
@@ -545,6 +552,7 @@ export function createSynth(
       release: p.filter_release,
       sustain: p.filter_sustain
     }
+    shift?.connect(filter.detune)
     if (fenv.amount) {
       filter.detune.setValueAtTime(0, t)
       filter.detune.linearRampToValueAtTime(fenv.amount, t + fenv.attack)
@@ -613,6 +621,7 @@ export function createSynth(
         trem,
         ...lfos.map((l) => l.depth)
       ].forEach((n) => n.disconnect())
+      shift?.disconnect(filter.detune)
     }
     for (const s of srcs) s.start(t)
     if (hiss) {
@@ -711,13 +720,43 @@ export function createSynth(
   function close(): void {
     master?.disconnect()
     master = null
+    shift?.stop()
+    shift = null
     ctx = null
     voices.clear()
     alive.clear()
   }
 
+  // Arranger automation: shifts every sounding and new note's cutoff, in octaves,
+  // along `ramp` from audio time t0 to t1; null puts it back to none at t0.
+  function automateFilter(ramp: null | Ramp, t0: number, t1: number): void {
+    if (!ramp && !shift) return
+    const { offset } = filterShift()
+    if (ramp) rampThrough(offset, [ramp[0] * 1200, ramp[1] * 1200], t0, t1)
+    else offset.setValueAtTime(0, t0)
+  }
+
+  // The song stopped: the shift glides back to none now.
+  function stopAutomation(): void {
+    if (shift && ctx) settle(shift.offset, ctx.currentTime, 0)
+  }
+
+  // Made the first time a song automates the filter, and joined to every note alive.
+  function filterShift(): ConstantSourceNode {
+    if (!shift) {
+      const { ctx } = ensureContext()
+      const created = ctx.createConstantSource()
+      created.offset.value = 0
+      created.start()
+      for (const v of alive) created.connect(v.filter.detune)
+      shift = created
+    }
+    return shift
+  }
+
   return {
     allNotesOff,
+    automateFilter,
     cancelPending,
     close,
     noteOff,
@@ -725,7 +764,8 @@ export function createSynth(
     now,
     setOwnParams,
     setParams,
-    setTempo
+    setTempo,
+    stopAutomation
   }
 }
 

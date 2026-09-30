@@ -1,6 +1,7 @@
-import type { DelayTime, Effects } from './types.js'
+import type { Automation, DelayTime, Effects, Ramp } from './types.js'
 
-import { getContext } from './audio.js'
+import { getContext, rampThrough, settle } from './audio.js'
+import { EFFECT_TARGETS, type EffectTarget } from './automation.js'
 
 // Shared send effects on the page's AudioContext: every instrument plays into a
 // channel that goes to the master stage dry and, through a send level per effect,
@@ -79,6 +80,9 @@ let clipCurve: Float32Array<ArrayBuffer> | null = null
 // evenly in pitch; 0 is off. A little resonance at the cutoff, as on a DJ mixer.
 const FILTER_Q = 4 // dB
 export interface EffectsBus {
+  // A section's ramps, from audio time `t0` to `t1` (arranger automation); any
+  // setting the last section ramped and this one doesn't goes back to the song's at `t0`.
+  automate(ramps: Automation, t0: number, t1: number): void
   // The node an instrument plays into (created on first use).
   channel(instrument: Instrument): AudioNode
   // A kick at audio time `at`, `level` its gain (1 = full): ducks the synth by
@@ -88,6 +92,8 @@ export interface EffectsBus {
   mute(instrument: Instrument, muted: boolean): void
   // Applies the song's settings; `bpm` sets the delay time and the duck's release.
   set(settings: Effects, bpm: number): void
+  // The song stopped: everything automated glides back to the song's settings now.
+  stopAutomation(): void
 }
 
 interface Bus {
@@ -123,6 +129,8 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
   let bpm = 110
   let bus: Bus | null = null
   const muted = new Set<Instrument>()
+  // Settings the arrangement is ramping; edits to them wait until it lets go.
+  const automated = new Set<EffectTarget>()
 
   function build(): Bus {
     const ctx = getCtx()
@@ -229,19 +237,13 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     to(b.crossLR.gain, pingPong ? fb : 0)
     to(b.crossRL.gain, pingPong ? fb : 0)
     to(b.bothSides.gain, pingPong ? 0 : 1)
-    to(b.delayOut.gain, settings.delay_mix)
-    to(b.reverbOut.gain, settings.reverb_mix)
     // Off is a ratio of 1 at 0 dB: nothing is squeezed and the makeup gain is 1.
     to(b.comp.threshold, settings.comp_on ? COMP_RANGE * settings.comp_amount : 0)
     to(b.comp.ratio, settings.comp_on ? COMP_RATIO : 1)
-    // The filter not in use rests where it passes everything (low-pass at the
-    // Nyquist frequency, high-pass at 0 Hz), so the centre is truly off.
-    const x = settings.master_filter
-    to(b.lowpass.frequency, x < 0 ? masterFilterHz(x) : b.ctx.sampleRate / 2)
-    to(b.highpass.frequency, x > 0 ? masterFilterHz(x) : 0)
-    for (const [instrument, sends] of Object.entries(b.channels)) {
-      to(sends.delay.gain, settings[`${instrument as Instrument}_delay`])
-      to(sends.reverb.gain, settings[`${instrument as Instrument}_reverb`])
+    // Mixes, sends and the master filter, unless the arrangement is moving them.
+    for (const target of EFFECT_TARGETS) {
+      if (automated.has(target)) continue
+      for (const [param, value] of drives(b, target)) to(param, value(settings[target]))
     }
     // A new impulse is only worth making when the size changes.
     if (b.size !== settings.reverb_size) {
@@ -251,6 +253,19 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
   }
 
   return {
+    automate(ramps: Automation, t0: number, t1: number): void {
+      if (!bus) return
+      for (const target of EFFECT_TARGETS) {
+        const ramp = ramps[target]
+        if (ramp) automated.add(target)
+        // A section that leaves it alone gets the song's setting back from its first beat.
+        else if (!automated.delete(target)) continue
+        for (const [param, value] of drives(bus, target)) {
+          if (!ramp) param.setValueAtTime(value(settings[target]), t0)
+          else rampThrough(param, rampPoints(ramp, target).map(value), t0, t1)
+        }
+      }
+    },
     channel(instrument: Instrument): AudioNode {
       const b = (bus ??= build())
       const existing = b.inputs[instrument]
@@ -289,6 +304,15 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       settings = next
       bpm = nextBpm
       if (bus) apply(bus)
+    },
+    stopAutomation(): void {
+      if (!bus) return
+      for (const target of automated) {
+        for (const [param, value] of drives(bus, target)) {
+          settle(param, bus.ctx.currentTime, value(settings[target]))
+        }
+      }
+      automated.clear()
     }
   }
 }
@@ -319,6 +343,31 @@ function clipper(): Float32Array<ArrayBuffer> {
     }
   }
   return clipCurve
+}
+
+// The params an automatable setting drives, each with its value for a setting of `x`.
+function drives(b: Bus, target: EffectTarget): [AudioParam, (x: number) => number][] {
+  const same = (x: number) => x
+  if (target === 'master_filter') {
+    // The filter not in use rests where it passes everything (low-pass at the
+    // Nyquist frequency, high-pass at 0 Hz), so the centre is truly off.
+    return [
+      [b.lowpass.frequency, (x) => (x < 0 ? masterFilterHz(x) : b.ctx.sampleRate / 2)],
+      [b.highpass.frequency, (x) => (x > 0 ? masterFilterHz(x) : 0)]
+    ]
+  }
+  if (target === 'delay_mix') return [[b.delayOut.gain, same]]
+  if (target === 'reverb_mix') return [[b.reverbOut.gain, same]]
+  const [instrument, effect] = target.split('_') as [Instrument, 'delay' | 'reverb']
+  const sends = b.channels[instrument]
+  return sends ? [[sends[effect].gain, same]] : []
+}
+
+// The points an automated setting passes through: the master filter's cutoff moves
+// evenly in pitch, which a straight line in Hz can't follow, so it's split up.
+function rampPoints([from, to]: Ramp, target: EffectTarget): number[] {
+  const n = target === 'master_filter' ? 33 : 2
+  return Array.from({ length: n }, (_, i) => from + ((to - from) * i) / (n - 1))
 }
 
 export const effects = createEffects()

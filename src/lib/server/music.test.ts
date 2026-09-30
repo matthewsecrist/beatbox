@@ -111,7 +111,16 @@ test('presets and songs are listed by name', async () => {
 
 test('songs keep their parts, drop unknown params, and reject invalid ones', async () => {
   const song = await music.createSong(me, {
-    arrangement: [{ bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }],
+    arrangement: [
+      {
+        automation: { evil: [0, 1], master_filter: [0, -0.5], synth_filter: [-2, 0] },
+        bars: 8,
+        drums: true,
+        name: 'Drop',
+        pads: [2],
+        pattern: 1
+      }
+    ],
     drums: { ...drums(140), patterns: [{ tom: [false, { decay: 0.5, on: true, tune: -5 }] }] },
     effects: { delay_time: '1/8d', drums_reverb: 0.2, evil: 'x' },
     loops: [{ ...loop, params: { evil: 'x', osc1_wave: 'sine' } }],
@@ -128,7 +137,14 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
   expect(saved.performance).toStrictEqual({ arp: 'updown', arp_rate: '1/8t', chord: 'min7' })
   expect(saved.effects).toStrictEqual({ delay_time: '1/8d', drums_reverb: 0.2 })
   expect(saved.arrangement).toStrictEqual([
-    { bars: 8, drums: true, name: 'Drop', pads: [2], pattern: 1 }
+    {
+      automation: { master_filter: [0, -0.5], synth_filter: [-2, 0] },
+      bars: 8,
+      drums: true,
+      name: 'Drop',
+      pads: [2],
+      pattern: 1
+    }
   ])
 
   const invalid = [
@@ -136,6 +152,9 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { loops: [{ ...loop, slot: 8 }] },
     { arrangement: [{ bars: 4, pads: [8] }] },
     { arrangement: [{ bars: 4, drums: true, pattern: 4 }] },
+    { arrangement: [{ automation: { synth_filter: [0, 5] }, bars: 4, pads: [] }] },
+    { arrangement: [{ automation: { delay_mix: [-0.1, 0.5] }, bars: 4, pads: [] }] },
+    { arrangement: [{ automation: { master_filter: [0] }, bars: 4, pads: [] }] },
     { drums: { ...drums(120), patterns: Array<object>(5).fill({}) } },
     { drums: { ...drums(120), patterns: [{ kick: [{ on: true, ratchet: 5 }] }] } },
     { drums: { ...drums(120), patterns: [{ tom: [{ on: true, tune: 13 }] }] } },

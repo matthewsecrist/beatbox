@@ -1,5 +1,8 @@
 import { z, type ZodError } from 'zod'
 
+import type { AutomationTarget } from '../types.js'
+
+import { lane } from '../automation.js'
 import { INSTRUMENT_IDS } from '../drums/kits.js'
 import { LFO_NOTES } from '../synth/engine.js'
 
@@ -184,9 +187,28 @@ const effects = z.object({
   synth_reverb: level
 })
 
+// A section's ramp for one lane: its start and end values, in the lane's range.
+function ramp(id: AutomationTarget) {
+  const { max, min } = lane(id)
+  const value = z.number().min(min).max(max)
+  return z.tuple([value, value]).exactOptional()
+}
+
 // One section of the arrangement: which pads and drums play, for how many bars,
-// and at what tempo (none: the song's).
+// at what tempo (none: the song's), and anything it automates.
 const section = z.object({
+  automation: z
+    .object({
+      delay_mix: ramp('delay_mix'),
+      drums_delay: ramp('drums_delay'),
+      drums_reverb: ramp('drums_reverb'),
+      master_filter: ramp('master_filter'),
+      reverb_mix: ramp('reverb_mix'),
+      synth_delay: ramp('synth_delay'),
+      synth_filter: ramp('synth_filter'),
+      synth_reverb: ramp('synth_reverb')
+    })
+    .exactOptional(),
   bars: z.int().min(1).max(64),
   bpm: z.int().min(60).max(200).nullable().exactOptional(),
   drums: z.boolean().default(false),
