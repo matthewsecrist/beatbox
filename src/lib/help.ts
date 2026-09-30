@@ -62,7 +62,11 @@ export const HELP = {
   kit: "Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit gives every track that kit's sound again, and resets the Tune and Decay knobs on each drum. Made your own mix? Name it and press Save kit, and it shows under Saved, ready for any song.",
   lfo_depth:
     'How big the wobble is. Off means nothing moves; turn it up for a bigger wave. What the number means depends on what it moves.',
+  lfo_note:
+    'How long one wobble lasts, as a note length at the song tempo: 1/4 is one wobble a beat, 1/8 two, 1/16 four. Dotted notes are half as long again and triplets two thirds as long, for a bouncier, off-grid feel. Change the tempo and the wobble keeps time.',
   lfo_rate: 'How fast the wobble goes. Low is a slow wave, like breathing; high is a fast flutter.',
+  lfo_sync:
+    "Hz sets the wobble's speed by itself. Sync locks it to the song's beat instead, so it speeds up and slows down with the tempo (and a section's own tempo): the way a dubstep wobble or a gated pad keeps in time.",
   lfo_target:
     'What the LFO moves. Filter makes a "wub wub" wobble. Pitch makes the note wave up and down, like a singer\'s vibrato. Amp makes the volume pulse, like a tremolo.',
   noise_level:

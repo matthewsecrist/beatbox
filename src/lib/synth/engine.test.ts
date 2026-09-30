@@ -110,6 +110,39 @@ test('each LFO runs at its own rate', () => {
   expect([lfo1?.frequency.value, lfo2?.frequency.value]).toStrictEqual([0.5, 6])
 })
 
+test('a synced LFO lasts its note value at the tempo, and follows tempo changes', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth(
+    { lfo1_note: '1/8', lfo1_sync: true, lfo2_note: '1/1d', lfo2_rate: 6 },
+    () => ctx
+  )
+  synth.setTempo(120) // 2 beats a second
+  synth.noteOn(60)
+  // A loop pad's own sound, synced to triplet sixteenths.
+  synth.noteOn(64, 0, 'pad0:64', { lfo1_note: '1/16t', lfo1_sync: true })
+
+  const oscs = nodes.filter((n) => n.kind === 'osc')
+  const [, , lfo1, lfo2] = oscs
+  const padLfo1 = oscs[6]
+  expect(lfo1?.frequency.value).toBe(4) // 1/8 notes: 4 a second
+  expect(lfo2?.frequency.value).toBe(6) // free: its own Hz, whatever its note
+  expect(padLfo1?.frequency.value).toBeCloseTo(12) // 1/16 triplets: 12 a second
+
+  // A section at 90 BPM: synced LFOs slow down, free ones don't move.
+  synth.setTempo(90)
+  expect(lfo1?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(3, 0, 0.01)
+  expect(padLfo1?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(9, 0, 0.01)
+  expect(lfo2?.frequency.setTargetAtTime).not.toHaveBeenCalled()
+
+  // Syncing LFO 2 to a dotted whole note (6 beats) at 90 BPM: a quarter cycle a second.
+  synth.setParams({ lfo2_sync: true })
+  expect(lfo2?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(0.25, 0, 0.01)
+  synth.setParams({ lfo1_sync: false })
+  expect(lfo1?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(4, 0, 0.01) // back to its 4 Hz
+  synth.setTempo(60)
+  expect(lfo1?.frequency.setTargetAtTime).toHaveBeenLastCalledWith(4, 0, 0.01)
+})
+
 test('amp tremolo swings a gain after the envelope', () => {
   const { ctx, nodes } = fakeAudio()
   createSynth({ lfo1_depth: 0.5, lfo1_target: 'amp' }, () => ctx).noteOn(60)

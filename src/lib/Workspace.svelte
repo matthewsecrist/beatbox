@@ -493,6 +493,7 @@
 <Arranger {store} bind:track />
 <div class="flex flex-col gap-4">
   <Synth
+    bpm={sectionBpm ?? store.drums.bpm}
     {store}
     {presets}
     {savePreset}

@@ -120,6 +120,8 @@
       undefined,
       () => effects.channel('synth')
     )
+    // The loop plays at the song tempo, so its synced LFOs do too.
+    previewSynth.setTempo(transport.bpm)
     const player = createPlayer(
       previewSynth,
       'preview:',

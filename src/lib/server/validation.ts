@@ -1,9 +1,11 @@
 import { z, type ZodError } from 'zod'
 
 import { INSTRUMENT_IDS } from '../drums/kits.js'
+import { LFO_NOTES } from '../synth/engine.js'
 
 const wave = z.enum(['sawtooth', 'sine', 'square', 'triangle'])
 const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
+const lfoNote = z.enum(LFO_NOTES)
 
 // Synth params the app knows about; anything else sent by a client is dropped.
 const params = z.object({
@@ -23,10 +25,14 @@ const params = z.object({
   glide: z.number().min(0).max(1).exactOptional(),
   glide_mode: z.enum(['always', 'legato']).exactOptional(),
   lfo1_depth: z.number().exactOptional(),
+  lfo1_note: lfoNote.exactOptional(),
   lfo1_rate: z.number().exactOptional(),
+  lfo1_sync: z.boolean().exactOptional(),
   lfo1_target: lfoTarget.exactOptional(),
   lfo2_depth: z.number().exactOptional(),
+  lfo2_note: lfoNote.exactOptional(),
   lfo2_rate: z.number().exactOptional(),
+  lfo2_sync: z.boolean().exactOptional(),
   lfo2_target: lfoTarget.exactOptional(),
   noise_level: z.number().min(0).max(1).exactOptional(),
   osc1_detune: z.number().exactOptional(),
