@@ -109,6 +109,28 @@ test('step settings survive switching off and saving; plain steps save as on/off
   })
 })
 
+test('a step keeps its locks through saving; clearing one gives it back, undoably', () => {
+  const store = new SongStore(song)
+  store.setLocks(0, 'tom', 5, { tune: 7 })
+  store.setLocks(0, 'tom', 5, { decay: 0.5 }) // part of the same drag: one undo step
+
+  const saved = store.toSongDoc().drums?.patterns[0]?.tom?.[5]
+  expect(saved).toStrictEqual({ ...STEP, decay: 0.5, tune: 7 }) // a lock on an off step saves
+  const reopened = new SongStore({ ...song, drums: store.toSongDoc().drums })
+  expect(reopened.drums.patterns[0]?.tom[5]).toStrictEqual({ ...STEP, decay: 0.5, tune: 7 })
+
+  store.setLocks(0, 'tom', 5, { tune: null })
+  expect(store.drums.patterns[0]?.tom[5]).toStrictEqual({ ...STEP, decay: 0.5 })
+  store.setLocks(0, 'tom', 5, { decay: null })
+  expect(store.toSongDoc().drums?.patterns[0]?.tom?.[5]).toBe(false) // plain again
+
+  store.undo()
+  expect(store.drums.patterns[0]?.tom[5]).toStrictEqual({ ...STEP, decay: 0.5 })
+  store.undo()
+  store.undo()
+  expect(store.drums.patterns[0]?.tom[5]).toStrictEqual(STEP)
+})
+
 test("writing a track's hits keeps each step's settings, and undoes as one step", () => {
   const store = new SongStore(song)
   store.setStep(0, 'rim', 3, { accent: true, velocity: 0.5 })

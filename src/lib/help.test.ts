@@ -35,7 +35,14 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'drums_tracks',
       'drums_euclid'
     ],
-    ...['step_hits', 'step_velocity', 'step_accent', 'step_probability', 'step_ratchet'],
+    ...[
+      'step_hits',
+      'step_velocity',
+      'step_accent',
+      'step_probability',
+      'step_ratchet',
+      'step_lock'
+    ],
     'tap_tempo',
     // Arrangement
     'section_bpm'

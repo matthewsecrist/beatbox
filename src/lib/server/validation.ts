@@ -54,16 +54,19 @@ const params = z.object({
 
 const name = (max: number) => z.string().trim().min(1, "can't be blank").max(max)
 
-// A step is plain on/off, or carries its own velocity, accent, probability and ratchet.
+// A step is plain on/off, or carries its own velocity, accent, probability and
+// ratchet, and any locked tune and decay (the same ranges as a voice's).
 const steps = z
   .array(
     z.union([
       z.boolean(),
       z.object({
         accent: z.boolean().exactOptional(),
+        decay: z.number().min(0.25).max(2).exactOptional(),
         on: z.boolean().exactOptional(),
         probability: z.number().min(0).max(1).exactOptional(),
         ratchet: z.int().min(1).max(4).exactOptional(),
+        tune: z.number().min(-12).max(12).exactOptional(),
         velocity: z.number().min(0).max(1).exactOptional()
       })
     ])
