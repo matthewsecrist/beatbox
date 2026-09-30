@@ -262,22 +262,30 @@ export class SongStore {
     })
   }
 
-  // Moves a pattern onto another grid, as one undo step: a step on a line both
-  // grids share keeps its hit and settings; the others go.
+  // Moves a pattern onto another grid, as one undo step. Steps on a line both
+  // grids share stay put; every other hit moves to the nearest step (halfway
+  // between two: the earlier), with its settings. Two hits landing on one step
+  // keep the stronger.
   setGrid(index: number, grid: DrumGrid): void {
     const map = this.patternsArray.get(index)
     const pattern = this.drums.patterns[index]
     if (!map || !pattern || gridOf(pattern) === grid) return
+    const strength = (s: DrumStep) => s.velocity * (s.accent ? 2 : 1)
     this.edit(() => {
       for (const { id } of TRACKS) {
         const row = pattern[id]
-        map.set(
-          id,
-          Array.from({ length: grid }, (_, s) => {
-            const from = (s * row.length) / grid
-            return (Number.isInteger(from) ? row[from] : undefined) ?? { ...STEP }
-          })
-        )
+        const next = Array.from({ length: grid }, (_, s) => {
+          const from = (s * row.length) / grid
+          return (Number.isInteger(from) ? row[from] : undefined) ?? { ...STEP }
+        })
+        row.forEach((step, i) => {
+          const at = (i * grid) / row.length
+          if (!step.on || Number.isInteger(at)) return
+          const s = Math.ceil(at - 0.5)
+          const there = next[s]
+          if (!there?.on || strength(step) > strength(there)) next[s] = step
+        })
+        map.set(id, next)
       }
     }, true)
   }

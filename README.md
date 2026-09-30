@@ -161,9 +161,9 @@ run of taps is one undo step.
 - **Grid** sets how many steps a bar has in the pattern you're editing: **1/16**
   (16, as before), **1/16 triplets** (24, six a beat, for trap rolls) or **1/8
   triplets** (12, three a beat, for shuffles and 12/8). Each pattern keeps its
-  own, so a song can switch grids from one section to the next. Changing it keeps
-  the hits (with their settings) on lines both grids share, such as the beats,
-  and drops the rest, as one undo step. If the drums are playing, the next hit
+  own, so a song can switch grids from one section to the next. Changing it moves
+  every hit (with its settings) to the nearest step on the new grid, the earlier
+  one when it's halfway; two hits of a track on one step keep the louder. It's one undo step. If the drums are playing, the next hit
   lands on the new grid's next line. Euclid works over the grid's steps, and
   Loop Browser beats, Reset and songs saved before grids are 1/16.
 - **Euclid** spreads a number of hits as evenly as possible over a cycle of steps

@@ -109,15 +109,24 @@ test('step settings survive switching off and saving; plain steps save as on/off
   })
 })
 
-test("changing a pattern's grid keeps hits on lines both share; the grid saves and undoes", () => {
+test("changing a pattern's grid moves each hit to the nearest step; the grid saves and undoes", () => {
   const store = new SongStore(song)
-  // Hats on every 16th, with an accent on the second beat's first one.
-  store.setHits(0, 'chat', Array<boolean>(16).fill(true))
-  store.setStep(0, 'chat', 4, { accent: true })
+  // Hats on 16ths 1, 2, 3, 4 and 7: a soft second, an accented fourth.
+  store.setHits(
+    0,
+    'chat',
+    Array.from({ length: 16 }, (_, i) => [0, 1, 2, 3, 6].includes(i))
+  )
+  store.setStep(0, 'chat', 1, { velocity: 0.5 })
+  store.setStep(0, 'chat', 3, { accent: true })
 
-  store.setGrid(0, 12) // 8th triplets: only the beats (every 4th 16th) are on both grids
+  // 8th triplets (three a beat): the beat stays; 16ths 2 and 3 (a quarter and half
+  // a beat in) both move to the first triplet, where the louder one wins; the
+  // accented one moves on, and 16th 7 (halfway between two) to the earlier.
+  store.setGrid(0, 12)
   const hats = store.drums.patterns[0]?.chat ?? []
-  expect(hats.map((s) => (s.on ? (s.accent ? 'X' : 'x') : '.')).join('')).toBe('x..X..x..x..')
+  expect(hats.map((s) => (s.on ? (s.accent ? 'X' : 'x') : '.')).join('')).toBe('xxX.x.......')
+  expect(hats[1]?.velocity).toBe(1)
 
   const saved = store.toSongDoc().drums
   expect(saved?.grids).toStrictEqual([12, 16, 16, 16])
@@ -127,7 +136,7 @@ test("changing a pattern's grid keeps hits on lines both share; the grid saves a
 
   store.undo()
   expect(store.drums.patterns[0]?.chat).toHaveLength(16)
-  expect(store.drums.patterns[0]?.chat.every((s) => s.on)).toBe(true)
+  expect(store.drums.patterns[0]?.chat.filter((s) => s.on)).toHaveLength(5)
   expect(store.toSongDoc().drums?.grids).toBe(undefined) // all 16ths: saved as before
 })
 
