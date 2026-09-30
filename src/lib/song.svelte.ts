@@ -3,6 +3,7 @@ import * as Y from 'yjs'
 import type {
   Automation,
   AutomationTarget,
+  DrumGrid,
   DrumPattern,
   Drums,
   DrumStep,
@@ -23,7 +24,7 @@ import type {
   VoiceTweak
 } from './types.js'
 
-import { STEPS } from './drums/engine.js'
+import { gridOf, STEPS } from './drums/engine.js'
 import { KIT_SOUNDS, TRACKS } from './drums/kits.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
@@ -77,8 +78,9 @@ const CAPTURE_MS = 400
 // Origin of transactions that load a whole song: not undoable, not a change.
 const LOAD = Symbol('load')
 
-// The drum machine as the instruments see it: every setting filled in.
-export type DrumState = Required<Omit<Drums, 'patterns' | 'voices'>> & {
+// The drum machine as the instruments see it: every setting filled in (each
+// pattern's grid is how many steps its rows have).
+export type DrumState = Required<Omit<Drums, 'grids' | 'patterns' | 'voices'>> & {
   patterns: DrumPattern[]
   voices: Record<TrackId, VoiceTweak>
 }
@@ -260,6 +262,26 @@ export class SongStore {
     })
   }
 
+  // Moves a pattern onto another grid, as one undo step: a step on a line both
+  // grids share keeps its hit and settings; the others go.
+  setGrid(index: number, grid: DrumGrid): void {
+    const map = this.patternsArray.get(index)
+    const pattern = this.drums.patterns[index]
+    if (!map || !pattern || gridOf(pattern) === grid) return
+    this.edit(() => {
+      for (const { id } of TRACKS) {
+        const row = pattern[id]
+        map.set(
+          id,
+          Array.from({ length: grid }, (_, s) => {
+            const from = (s * row.length) / grid
+            return (Number.isInteger(from) ? row[from] : undefined) ?? { ...STEP }
+          })
+        )
+      }
+    }, true)
+  }
+
   // Switches a track's steps on or off (`on[i]` for step i) as one undo step. Each
   // step keeps its other settings, as when clicked on or off.
   setHits(index: number, track: TrackId, on: boolean[]): void {
@@ -329,10 +351,10 @@ export class SongStore {
       Object.values(patch).includes(null)
     )
   }
-
   setLoop(loop: Loop): void {
     this.edit(() => this.loopsMap.set(String(loop.slot), plain(loop)), true)
   }
+
   // One synth setting: of the keyboard's sound, or (`slot`) of that loop pad's own.
   setParam<K extends keyof SynthParams>(
     key: K,
@@ -438,6 +460,10 @@ export class SongStore {
       ),
       drums: {
         ...this.drums,
+        // Saved only when a pattern isn't on 16ths.
+        ...(this.drums.patterns.some((p) => gridOf(p) !== STEPS)
+          ? { grids: this.drums.patterns.map(gridOf) }
+          : {}),
         // Steps with default settings and no locks save as plain on/off.
         patterns: this.drums.patterns.map((p) =>
           Object.fromEntries(
@@ -558,13 +584,14 @@ export class SongStore {
     this.patternsArray.push(
       Array.from({ length: DRUM_PATTERNS }, (_, i) => {
         const saved = source[i] ?? {}
+        const grid = drums?.grids?.[i] ?? STEPS
         const map = new Y.Map<DrumStep[]>()
         // A saved pattern may omit tracks or steps (off), and stores plain on/off
-        // for steps with default settings.
+        // for steps with default settings. Its grid is how many steps each row has.
         for (const { id } of TRACKS) {
           map.set(
             id,
-            Array.from({ length: STEPS }, (_, s) => {
+            Array.from({ length: grid }, (_, s) => {
               const step = saved[id]?.[s]
               return typeof step === 'object' ? { ...STEP, ...step } : { ...STEP, on: !!step }
             })

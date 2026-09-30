@@ -5,6 +5,7 @@
 
   import type { SongStore } from './song.svelte.js'
   import type {
+    DrumGrid,
     DrumPattern,
     DrumStep,
     KitId,
@@ -18,7 +19,14 @@
     Voices
   } from './types.js'
 
-  import { createDrums, type Drums, isAudible, type PatternFn, STEPS } from './drums/engine.js'
+  import {
+    createDrums,
+    type Drums,
+    gridOf,
+    isAudible,
+    type PatternFn,
+    STEPS
+  } from './drums/engine.js'
   import { euclid } from './drums/euclid.js'
   import { INSTRUMENT_IDS, INSTRUMENTS, KIT_SOUNDS, KITS, TRACKS } from './drums/kits.js'
   import { effects } from './effects.js'
@@ -28,15 +36,23 @@
   import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
   import Tabs from './Tabs.svelte'
 
-  const build = (step: (id: keyof DrumPattern, i: number) => boolean): DrumPattern => {
+  const build = (
+    step: (id: keyof DrumPattern, i: number) => boolean,
+    grid: DrumGrid = STEPS
+  ): DrumPattern => {
     const pattern = { ...DEFAULT_PATTERN }
     for (const { id } of TRACKS) {
-      pattern[id] = Array.from({ length: STEPS }, (_, i) => ({ ...STEP, on: step(id, i) }))
+      pattern[id] = Array.from({ length: grid }, (_, i) => ({ ...STEP, on: step(id, i) }))
     }
     return pattern
   }
-  const empty = (): DrumPattern => build(() => false)
+  const empty = (grid: DrumGrid = STEPS): DrumPattern => build(() => false, grid)
   const LETTERS = ['A', 'B', 'C', 'D']
+  const GRID_LABELS: [DrumGrid, string][] = [
+    [16, '1/16'],
+    [24, '1/16 triplets'],
+    [12, '1/8 triplets']
+  ]
   // Per-track hit probability; kick always lands on the downbeat so it still grooves.
   // The percussion tracks stay empty.
   const DENSITY: Partial<Record<keyof DrumPattern, number>> = {
@@ -47,8 +63,8 @@
     snare: 0.2,
     tom: 0.1
   }
-  const randomPattern = (): DrumPattern =>
-    build((id, i) => (id === 'kick' && i === 0) || Math.random() < (DENSITY[id] ?? 0))
+  const randomPattern = (grid: DrumGrid): DrumPattern =>
+    build((id, i) => (id === 'kick' && i === 0) || Math.random() < (DENSITY[id] ?? 0), grid)
 
   // The instrument library by part, for the Kit tab's sound pickers.
   const LIBRARY = TRACKS.map((part) => ({
@@ -150,6 +166,8 @@
   let editing = $state(0) // tab shown in the grid
   let mode: Mode = $state('hits')
   const shown = $derived(patterns[editing] ?? empty())
+  // Steps per bar in the pattern being edited (16ths, or 16th or 8th triplets).
+  const grid = $derived(gridOf(shown))
   // The step the lock sliders edit (UI-only), with its settings and its voice.
   let lockStep: null | { step: number; track: TrackId } = $state(null)
   const locking = $derived.by(() => {
@@ -197,7 +215,18 @@
   let euclidHits = $state(3)
   let euclidSteps = $state(8)
   let euclidRotation = $state(0)
-  const euclidPreview = $derived(euclid(euclidHits, euclidSteps, euclidRotation, STEPS))
+  // Kept inside the grid: a triplet grid's bar has fewer (or more) steps.
+  const euclidCycle = $derived.by(() => {
+    const steps = Math.min(euclidSteps, grid)
+    return {
+      hits: Math.min(euclidHits, steps),
+      rotation: Math.min(euclidRotation, steps - 1),
+      steps
+    }
+  })
+  const euclidPreview = $derived(
+    euclid(euclidCycle.hits, euclidCycle.steps, euclidCycle.rotation, grid)
+  )
 
   // Writes the rhythm into the track, as one undo step; its row stays in the grid.
   function applyEuclid() {
@@ -450,9 +479,25 @@
             </button>
           {/each}
         </div>
-        <span class="mr-auto text-xs text-zinc-500"
+        <span class="text-xs text-zinc-500"
           >{store.readOnly ? 'Showing' : 'Editing'} {LETTERS[editing]}</span
         >
+        <label class="mr-auto flex items-center gap-1 text-xs text-zinc-500" for="drums-grid">
+          <span class="flex items-center gap-1"
+            >Grid<Info label="Grid" text={help('drums_grid') ?? ''} /></span
+          >
+          <select
+            id="drums-grid"
+            value={grid}
+            disabled={store.readOnly}
+            onchange={(e) => store.setGrid(editing, Number(e.currentTarget.value) as DrumGrid)}
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+          >
+            {#each GRID_LABELS as [value, label] (value)}
+              <option {value}>{label}</option>
+            {/each}
+          </select>
+        </label>
         {#if !store.readOnly}
           <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = shown)}>
             Copy
@@ -466,14 +511,19 @@
           >
             Paste
           </button>
-          <button id="drums-clear" type="button" class={btn} onclick={() => setEditing(empty())}>
+          <button
+            id="drums-clear"
+            type="button"
+            class={btn}
+            onclick={() => setEditing(empty(grid))}
+          >
             Clear
           </button>
           <button
             id="drums-randomize"
             type="button"
             class={btn}
-            onclick={() => setEditing(randomPattern())}
+            onclick={() => setEditing(randomPattern(grid))}
           >
             Randomize
           </button>
@@ -611,12 +661,13 @@
               id="drums-euclid-hits"
               type="range"
               min="0"
-              max={euclidSteps}
+              max={euclidCycle.steps}
               step="1"
-              bind:value={euclidHits}
+              value={euclidCycle.hits}
+              oninput={(e) => (euclidHits = Number(e.currentTarget.value))}
               class="w-20 cursor-pointer accent-amber-400"
             />
-            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidHits}</span>
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidCycle.hits}</span>
           </label>
           <label class="flex items-center gap-2 text-xs text-zinc-400">
             Steps
@@ -624,13 +675,13 @@
               id="drums-euclid-steps"
               type="range"
               min="1"
-              max={STEPS}
+              max={grid}
               step="1"
-              value={euclidSteps}
+              value={euclidCycle.steps}
               oninput={(e) => setEuclidSteps(Number(e.currentTarget.value))}
               class="w-20 cursor-pointer accent-amber-400"
             />
-            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidSteps}</span>
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidCycle.steps}</span>
           </label>
           <label class="flex items-center gap-2 text-xs text-zinc-400">
             Rotate
@@ -638,19 +689,25 @@
               id="drums-euclid-rotation"
               type="range"
               min="0"
-              max={euclidSteps - 1}
+              max={euclidCycle.steps - 1}
               step="1"
-              bind:value={euclidRotation}
+              value={euclidCycle.rotation}
+              oninput={(e) => (euclidRotation = Number(e.currentTarget.value))}
               class="w-20 cursor-pointer accent-amber-400"
             />
-            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidRotation}</span>
+            <span class="w-5 font-mono text-amber-300 tabular-nums">{euclidCycle.rotation}</span>
           </label>
-          <div id="drums-euclid-preview" class="grid w-40 grid-cols-16 gap-0.5" aria-hidden="true">
+          <div
+            id="drums-euclid-preview"
+            class="grid w-40 gap-0.5"
+            style:grid-template-columns={`repeat(${grid}, minmax(0, 1fr))`}
+            aria-hidden="true"
+          >
             {#each euclidPreview as on, i (i)}
               <span
                 class={[
                   'h-3 rounded-sm',
-                  on ? 'bg-amber-400' : i % 4 === 0 ? 'bg-zinc-700' : 'bg-zinc-800'
+                  on ? 'bg-amber-400' : i % (grid / 4) === 0 ? 'bg-zinc-700' : 'bg-zinc-800'
                 ]}
               ></span>
             {/each}
@@ -701,7 +758,8 @@
               ]}>S</button
             >
             <div
-              class={['grid flex-1 grid-cols-16 gap-1 transition-opacity', !heard && 'opacity-40']}
+              class={['grid flex-1 gap-1 transition-opacity', !heard && 'opacity-40']}
+              style:grid-template-columns={`repeat(${grid}, minmax(0, 1fr))`}
             >
               {#each shown[track.id] as step, i (i)}
                 {@const detail = describeStep(step)}
@@ -716,7 +774,7 @@
                     'relative h-8 rounded text-[10px] font-bold text-zinc-900 transition-colors duration-75 disabled:pointer-events-none',
                     step.on
                       ? 'bg-amber-400 shadow shadow-amber-400/30 hover:bg-amber-300'
-                      : i % 4 === 0
+                      : i % (grid / 4) === 0
                         ? 'bg-zinc-700 hover:bg-zinc-600'
                         : 'bg-zinc-800 hover:bg-zinc-700',
                     step.on &&

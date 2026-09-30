@@ -109,6 +109,28 @@ test('step settings survive switching off and saving; plain steps save as on/off
   })
 })
 
+test("changing a pattern's grid keeps hits on lines both share; the grid saves and undoes", () => {
+  const store = new SongStore(song)
+  // Hats on every 16th, with an accent on the second beat's first one.
+  store.setHits(0, 'chat', Array<boolean>(16).fill(true))
+  store.setStep(0, 'chat', 4, { accent: true })
+
+  store.setGrid(0, 12) // 8th triplets: only the beats (every 4th 16th) are on both grids
+  const hats = store.drums.patterns[0]?.chat ?? []
+  expect(hats.map((s) => (s.on ? (s.accent ? 'X' : 'x') : '.')).join('')).toBe('x..X..x..x..')
+
+  const saved = store.toSongDoc().drums
+  expect(saved?.grids).toStrictEqual([12, 16, 16, 16])
+  const reopened = new SongStore({ ...song, drums: saved ?? null })
+  expect(reopened.drums.patterns[0]?.chat).toHaveLength(12)
+  expect(reopened.drums.patterns[1]?.chat).toHaveLength(16)
+
+  store.undo()
+  expect(store.drums.patterns[0]?.chat).toHaveLength(16)
+  expect(store.drums.patterns[0]?.chat.every((s) => s.on)).toBe(true)
+  expect(store.toSongDoc().drums?.grids).toBe(undefined) // all 16ths: saved as before
+})
+
 test('a step keeps its locks through saving; clearing one gives it back, undoably', () => {
   const store = new SongStore(song)
   store.setLocks(0, 'tom', 5, { tune: 7 })
