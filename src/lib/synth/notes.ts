@@ -12,6 +12,8 @@ export interface Note {
   length: number
   midi: number
   start: number
+  // How hard it's played, 0-1.
+  velocity: number
 }
 
 export interface NoteLoop {
@@ -48,11 +50,12 @@ export function clampNote(
 }
 
 // Note on/off events in seconds at `bpm`, in playback order: at the same moment,
-// note-offs come first so a repeated pitch restarts cleanly.
+// note-offs come first so a repeated pitch restarts cleanly. A note-on carries its
+// velocity unless it's full, so loops without any stay as they were.
 export function eventsFromNotes(notes: Note[], bpm: number): LoopEvent[] {
   const sec = (beat: number) => Math.round((beat * 60 * 1000) / bpm) / 1000
-  const events = notes.flatMap((n) => [
-    { midi: n.midi, on: true, t: sec(n.start) },
+  const events = notes.flatMap((n): LoopEvent[] => [
+    { midi: n.midi, on: true, t: sec(n.start), ...(n.velocity < 1 && { velocity: n.velocity }) },
     { midi: n.midi, on: false, t: sec(n.start + n.length) }
   ])
   return events.sort((a, b) => a.t - b.t || Number(a.on) - Number(b.on))
@@ -90,19 +93,25 @@ export function notesFromLoop(loop: Pick<Loop, 'events' | 'length'>, bpm: number
   const beats =
     Math.max(1, Math.ceil((loop.length * toBeats) / BEATS_PER_BAR - BAR_TOLERANCE)) * BEATS_PER_BAR
   const notes: Note[] = []
-  const held = new Map<number, number>()
+  const held = new Map<number, { start: number; velocity: number }>()
   const close = (midi: number, end: number) => {
-    const start = held.get(midi)
-    if (start === undefined) return
+    const on = held.get(midi)
+    if (on === undefined) return
     held.delete(midi)
-    notes.push({ id: newNoteId(), length: Math.max(MIN_LENGTH, end - start), midi, start })
+    notes.push({
+      id: newNoteId(),
+      length: Math.max(MIN_LENGTH, end - on.start),
+      midi,
+      start: on.start,
+      velocity: on.velocity
+    })
   }
   const events = [...loop.events].sort((a, b) => a.t - b.t || Number(a.on) - Number(b.on))
   for (const e of events) {
     const beat = round(Math.round((e.t * toBeats) / TICK) * TICK)
     if (e.on) {
       close(e.midi, beat) // a repeated note-on ends the previous one
-      held.set(e.midi, beat)
+      held.set(e.midi, { start: beat, velocity: e.velocity ?? 1 })
     } else {
       close(e.midi, beat)
     }

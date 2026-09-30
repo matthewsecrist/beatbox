@@ -21,8 +21,8 @@ export type LibraryBeat = LibraryCommon & {
 export type LibraryItem = LibraryBeat | LibraryLoop
 
 export type LibraryLoop = LibraryCommon & {
-  // [midi, start, length], start and length in beats.
-  notes: [number, number, number][]
+  // [midi, start, length, velocity?], start and length in beats; no velocity is full.
+  notes: LibraryNote[]
   params: Partial<SynthParams>
   // Factory preset it plays with.
   sound: string
@@ -36,16 +36,20 @@ interface LibraryCommon {
   name: string
 }
 
+type LibraryNote = [number, number, number, number?]
+
 const PITCH_CLASS: Record<string, number> = { A: 9, B: 11, C: 0, D: 2, E: 4, F: 5, G: 7 }
 const NOTE = /^([A-G])(#|b)?(-?\d)$/
 const STEP_BEATS = BEATS_PER_BAR / STEPS
+// How hard a ghost note, `(C3)`, plays: half, like a beat's soft `o`.
+const GHOST = 0.5
 
 // Reads a loop score (see `library_items.ts`) into notes; throws on a bad note or
 // a bar that isn't 16 steps, so a typo fails as soon as the module loads.
 export function parseScore(score: string): Pick<LibraryLoop, 'bars' | 'notes'> {
   const bars = score.split('|').map((bar) => bar.trim().split(/\s+/))
-  const notes: [number, number, number][] = []
-  let held: [number, number, number][] = []
+  const notes: LibraryNote[] = []
+  let held: LibraryNote[] = []
   // Held notes marked `~`: they overlap the next note, so it glides from them.
   let sliding = false
   bars.forEach((steps, b) => {
@@ -57,7 +61,9 @@ export function parseScore(score: string): Pick<LibraryLoop, 'bars' | 'notes'> {
       }
       const slide = step.endsWith('~')
       const token = slide ? step.slice(0, -1) : step
-      const next = token === '.' ? [] : token.split('+').map((name) => pitch(name, score))
+      const ghost = token.startsWith('(') && token.endsWith(')')
+      const names = ghost ? token.slice(1, -1) : token
+      const next = names === '.' ? [] : names.split('+').map((name) => pitch(name, score))
       // A slide overlaps the next note by half a step (not a repeat of its own
       // pitch, which would cut the new note short).
       if (sliding && next.length) {
@@ -66,7 +72,8 @@ export function parseScore(score: string): Pick<LibraryLoop, 'bars' | 'notes'> {
       held = []
       sliding = slide
       for (const midi of next) {
-        const note: [number, number, number] = [midi, (b * STEPS + s) * STEP_BEATS, STEP_BEATS]
+        const note: LibraryNote = [midi, (b * STEPS + s) * STEP_BEATS, STEP_BEATS]
+        if (ghost) note[3] = GHOST
         notes.push(note)
         held.push(note)
       }
@@ -167,7 +174,13 @@ export function libraryLoop({ bars, notes, params }: LibraryLoop, slot: number, 
     { bpm, events: [], length: 0, params, slot },
     {
       beats: bars * BEATS_PER_BAR,
-      notes: notes.map(([midi, start, length], id) => ({ id, length, midi, start }))
+      notes: notes.map(([midi, start, length, velocity = 1], id) => ({
+        id,
+        length,
+        midi,
+        start,
+        velocity
+      }))
     },
     bpm
   )

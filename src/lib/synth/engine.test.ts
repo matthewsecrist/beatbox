@@ -368,6 +368,43 @@ test('the filter envelope sweeps the cutoff in octaves, and releases from where 
   expect(detune?.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 0.55)
 })
 
+test("velocity scales a note's level, and its filter sweep as far as filter_velocity says", () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth(
+    { attack: 0.1, decay: 0.2, filter_env_amount: 2, filter_velocity: 0.5, sustain: 0.5 },
+    () => ctx
+  )
+  synth.noteOn(60, 0, 'soft', null, 0.5)
+  synth.noteOn(64, 0, 'hard') // full velocity
+
+  // Each voice makes its filter, then the drive stage's DC blocker; the amp follows the filter.
+  const [soft, , hard] = nodes.filter((n) => n.kind === 'filter')
+  const amp = (filter: FakeNode | undefined) => {
+    const out = filter?.outputs[0]
+    return out && 'gain' in out ? out.gain : undefined
+  }
+  const ramps = (param: FakeParam | undefined) =>
+    param?.linearRampToValueAtTime.mock.calls.map(([v, t]) => [+v.toFixed(4), +t.toFixed(3)])
+
+  // Half the level all through: peak, then sustain.
+  expect(ramps(amp(soft))).toStrictEqual([
+    [0.15, 0.1],
+    [0.075, 0.3]
+  ])
+  expect(ramps(amp(hard))).toStrictEqual([
+    [0.3, 0.1],
+    [0.15, 0.3]
+  ])
+  // filter_velocity 0.5: a half-velocity note sweeps three quarters as far.
+  expect(ramps(soft?.detune)?.[0]).toStrictEqual([1800, 0.005])
+  expect(ramps(hard?.detune)?.[0]).toStrictEqual([2400, 0.005])
+
+  // Letting go releases from the soft note's own level.
+  clock.currentTime = 0.05 // halfway up the attack
+  synth.noteOff('soft')
+  expect(amp(soft)?.setValueAtTime).toHaveBeenLastCalledWith(0.075, 0.05)
+})
+
 test('with no envelope amount the cutoff is left alone', () => {
   const { ctx, nodes } = fakeAudio()
   const synth = createSynth({ filter_env_amount: 0 }, () => ctx)

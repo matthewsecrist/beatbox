@@ -55,6 +55,37 @@ test('a slide overlaps the next note by half a step, but not a repeat of its own
   expect(parseScore(`C3~ . D3 . ${rest}`).notes[0]).toStrictEqual([48, 0, 0.25])
 })
 
+test('a ghost note in brackets plays at half velocity, chords and slides too', () => {
+  const rest = Array<string>(12).fill('.').join(' ')
+  expect(parseScore(`C3 (C3) (C3+G3)~ D3 ${rest}`).notes).toStrictEqual([
+    [48, 0, 0.25],
+    [48, 0.25, 0.25, 0.5],
+    [48, 0.5, 0.375, 0.5], // slides into D3
+    [55, 0.5, 0.375, 0.5],
+    [50, 0.75, 0.25]
+  ])
+  expect(() => parseScore(`(C3 ${rest} . . .`)).toThrow('Bad note “(C3”')
+
+  // On a pad, the ghost note keeps its velocity.
+  const loop = libraryLoop(
+    {
+      genre: 'Test',
+      instrument: 'Bass',
+      name: 'Ghost',
+      params: {},
+      sound: 'Pluck',
+      type: 'Loop',
+      ...parseScore(`C3 (C3) ${Array<string>(14).fill('.').join(' ')}`)
+    },
+    0,
+    120
+  )
+  expect(loop.events.filter((e) => e.on)).toStrictEqual([
+    { midi: 48, on: true, t: 0 },
+    { midi: 48, on: true, t: 0.125, velocity: 0.5 }
+  ])
+})
+
 test('a library loop lasts its bars at the song tempo, with every note inside', () => {
   const item = LIBRARY.find((l) => l.type === 'Loop' && l.bars === 4)
   expect(item?.type).toBe('Loop')

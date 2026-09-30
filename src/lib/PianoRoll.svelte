@@ -37,7 +37,8 @@
     loop: Loop
     onchange: (loop: Loop) => void
     onclose: () => void
-    onpreview: (midi: number) => void
+    // Sounds a pitch, at a note's velocity when it has one.
+    onpreview: (midi: number, velocity?: number) => void
     ontoggle: () => void
     playing: boolean
     // Playhead, 0..1 through the loop.
@@ -49,6 +50,10 @@
   const HIGHEST = 108 // C8
   const RANGE = [LOWEST, HIGHEST] as const
   const ROW = 12 // px per semitone
+  // Velocity lane: a bar per note, as tall as its velocity. Notes never go below
+  // MIN_VELOCITY, so one can't vanish by accident.
+  const LANE = 56
+  const MIN_VELOCITY = 0.05
   const BAR_PX = 256
   const MAX_BARS = 32
   const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -77,6 +82,7 @@
   const pct = (beats: number) => `${(beats / view.beats) * 100}%`
 
   let gridEl: HTMLDivElement | undefined = $state()
+  let laneEl: HTMLDivElement | undefined = $state()
   let scroller: HTMLDivElement | undefined = $state()
 
   function commit() {
@@ -134,7 +140,7 @@
     if (e.button !== 0 || e.target !== gridEl) return
     const { beat, midi } = pointAt(e)
     const note = clampNote(
-      { id: newNoteId(), length: drawLength, midi, start: snapDown(beat, grid) },
+      { id: newNoteId(), length: drawLength, midi, start: snapDown(beat, grid), velocity: 1 },
       view.beats,
       RANGE
     )
@@ -147,7 +153,7 @@
     e.stopPropagation()
     if (e.button === 2) return
     const edge = e.target instanceof HTMLElement && e.target.dataset.edge !== undefined
-    onpreview(note.midi)
+    onpreview(note.midi, note.velocity)
     beginDrag(e, note, edge ? 'resize' : 'move', false)
   }
 
@@ -170,7 +176,7 @@
     } else if (e.key in moves) {
       e.preventDefault()
       const next = clampNote({ ...note, ...moves[e.key] }, view.beats, RANGE)
-      if (next.midi !== note.midi) onpreview(next.midi)
+      if (next.midi !== note.midi) onpreview(next.midi, next.velocity)
       view.notes[index] = next
       commit()
     }
@@ -193,7 +199,7 @@
       next = { ...origin, length: Math.max(grid, end - origin.start) }
     }
     next = clampNote(next, view.beats, RANGE)
-    if (next.midi !== current.midi) onpreview(next.midi)
+    if (next.midi !== current.midi) onpreview(next.midi, next.velocity)
     if (
       next.start !== current.start ||
       next.length !== current.length ||
@@ -211,6 +217,59 @@
     const note = view.notes.find((n) => n.id === id)
     if (note && mode === 'resize') drawLength = note.length
     if (changed) commit()
+  }
+
+  // Velocity lane: pressing sets the velocity of the notes under the pointer from
+  // its height, and dragging paints across notes (just the selected one, when it's
+  // under the pointer, so one note of a chord can be set alone). Committed on release.
+  let painting: null | { changed: boolean } = null
+
+  function onLaneDown(e: PointerEvent) {
+    if (e.button !== 0) return
+    // Pressing a note's bar picks that note, so a chord's notes can be set one by one.
+    const bar = e.target instanceof HTMLElement ? e.target.dataset.velocity : undefined
+    if (bar !== undefined) selected = Number(bar)
+    painting = { changed: false }
+    laneEl?.setPointerCapture(e.pointerId)
+    paintVelocity(e)
+  }
+
+  function onLaneUp() {
+    if (painting?.changed) {
+      commit()
+      // Let the edited note be heard at its new velocity (the selected one, if set).
+      const note = view.notes.find((n) => n.id === selected)
+      if (note) onpreview(note.midi, note.velocity)
+    }
+    painting = null
+  }
+
+  // On a focused velocity bar: up/down by 5% (25% with Shift).
+  function onVelocityKey(e: KeyboardEvent, note: Note) {
+    const steps: Record<string, number> = { ArrowDown: -1, ArrowUp: 1 }
+    const step = steps[e.key]
+    if (step === undefined) return
+    e.preventDefault()
+    selected = note.id
+    const next = note.velocity + step * (e.shiftKey ? 0.25 : 0.05)
+    note.velocity = Math.round(Math.min(1, Math.max(MIN_VELOCITY, next)) * 100) / 100
+    onpreview(note.midi, note.velocity)
+    commit()
+  }
+
+  function paintVelocity(e: PointerEvent) {
+    const rect = laneEl?.getBoundingClientRect()
+    if (!painting || !rect) return
+    const beat = ((e.clientX - rect.left) / rect.width) * view.beats
+    const high = 1 - (e.clientY - rect.top) / rect.height
+    const velocity = Math.round(Math.min(1, Math.max(MIN_VELOCITY, high)) * 100) / 100
+    const under = view.notes.filter((n) => n.start <= beat && beat < n.start + n.length)
+    const chosen = under.filter((n) => n.id === selected)
+    for (const note of chosen.length ? chosen : under) {
+      if (note.velocity === velocity) continue
+      note.velocity = velocity
+      painting.changed = true
+    }
   }
 
   function pointAt(e: PointerEvent): { beat: number; midi: number } {
@@ -378,7 +437,7 @@
           <button
             type="button"
             data-note={note.id}
-            aria-label={`${noteName(note.midi)} at beat ${note.start + 1}, ${note.length} beats`}
+            aria-label={`${noteName(note.midi)} at beat ${note.start + 1}, ${note.length} beats, velocity ${Math.round(note.velocity * 100)}%`}
             aria-pressed={selected === note.id}
             onpointerdown={(e) => onNoteDown(e, note)}
             oncontextmenu={(e) => {
@@ -395,7 +454,7 @@
                 : 'border-amber-600 bg-amber-400 hover:bg-amber-300'
             ]}
             style="left: {pct(note.start)}; width: {pct(note.length)}; top: {(HIGHEST - note.midi) *
-              ROW}px; height: {ROW - 1}px"
+              ROW}px; height: {ROW - 1}px; opacity: {0.4 + 0.6 * note.velocity}"
           >
             <span class="pointer-events-none pl-0.5">{noteName(note.midi)}</span>
             <span data-edge class="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize"></span>
@@ -410,10 +469,60 @@
         {/if}
       </div>
     </div>
+
+    <!-- Velocity lane: stays at the bottom while the notes scroll up and down, and
+         scrolls sideways with them. -->
+    <div
+      class="sticky bottom-0 z-30 flex border-t border-zinc-700 bg-zinc-950"
+      style="height: {LANE}px; min-width: 100%"
+    >
+      <div
+        class="sticky left-0 z-10 flex w-12 shrink-0 items-start justify-end border-r border-zinc-800 bg-zinc-950 pt-1 pr-1.5 font-mono text-[9px] text-zinc-500"
+      >
+        Vel
+      </div>
+      <div
+        bind:this={laneEl}
+        id="roll-velocity"
+        role="group"
+        aria-label="Velocity: drag up or down over notes to set how hard they play; a focused bar moves with the arrow keys"
+        class="relative flex-1 cursor-ns-resize touch-none select-none"
+        style="width: max(100%, {bars * BAR_PX}px); min-width: {bars * BAR_PX}px"
+        onpointerdown={onLaneDown}
+        onpointermove={paintVelocity}
+        onpointerup={onLaneUp}
+        onpointercancel={onLaneUp}
+      >
+        {#each view.notes as note (note.id)}
+          <div
+            role="slider"
+            tabindex="0"
+            data-velocity={note.id}
+            aria-label={`Velocity of ${noteName(note.midi)} at beat ${note.start + 1}`}
+            aria-valuemin={Math.round(MIN_VELOCITY * 100)}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(note.velocity * 100)}
+            aria-valuetext={`${Math.round(note.velocity * 100)}%`}
+            onkeydown={(e) => onVelocityKey(e, note)}
+            onfocus={() => (selected = note.id)}
+            class={[
+              'absolute bottom-0 rounded-t-sm border-t-2 outline-none focus-visible:ring-1 focus-visible:ring-amber-400',
+              selected === note.id
+                ? 'z-10 border-white bg-amber-300/60'
+                : 'border-amber-400 bg-amber-400/25'
+            ]}
+            style="left: {pct(note.start)}; width: max(3px, {pct(
+              note.length
+            )}); height: {note.velocity * 100}%"
+          ></div>
+        {/each}
+      </div>
+    </div>
   </div>
 
   <p class="text-xs text-zinc-500">
     Click to add a note and drag to set its length · drag a note to move it, its right edge to
-    resize · right-click or double-click to delete · arrow keys nudge the selected note
+    resize · right-click or double-click to delete · arrow keys nudge the selected note · drag up or
+    down in the Vel lane to set how hard notes play
   </p>
 </section>

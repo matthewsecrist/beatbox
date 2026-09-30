@@ -93,7 +93,11 @@ Radio Keys (band), Phaser Pad, Jet Lead and Hollow Bass (notch), with loops buil
 on them in the Loop Browser. The
 filter envelope sweeps the cutoff from each note's start: **Env amount** sets how
 far (up to ±4 octaves; negative sweeps down, 0 is off), with its own attack, decay, sustain and
-release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO
+release, so a note can open bright and close down (Acid Bass, Pluck). **Env
+velocity** lets softer notes (see the piano roll's velocity lane) open it less: at
+100% the sweep follows velocity all the way, off every note sweeps the full amount
+(Acid Bass, Pluck, Brass, Electric Piano, Wah Clav, Moog Bass and Glass Pluck have
+some). Each LFO
 has its own rate, depth and target: **Filter** (wobbles; depth in octaves),
 **Pitch** (vibrato; depth in cents) or **Amp** (tremolo; depth as a share of the
 level), so a slow filter sweep can run under a fast vibrato. Switching target
@@ -204,6 +208,15 @@ it starts an empty one-bar loop to draw in).
   moves with the arrow keys (Shift: an octave).
 - Everything snaps to the grid (1/4 to 1/32). **Quantize** moves note starts to
   it, and − / + change the loop length in bars.
+- **Velocity**: the **Vel** lane under the notes has a bar per note, as tall as
+  how hard it plays. Drag up or down over the bars to set them (dragging across
+  several paints them; pressing a bar sets just that note, so a chord's notes can
+  differ), or focus a bar and use ↑/↓ (5%, Shift: 25%). Softer notes are quieter
+  and look fainter. New notes play at full velocity, as do the keyboard and the
+  arpeggiator. Some Loop Browser loops have softer ghost notes (funk and disco
+  basses, acid lines, busy arps), and some example-song loops have dynamics: accented
+  acid lines in Acid Sunrise, pulsing arps in Afterglow Over Ibiza and Midnight
+  Arcade, and unevenly played Rhodes chords in Rain on the Tape Deck.
 - Edits are heard straight away, even while the pad plays, and are saved with
   the song.
 - While a pad is open, the synth's sound controls and presets change that pad's
@@ -255,8 +268,9 @@ beat into the picked drum pattern; either is one undo step. ▶ previews an item
 time with anything already playing (beats with the song's kit, swing and humanize); press
 it again, close the browser or press Stop to stop. To add more, add to
 `LOOP_SPECS` or `BEAT_SPECS` in `src/lib/library_items.ts`: loops are written as a
-16-step-per-bar score (`A3+C4+E4 - - . G3 …`) and beats as one `x..x` string per
-drum; the file explains the notation, and a bad note or bar length fails the tests.
+16-step-per-bar score (`A3+C4+E4 - - . G3 …`, with a note in brackets, `(G3)`, as a
+half-velocity ghost note) and beats as one `x..x` string per drum; the file explains
+the notation, and a bad note or bar length fails the tests.
 
 **Songs**: the song bar at the top saves everything together: synth, chord and
 arp settings, drums, effects, loops and arrangement. **Save** stores the song (a blank name becomes
