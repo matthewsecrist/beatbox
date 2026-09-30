@@ -244,7 +244,16 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     // Mixes, sends and the master filter, unless the arrangement is moving them.
     for (const target of EFFECT_TARGETS) {
       const release = automated.get(target)
-      if (release !== undefined && release > b.ctx.currentTime) continue
+      if (release !== undefined && release > b.ctx.currentTime) {
+        // Letting go on a boundary already scheduled: the reset there lands on the
+        // latest setting (a later event at the same time wins).
+        if (release !== Infinity) {
+          for (const [param, value] of drives(b, target)) {
+            param.setValueAtTime(value(settings[target]), release)
+          }
+        }
+        continue
+      }
       automated.delete(target)
       for (const [param, value] of drives(b, target)) to(param, value(settings[target]))
     }

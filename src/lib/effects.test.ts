@@ -265,15 +265,19 @@ test("a section's ramp moves a send in a line; song edits wait, and its setting 
   expect(gain.setTargetAtTime).not.toHaveBeenCalled()
 
   // The next section leaves it alone (announced early): the song's setting is
-  // back on its first beat, but until that beat passes the ramp still owns it.
+  // back on its first beat. An edit before that beat doesn't touch the running
+  // ramp, but the reset on the beat lands on it.
   bus.automate({}, 10, 18)
   expect(gain.setValueAtTime.mock.calls.at(-1)).toStrictEqual([0.4, 10])
   bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.3 }, 120)
   expect(gain.setTargetAtTime).not.toHaveBeenCalled()
+  expect(gain.setValueAtTime.mock.calls.at(-1)).toStrictEqual([0.3, 10])
+
+  // Once the beat has passed, edits apply straight away again.
   const clock = getCtx() as unknown as { currentTime: number }
   clock.currentTime = 10
-  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.3 }, 120)
-  expect(gain.value).toBe(0.3)
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.5 }, 120)
+  expect(gain.value).toBe(0.5)
 })
 
 test('stopping just before a section that lets go still cancels the ramp and its reset', () => {
