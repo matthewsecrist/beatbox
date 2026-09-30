@@ -81,6 +81,8 @@ export const HELP = {
     "Hz sets the wobble's speed by itself. Sync locks it to the song's beat instead, so it speeds up and slows down with the tempo (and a section's own tempo): the way a dubstep wobble or a gated pad keeps in time.",
   lfo_target:
     'What the LFO moves. Filter makes a "wub wub" wobble. Pitch makes the note wave up and down, like a singer\'s vibrato. Amp makes the volume pulse, like a tremolo.',
+  master_filter:
+    "A DJ filter on the whole song. Slide left and the sound gets darker and more muffled, as if it's coming through a wall, until only the bass is left; slide right and the bass drains away, leaving it thin and tinny. Sweep it slowly for build-ups and breakdowns, and drag it back to the middle (off) for the drop.",
   noise_level:
     'Mixes in white noise: the "shhh" of a radio between stations. A little adds breath to a flute or air to a pad; a lot makes wind, sweeps and risers. With the oscillators turned down and a short envelope, it plays hi-hats on the keys.',
   osc_detune:
@@ -105,7 +107,7 @@ export const HELP = {
   panel_lfo:
     'An LFO is like an invisible hand that keeps turning a knob back and forth, slowly or quickly. It makes sounds wobble, wave or shimmer on their own.',
   panel_master:
-    'The last stop before your speakers, for the whole song: a compressor that glues everything together, then a limiter that is always on and stops the loudest peaks from distorting when lots of sounds, echoes and drive pile up.',
+    'The last stop before your speakers, for the whole song: a compressor that glues everything together, a DJ filter for sweeps, then a limiter that is always on and stops the loudest peaks from distorting when lots of sounds, echoes and drive pile up.',
   panel_osc:
     'An oscillator is the part that actually makes the sound: it vibrates really fast, like a guitar string. The synth has two, and you hear them mixed together.',
   panel_pitch_env:

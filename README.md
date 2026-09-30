@@ -253,11 +253,15 @@ muted kick track, or muted drums, don't duck it.
 Everything (both instruments dry and both effect returns) then goes through the
 **Master** stage on its way to the speakers: a glue **Compressor** (off in a new
 song; **Amount** lowers its threshold from 0 to −24 dB at 3:1, and its built-in
-makeup gain keeps a typical mix about as loud: quiet parts up, peaks down), then a
+makeup gain keeps a typical mix about as loud: quiet parts up, peaks down), a DJ
+**Filter** (off in the middle; left sweeps a low-pass down from 20 kHz to 100 Hz,
+right a high-pass up from 20 Hz to 8 kHz, evenly in pitch, with a little resonance
+at the cutoff, for build-ups and breakdowns), then a
 fixed limiter at −1 dB and a clipper that bends smoothly from 0.95 and never lets
 a sample past 0.984, so stacked sends, feedback and drive can't clip, however hot.
-Below the limiter the master stage leaves the sound untouched; the two compressors
-look ahead, which delays everything by about 12 ms together.
+Below the limiter the master stage leaves the sound untouched (the filter, in the
+middle, passes everything); the two compressors look ahead, which delays
+everything by about 12 ms together.
 
 **Arrangement** (the columns next to the tracks): a list of sections, each with a
 length in bars, a drum pattern (or none) on the drums' row, and a toggle on each

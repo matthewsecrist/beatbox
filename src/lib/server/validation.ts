@@ -177,6 +177,7 @@ const effects = z.object({
   drums_reverb: level,
   duck_amount: level,
   duck_release: noteValue,
+  master_filter: z.number().min(-1).max(1).exactOptional(),
   reverb_mix: level,
   reverb_size: z.number().min(0.3).max(6).exactOptional(),
   synth_delay: level,
