@@ -114,6 +114,8 @@ export const HELP = {
     'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
   synth_reverb: 'How much of the synth (and the loop pads) goes into the room sound (the reverb).',
+  tap_tempo:
+    'Tap this button along with the beat, four or more times, and the song tempo follows your taps. Stop for two seconds and the next tap starts counting again. Handy when you know how fast a song should feel but not its number.',
   tempo:
     'How fast the whole song goes, in beats per minute (BPM): about 80 is a slow nod, 120 a dance, 170 a sprint. The drums, loops and arpeggiator all follow it.',
   volume: 'How loud the synth is overall, loops included.'

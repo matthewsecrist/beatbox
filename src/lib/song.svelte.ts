@@ -353,6 +353,13 @@ export class SongStore {
     return slot === null ? this.synth : (this.loops[slot]?.params ?? {})
   }
 
+  // The song tempo from tap tempo: a run of taps is one undo step, however far
+  // apart they are, starting with its `first` tempo.
+  tapTempo(bpm: number, first: boolean): void {
+    if (!first) this.undoManager.lastChange = Date.now()
+    this.edit(() => this.drumsMap.set('bpm', bpm), first)
+  }
+
   // The song's parts, for saving.
   toSongDoc(): SongDoc {
     const synth = this.synthMap.toJSON() as Partial<SynthParams>

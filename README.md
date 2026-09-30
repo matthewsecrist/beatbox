@@ -129,7 +129,9 @@ block, ride and crash), with four patterns (**A–D**). Copy/Paste lets you buil
 variations, and Randomize, Clear and Reset act on the pattern you're editing.
 Switching patterns while the drums play changes over on the next bar. The song
 bar's **Tempo** slider sets the tempo for the whole song (a section can have its
-own; see **Arrangement**).
+own; see **Arrangement**). **Tap** next to it sets the tempo from the average gap
+between your last five taps; after a 2 s pause the next tap starts over, and each
+run of taps is one undo step.
 
 - The grid shows the six core tracks and any percussion the pattern uses. **Add
   track** gives another one a row to write into; the **×** on an empty percussion
@@ -340,7 +342,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Master effects and per-instrument sends, and the shared delay/reverb bus every instrument plays into                        |
 | `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                                       |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                            |
-| `src/lib/transport.ts`                                                         | Tempo, beat grid and metronome shared by every instrument                                                                   |
+| `src/lib/transport.ts`, `src/lib/tap_tempo.ts`                                 | Tempo, beat grid and metronome shared by every instrument; tap tempo                                                        |
 | `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                                     |
 | `src/lib/synth/`                                                               | Synth engine, loop recorder/player, arpeggiator and chords, piano-roll note conversion, factory presets                     |
 | `src/lib/drums/engine.ts`, `src/lib/drums/kits.ts`                             | Drum sounds and sequencer; the tracks, kits and instrument library                                                          |
