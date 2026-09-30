@@ -17,6 +17,7 @@ export const DEFAULT_PARAMS: SynthParams = {
   filter_release: 0.3,
   filter_resonance: 4,
   filter_sustain: 0,
+  filter_type: 'lowpass',
   // Glide: seconds a new note takes to slide from the last one's pitch (0 = off);
   // 'legato' only slides into a note played while the last one is still held.
   glide: 0,
@@ -50,6 +51,14 @@ const lfoParams = (p: SynthParams, n: 1 | 2) => ({
   rate: p[`lfo${n}_rate`],
   target: p[`lfo${n}_target`]
 })
+
+// Resonance is in dB, as low- and high-pass filters take their Q; band-pass and
+// notch take Q as a plain ratio (how narrow the band is), so it's converted and
+// the slider feels the same for every type.
+function filterQ(p: SynthParams): number {
+  const r = p.filter_resonance
+  return p.filter_type === 'lowpass' || p.filter_type === 'highpass' ? r : 10 ** (r / 20)
+}
 
 // How far an LFO swings its target's AudioParam: filter and pitch in cents; amp
 // down from full level, so full depth dips to silence.
@@ -436,9 +445,9 @@ export function createSynth(
     const from = glideFrom(key, midi, t, p)
     applyOsc(t, osc1, g1, 1, midi, false, p, from)
     applyOsc(t, osc2, g2, 2, midi, false, p, from)
-    filter.type = 'lowpass'
+    filter.type = p.filter_type
     filter.frequency.value = p.filter_cutoff
-    filter.Q.value = p.filter_resonance
+    filter.Q.value = filterQ(p)
 
     osc1.connect(g1).connect(drive.level)
     osc2.connect(g2).connect(drive.level)
@@ -546,7 +555,8 @@ export function createSynth(
   // Sounding voices take on changed settings, gliding so nothing clicks.
   function follow(v: Voice, p: SynthParams, t: number): void {
     v.filter.frequency.setTargetAtTime(p.filter_cutoff, t, 0.01)
-    v.filter.Q.setTargetAtTime(p.filter_resonance, t, 0.01)
+    v.filter.type = p.filter_type
+    v.filter.Q.setTargetAtTime(filterQ(p), t, 0.01)
     for (const lfo of v.lfos) {
       const { rate, target } = lfoParams(p, lfo.n)
       if (lfo.target !== target) routeLfo(v, lfo, target)

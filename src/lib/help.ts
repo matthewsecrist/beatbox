@@ -42,7 +42,7 @@ export const HELP = {
   filter_attack:
     'How quickly the filter opens at the start of each note. Short gives a snappy "blip"; long gives a slow "wooow".',
   filter_cutoff:
-    'Where the filter starts blocking sound. Low makes it dark and muffled, like music through a wall. High lets everything through, bright and crisp.',
+    'Where the filter starts blocking sound. With the Low type, low makes it dark and muffled, like music through a wall, and high lets everything through, bright and crisp. The other types move their own way round it.',
   filter_decay:
     'How long the filter takes to close down again after it opens at the start of a note.',
   filter_env_amount:
@@ -51,6 +51,8 @@ export const HELP = {
   filter_resonance:
     'Adds a whistle right at the cutoff. A little makes the sound sharper; a lot makes it sing and squeal, especially when the cutoff moves.',
   filter_sustain: 'How far open the filter stays while you keep holding the key.',
+  filter_type:
+    'Which part of the sound the filter keeps. Low keeps the deep part and cuts the fizz (the usual synth sound). High keeps the bright part and cuts the bass, thin and airy. Band keeps only the sound around the Cutoff, nasal like a telephone or a "wah". Notch cuts a gap out at the Cutoff, hollow and phasey when it moves.',
   glide:
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:
@@ -75,7 +77,7 @@ export const HELP = {
   panel_envelope:
     'The envelope shapes how loud each note is over time: how it starts, how it holds while you keep the key down, and how it fades away when you let go.',
   panel_filter:
-    'The filter is like a tone knob. It lets the low, deep part of the sound through and blocks the high, fizzy part, so it can make a sound bright and sharp or dark and muffled.',
+    'The filter is like a tone knob. Usually it lets the low, deep part of the sound through and blocks the high, fizzy part, so it can make a sound bright and sharp or dark and muffled. Its Type can flip that round, or keep or cut just a slice of the sound.',
   panel_glide:
     'Glide makes each note slide up or down into the next one, like a trombone or a singer swooping between notes, instead of jumping straight there.',
   panel_lfo:

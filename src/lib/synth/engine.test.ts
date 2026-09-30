@@ -14,6 +14,7 @@ interface FakeNode {
   kind: string
   outputs: (FakeNode | FakeParam)[]
   Q: FakeParam
+  type?: string
 }
 
 interface FakeParam {
@@ -248,6 +249,29 @@ test('with no envelope amount the cutoff is left alone', () => {
   const detune = nodes.find((n) => n.kind === 'filter')?.detune
   expect(detune?.setValueAtTime).not.toHaveBeenCalled()
   expect(detune?.linearRampToValueAtTime).not.toHaveBeenCalled()
+})
+
+test('each note takes the filter type, with resonance meaning the same for every type', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ filter_resonance: 20 }, () => ctx)
+  synth.noteOn(60)
+  synth.noteOn(64, undefined, 'pad0:64', { filter_resonance: 20, filter_type: 'bandpass' })
+
+  // Each voice makes its filter, then the drive stage's DC blocker.
+  const [low, , band] = nodes.filter((n) => n.kind === 'filter')
+  expect([low?.type, low?.Q.value]).toStrictEqual(['lowpass', 20]) // dB
+  expect([band?.type, band?.Q.value]).toStrictEqual(['bandpass', 10]) // 20 dB as a ratio
+})
+
+test('sounding notes switch to a new filter type', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth(null, () => ctx)
+  synth.noteOn(60)
+  synth.setParams({ filter_type: 'highpass' })
+
+  const filter = nodes.find((n) => n.kind === 'filter')
+  expect(filter?.type).toBe('highpass')
+  expect(filter?.Q.setTargetAtTime).toHaveBeenLastCalledWith(4, 0, 0.01)
 })
 
 // Voice `n`'s first oscillator (each voice makes osc1, osc2 and two LFOs).

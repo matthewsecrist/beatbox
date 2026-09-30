@@ -72,8 +72,8 @@ and the keys) stays at the bottom whichever track is open.
   drums', are for listening only: they aren't saved with the song.
 
 **Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
-a drive (distortion), a resonant low-pass filter with its own envelope, two LFOs, an ADSR envelope
-and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
+a drive (distortion), a resonant filter (low-pass, high-pass, band-pass or notch) with
+its own envelope, two LFOs, an ADSR envelope and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
 clean; turning it up pushes the wave harder into the **Character**'s curve: **Soft**
 rounds it off towards a square, **Tube** does too but lopsided, for a warmer sound
 with even harmonics, **Hard** cuts it flat for a sharper edge, and **Fold** flips it
@@ -83,6 +83,10 @@ its weight. Drive keeps the level about even as it goes up. A preset shows off e
 character: Buzz Bass and Overdrive Organ (tube), Dirty 808 (soft), Fuzz Lead (hard)
 and Fold Growl (fold), and the Loop Browser has loops built on them. It's part of the
 sound, so presets and loop pads keep their own. The
+filter's **Type** picks what it keeps: **Low** (low-pass, the usual), **High**
+(high-pass, thin and airy), **Band** (band-pass, nasal, a wah as it sweeps) or
+**Notch** (cuts a slice out, phasey as it moves); the envelope and LFOs move the
+cutoff whatever the type, and **Resonance** feels the same for each. The
 filter envelope sweeps the cutoff from each note's start: **Env amount** sets how
 far (up to ±4 octaves; negative sweeps down, 0 is off), with its own attack, decay, sustain and
 release, so a note can open bright and close down (Acid Bass, Pluck). Each LFO

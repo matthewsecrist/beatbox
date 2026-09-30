@@ -12,6 +12,7 @@
     ArpRate,
     ChordShape,
     DriveType,
+    FilterType,
     GlideMode,
     LfoTarget,
     LoadPresetReply,
@@ -155,6 +156,12 @@
   const LFO_TARGETS: LfoTarget[] = ['filter', 'pitch', 'amp']
   // Mildest to wildest.
   const DRIVE_TYPES: DriveType[] = ['soft', 'tube', 'hard', 'fold']
+  const FILTER_TYPES: [FilterType, string][] = [
+    ['lowpass', 'Low'],
+    ['highpass', 'High'],
+    ['bandpass', 'Band'],
+    ['notch', 'Notch']
+  ]
   const GLIDE_MODES: [GlideMode, string][] = [
     ['legato', 'Legato'],
     ['always', 'Always']
@@ -695,6 +702,32 @@
 {/snippet}
 
 {#snippet filter()}
+  <div class="space-y-1">
+    {@render caption('filter_type', 'Type')}
+    <div
+      id="synth-filter_type"
+      class="grid grid-cols-4 gap-1 rounded-lg bg-zinc-950/60 p-1"
+      role="group"
+      aria-label="Filter type"
+    >
+      {#each FILTER_TYPES as [type, label] (type)}
+        <button
+          type="button"
+          aria-pressed={edited.filter_type === type}
+          disabled={store.readOnly}
+          onclick={() => store.setParam('filter_type', type, soundPad)}
+          class={[
+            'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+            edited.filter_type === type
+              ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+              : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+          ]}
+        >
+          {label}
+        </button>
+      {/each}
+    </div>
+  </div>
   <label class="block space-y-1" for="synth-filter_cutoff">
     <span
       class="flex items-baseline justify-between text-xs uppercase tracking-wider text-zinc-400"
