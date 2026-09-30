@@ -486,9 +486,10 @@
           <select
             id="drums-grid"
             value={grid}
-            disabled={store.readOnly}
+            disabled={store.readOnly || !isEmpty(shown)}
+            title={isEmpty(shown) ? undefined : 'Clear the pattern to change its grid'}
             onchange={(e) => store.setGrid(editing, Number(e.currentTarget.value) as DrumGrid)}
-            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200"
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 disabled:opacity-60"
           >
             {#each GRID_LABELS as [value, label] (value)}
               <option {value}>{label}</option>

@@ -24,7 +24,7 @@ import type {
   VoiceTweak
 } from './types.js'
 
-import { ACCENT, gridOf, STEPS } from './drums/engine.js'
+import { gridOf, STEPS } from './drums/engine.js'
 import { KIT_SOUNDS, TRACKS } from './drums/kits.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
@@ -262,32 +262,19 @@ export class SongStore {
     })
   }
 
-  // Moves a pattern onto another grid, as one undo step. Steps on a line both
-  // grids share stay put; every other hit moves to the nearest step (halfway
-  // between two: the earlier), with its settings. Two hits landing on one step
-  // keep the stronger.
+  // Puts an empty pattern on another grid, as one undo step. A pattern with hits
+  // keeps its grid (Clear it first), so no hit is ever moved or lost.
   setGrid(index: number, grid: DrumGrid): void {
     const map = this.patternsArray.get(index)
     const pattern = this.drums.patterns[index]
     if (!map || !pattern || gridOf(pattern) === grid) return
-    // How loud a hit plays, as the engine plays it.
-    const strength = (s: DrumStep) => s.velocity * (s.accent ? ACCENT : 1)
+    if (Object.values(pattern).some((row) => row.some((s) => s.on))) return
     this.edit(() => {
-      for (const { id } of TRACKS) {
-        const row = pattern[id]
-        const next = Array.from({ length: grid }, (_, s) => {
-          const from = (s * row.length) / grid
-          return (Number.isInteger(from) ? row[from] : undefined) ?? { ...STEP }
-        })
-        row.forEach((step, i) => {
-          const at = (i * grid) / row.length
-          if (!step.on || Number.isInteger(at)) return
-          const s = Math.ceil(at - 0.5)
-          const there = next[s]
-          if (!there?.on || strength(step) > strength(there)) next[s] = step
-        })
-        map.set(id, next)
-      }
+      for (const { id } of TRACKS)
+        map.set(
+          id,
+          Array.from({ length: grid }, () => ({ ...STEP }))
+        )
     }, true)
   }
 

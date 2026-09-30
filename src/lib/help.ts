@@ -41,7 +41,7 @@ export const HELP = {
   drums_euclid:
     'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
   drums_grid:
-    'How many squares a bar has in this pattern. 1/16 is 16, four to a beat, for most beats. 1/16 triplets fits six in a beat, for rolling trap hi-hats and fast drum rolls; 1/8 triplets fits three, for a shuffle, a 12/8 blues or a swung, loping groove. Changing it moves every hit to the nearest square on the new grid, so a straight beat turns into a shuffled one; if two hits of a drum land on one square, the louder stays. Undo takes it back.',
+    'How many squares a bar has in this pattern. 1/16 is 16, four to a beat, for most beats. 1/16 triplets fits six in a beat, for rolling trap hi-hats and fast drum rolls; 1/8 triplets fits three, for a shuffle, a 12/8 blues or a swung, loping groove. Pick it before you start: it only changes while the pattern is empty, so no hit ever moves. To switch a pattern with hits, Clear it first.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',
