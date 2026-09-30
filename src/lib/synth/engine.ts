@@ -36,6 +36,10 @@ export const DEFAULT_PARAMS: SynthParams = {
   osc2_level: 0.4,
   osc2_octave: -1,
   osc2_wave: 'square',
+  // Pitch envelope: semitones each note starts off by (0 = off), and seconds
+  // to fall back to its pitch.
+  pitch_env_amount: 0,
+  pitch_env_decay: 0.1,
   release: 0.5,
   sustain: 0.6,
   volume: 0.7
@@ -263,7 +267,7 @@ interface Voice {
   osc2: OscillatorNode
   own: boolean
   release: number
-  srcs: OscillatorNode[]
+  srcs: AudioScheduledSourceNode[]
   sustain: number
   t0: number
   // Tremolo stage after the envelope; the LFO drives its gain when targeting amp.
@@ -476,7 +480,18 @@ export function createSynth(
       )
     }
 
-    const srcs = [osc1, osc2, ...lfos.map((l) => l.osc)]
+    // The pitch envelope: an offset on both oscillators' detune, falling in a
+    // straight line of cents (a curve in pitch) from the amount to nothing.
+    // Pitch LFOs and glide work on top of it.
+    const srcs: AudioScheduledSourceNode[] = [osc1, osc2, ...lfos.map((l) => l.osc)]
+    if (p.pitch_env_amount) {
+      const penv = ctx.createConstantSource()
+      penv.offset.setValueAtTime(p.pitch_env_amount * 100, t)
+      penv.offset.linearRampToValueAtTime(0, t + p.pitch_env_decay)
+      penv.connect(osc1.detune)
+      penv.connect(osc2.detune)
+      srcs.push(penv)
+    }
     const v: Voice = {
       amp,
       attack,

@@ -213,6 +213,10 @@ export interface SynthParams {
   osc2_level: number
   osc2_octave: number
   osc2_wave: Wave
+  // Pitch envelope: each note starts `pitch_env_amount` semitones off (negative
+  // starts below; 0 = off) and falls back to its pitch over `pitch_env_decay` s.
+  pitch_env_amount: number
+  pitch_env_decay: number
   release: number
   sustain: number
   volume: number

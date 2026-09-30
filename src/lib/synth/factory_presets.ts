@@ -36,6 +36,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0,
       osc2_octave: -1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.08,
       sustain: 0.3
     }
@@ -73,6 +75,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 1,
       osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 2,
       sustain: 0.8
     }
@@ -111,6 +115,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 0,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.25,
       sustain: 0.85
     }
@@ -147,6 +153,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.35,
       osc2_octave: 2,
       osc2_wave: 'sine',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 1.8,
       sustain: 0
     }
@@ -184,6 +192,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 0,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.2,
       sustain: 0.75
     }
@@ -223,6 +233,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.15,
       osc2_octave: -1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.08,
       sustain: 0.85
     }
@@ -259,6 +271,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.2,
       osc2_octave: 1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.05,
       sustain: 0.8
     }
@@ -296,12 +310,15 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: -2,
       osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.15,
       sustain: 0.9
     }
   },
   {
     // A long sliding 808 with its top roughed up; some left clean so the boom stays.
+    // Each note punches in a fifth high and drops onto its pitch.
     name: 'Dirty 808',
     params: {
       attack: 0.002,
@@ -333,6 +350,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0,
       osc2_octave: -1,
       osc2_wave: 'triangle',
+      pitch_env_amount: 7,
+      pitch_env_decay: 0.08,
       release: 0.3,
       sustain: 0.6
     }
@@ -369,6 +388,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: -2,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.15,
       sustain: 1
     }
@@ -406,6 +427,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.25,
       osc2_octave: 1,
       osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.5,
       sustain: 0.2
     }
@@ -442,6 +465,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.2,
       osc2_octave: 1,
       osc2_wave: 'sine',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.15,
       sustain: 0.9
     }
@@ -479,6 +504,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: -1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.1,
       sustain: 0.8
     }
@@ -516,6 +543,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 0,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.2,
       sustain: 0.8
     }
@@ -553,6 +582,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.35,
       osc2_octave: 1,
       osc2_wave: 'sine',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.2,
       sustain: 0
     }
@@ -591,6 +622,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: -1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.15,
       sustain: 0.8
     }
@@ -629,6 +662,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: -1,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.5,
       sustain: 0.9
     }
@@ -666,8 +701,49 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.4,
       sustain: 0.8
+    }
+  },
+  {
+    // Three octaves of pitch falling away in a moment: "pew".
+    name: 'Laser',
+    params: {
+      attack: 0.001,
+      decay: 0.35,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 6000,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 2,
+      filter_sustain: 0,
+      filter_type: 'lowpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.6,
+      osc1_octave: 0,
+      osc1_wave: 'square',
+      osc2_detune: 10,
+      osc2_level: 0.3,
+      osc2_octave: 1,
+      osc2_wave: 'sawtooth',
+      pitch_env_amount: 36,
+      pitch_env_decay: 0.3,
+      release: 0.1,
+      sustain: 0
     }
   },
   {
@@ -702,6 +778,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 1,
       osc2_wave: 'sine',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.08,
       sustain: 1
     }
@@ -739,6 +817,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 1,
       osc2_wave: 'sine',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.08,
       sustain: 1
     }
@@ -776,6 +856,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 2,
       sustain: 0.8
     }
@@ -813,6 +895,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.3,
       osc2_octave: 1,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.3,
       sustain: 0
     }
@@ -849,6 +933,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 1.5,
       sustain: 0.8
     }
@@ -886,6 +972,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 0,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.4,
       sustain: 0.4
     }
@@ -923,6 +1011,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: -1,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.3,
       sustain: 0.9
     }
@@ -961,6 +1051,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.55,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 1,
       sustain: 1
     }
@@ -997,6 +1089,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 0,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.2,
       sustain: 0.8
     }
@@ -1034,6 +1128,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.5,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 1.2,
       sustain: 0.85
     }
@@ -1071,6 +1167,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.4,
       sustain: 0.8
     }
@@ -1108,6 +1206,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 1,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.3,
       sustain: 0.8
     }
@@ -1146,6 +1246,8 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.6,
       osc2_octave: 1,
       osc2_wave: 'square',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 0.1,
       sustain: 0.45
     }
@@ -1183,8 +1285,49 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_level: 0.4,
       osc2_octave: 0,
       osc2_wave: 'sawtooth',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
       release: 2,
       sustain: 0.7
+    }
+  },
+  {
+    // Four octaves gone in a blink: a video-game zap, or a click on top of a beat.
+    name: 'Zap',
+    params: {
+      attack: 0.001,
+      decay: 0.12,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 8000,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      filter_type: 'lowpass',
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_rate: 4,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_rate: 5,
+      lfo2_target: 'pitch',
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'triangle',
+      osc2_detune: 0,
+      osc2_level: 0.3,
+      osc2_octave: 0,
+      osc2_wave: 'square',
+      pitch_env_amount: 48,
+      pitch_env_decay: 0.05,
+      release: 0.05,
+      sustain: 0
     }
   }
 ]
