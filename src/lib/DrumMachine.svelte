@@ -227,6 +227,7 @@
 
   onMount(() => {
     const engine = createDrums({
+      onKick: (at, level) => effects.duck(at, level),
       onPattern: (i) => (playingPattern = i ?? -1),
       onStep: (s) => (current = s),
       onStop: () => {

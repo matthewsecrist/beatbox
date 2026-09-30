@@ -5,7 +5,8 @@ import { getContext } from './audio.js'
 // Shared send effects on the page's AudioContext: every instrument plays into a
 // channel that goes to the master stage dry and, through a send level per effect,
 // into one tempo-synced delay (straight or ping-pong) and one reverb, whose
-// returns join it there. The master stage is a glue compressor (off by default)
+// returns join it there. Each kick ducks the synth channel (dry and sends) for the
+// pumping sidechain sound. The master stage is a glue compressor (off by default)
 // and then a fixed limiter, so stacked sends and drive don't clip. Nothing is
 // built until an instrument first asks for its channel (after a user gesture);
 // settings made before then are kept and applied when it is.
@@ -23,6 +24,8 @@ export const DEFAULT_EFFECTS: Effects = {
   delay_time: '1/8d',
   drums_delay: 0,
   drums_reverb: 0,
+  duck_amount: 0,
+  duck_release: '1/8',
   reverb_mix: 0.6,
   reverb_size: 2,
   synth_delay: 0,
@@ -43,6 +46,10 @@ export const DELAY_BEATS: Record<DelayTime, number> = {
 const MAX_DELAY = 4 // seconds: a half note down to 30 BPM
 const DAMPING = 4500 // Hz: each repeat comes back a little darker
 const SMOOTH = 0.02 // s: glide for level and time changes, so they don't click
+// Sidechain: a kick pulls the synth down within a few ms and holds it there
+// briefly, then it comes back (95% of the way over the release).
+const DUCK_ATTACK = 0.003 // s, time constant
+const DUCK_HOLD = 0.01 // s
 
 // Glue compressor: `comp_amount` lowers the threshold from 0 to COMP_RANGE dB at a
 // gentle ratio. The node adds its own makeup gain, which keeps a typical mix about
@@ -69,16 +76,20 @@ let clipCurve: Float32Array<ArrayBuffer> | null = null
 export interface EffectsBus {
   // The node an instrument plays into (created on first use).
   channel(instrument: Instrument): AudioNode
+  // A kick at audio time `at`, `level` its gain (1 = full): ducks the synth by
+  // the sidechain amount, less for a softer kick. Nothing while the drums are muted.
+  duck(at: number, level: number): void
   // Silences an instrument (dry and sends) or brings it back; listening only.
   mute(instrument: Instrument, muted: boolean): void
-  // Applies the song's settings; `bpm` sets the delay time.
+  // Applies the song's settings; `bpm` sets the delay time and the duck's release.
   set(settings: Effects, bpm: number): void
 }
 
 interface Bus {
   // Gain putting the left delay line on the right side too (straight delay).
   bothSides: GainNode
-  channels: Partial<Record<Instrument, { delay: GainNode; reverb: GainNode }>>
+  // Per instrument: its ducking gain (after the mute), then its send levels.
+  channels: Partial<Record<Instrument, { delay: GainNode; duck: GainNode; reverb: GainNode }>>
   comp: DynamicsCompressorNode
   // Ping-pong feedback: each delay line into the other.
   crossLR: GainNode
@@ -218,17 +229,27 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       if (existing) return existing
       const { ctx } = b
       const input = ctx.createGain()
+      const duck = ctx.createGain()
       const delay = ctx.createGain()
       const reverb = ctx.createGain()
       input.gain.value = muted.has(instrument) ? 0 : 1
-      input.connect(b.master)
-      input.connect(delay).connect(b.delay)
-      input.connect(reverb).connect(b.reverb)
+      input.connect(duck)
+      duck.connect(b.master)
+      duck.connect(delay).connect(b.delay)
+      duck.connect(reverb).connect(b.reverb)
       delay.gain.value = settings[`${instrument}_delay`]
       reverb.gain.value = settings[`${instrument}_reverb`]
       b.inputs[instrument] = input
-      b.channels[instrument] = { delay, reverb }
+      b.channels[instrument] = { delay, duck, reverb }
       return input
+    },
+    duck(at: number, level: number): void {
+      const synth = bus?.channels.synth
+      if (!synth || !settings.duck_amount || muted.has('drums')) return
+      const release = (DELAY_BEATS[settings.duck_release] * 60) / bpm
+      const { gain } = synth.duck
+      gain.setTargetAtTime(1 - settings.duck_amount * Math.min(1, level), at, DUCK_ATTACK)
+      gain.setTargetAtTime(1, at + DUCK_HOLD, release / 3)
     },
     mute(instrument: Instrument, on: boolean): void {
       if (on) muted.add(instrument)

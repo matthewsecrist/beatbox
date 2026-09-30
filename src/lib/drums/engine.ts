@@ -54,6 +54,8 @@ export function createDrums({
   getCtx = getContext,
   // Name it holds the transport under; a second engine (a preview) needs its own.
   id = 'drums',
+  // Each kick the pattern plays, at its audio time and gain (the sidechain).
+  onKick = noop,
   onPattern = noop,
   onStep,
   onStop = noop,
@@ -64,6 +66,7 @@ export function createDrums({
 }: {
   getCtx?: () => BaseAudioContext
   id?: string
+  onKick?: (at: number, level: number) => void
   onPattern?: (tag: number | undefined) => void
   onStep: (step: number) => void
   onStop?: () => void
@@ -385,7 +388,9 @@ export function createDrums({
         const dt = humanize ? Math.max(drift(HUMANIZE_TIME), Math.min(0, ctx.currentTime - t)) : 0
         for (let r = 0; r < step.ratchet; r++) {
           const at = transport.timeAt(from + (span * r) / step.ratchet) + dt
-          hit(id, at, humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain, step)
+          const level = humanize ? gain * (1 + drift(HUMANIZE_GAIN)) : gain
+          hit(id, at, level, step)
+          if (id === 'kick') onKick(at, level)
         }
       }
       queue.push({ step: nextStep, time: t })

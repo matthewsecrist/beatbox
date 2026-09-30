@@ -56,7 +56,8 @@ export interface DrumStep {
 // Shared send effects: a tempo-synced delay and a reverb, each fed by a send
 // level per instrument and returned at `*_mix`, then the master stage: a glue
 // compressor (`comp_on`, squeezing harder as `comp_amount` goes up) and a fixed
-// limiter. Sends, mixes and the amount are 0-1.
+// limiter. Sends, mixes and the amount are 0-1. Sidechain: each kick ducks the
+// synth by `duck_amount` (0 = off) and it comes back over `duck_release`.
 export interface Effects {
   comp_amount: number
   comp_on: boolean
@@ -67,6 +68,9 @@ export interface Effects {
   delay_time: DelayTime
   drums_delay: number
   drums_reverb: number
+  duck_amount: number
+  // A note value at the tempo playing, like the delay time.
+  duck_release: DelayTime
   reverb_mix: number
   reverb_size: number // decay in seconds, 0.3-6
   synth_delay: number

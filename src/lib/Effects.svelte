@@ -108,26 +108,31 @@
   </div>
 {/snippet}
 
+<!-- A note-value menu (at the tempo playing), for the delay time and the duck's release. -->
+{#snippet noteSelect(key: 'delay_time' | 'duck_release', label: string)}
+  <label class="block space-y-1" for={'fx-' + key}>
+    <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+      >{label}{@render info(key)}</span
+    >
+    <select
+      id={'fx-' + key}
+      value={settings[key]}
+      disabled={store.readOnly}
+      onchange={(e) => store.setEffects({ [key]: e.currentTarget.value as DelayTime })}
+      class="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none disabled:cursor-default disabled:hover:border-zinc-700"
+    >
+      {#each DELAY_TIMES as [value, text] (value)}
+        <option {value}>{text}</option>
+      {/each}
+    </select>
+  </label>
+{/snippet}
+
 {#if part === 'master'}
   <div id="effects" class="grid gap-4 sm:grid-cols-2">
     <div class={panel}>
       {@render heading('delay', 'Delay')}
-      <label class="block space-y-1" for="fx-delay_time">
-        <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
-          >Time{@render info('delay_time')}</span
-        >
-        <select
-          id="fx-delay_time"
-          value={settings.delay_time}
-          disabled={store.readOnly}
-          onchange={(e) => store.setEffects({ delay_time: e.currentTarget.value as DelayTime })}
-          class="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none disabled:cursor-default disabled:hover:border-zinc-700"
-        >
-          {#each DELAY_TIMES as [value, label] (value)}
-            <option {value}>{label}</option>
-          {/each}
-        </select>
-      </label>
+      {@render noteSelect('delay_time', 'Time')}
       {@render toggle('delay_pingpong', 'Bounce', ['Straight', 'Ping-pong'])}
       {@render slider('delay_feedback', 'Feedback', 0.9, fmtPct)}
       {@render slider('delay_mix', 'Mix', 1, fmtPct)}
@@ -137,7 +142,12 @@
       {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
       {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
     </div>
-    <div id="fx-master" class={[panel, 'sm:col-span-2']}>
+    <div id="fx-duck" class={panel}>
+      {@render heading('duck', 'Sidechain')}
+      {@render slider('duck_amount', 'Amount', 1, fmtSend)}
+      {@render noteSelect('duck_release', 'Release')}
+    </div>
+    <div id="fx-master" class={panel}>
       {@render heading('master', 'Master')}
       {@render toggle('comp_on', 'Compressor', ['Off', 'On'])}
       {@render slider('comp_amount', 'Amount', 1, fmtPct)}
