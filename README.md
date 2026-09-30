@@ -217,7 +217,9 @@ to each effect (all off in a new song). **Song settings** in the song bar has th
 themselves, with **Mix** for how loud each comes back. The delay's
 **Time** is a note value (1/16 to 1/2, with dotted and triplet ones) that follows
 the song tempo, with **Feedback** for how many repeats; each repeat comes back a
-little darker. The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
+little darker. **Bounce** keeps the repeats in the middle (**Straight**) or sends
+them from side to side (**Ping-pong**: the first from the left, the next from the
+right, and so on, each a delay time apart). The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
 Browser previews play through the same effects.
 
 Everything (both instruments dry and both effect returns) then goes through the

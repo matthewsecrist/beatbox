@@ -24,6 +24,8 @@ export const HELP = {
   delay_feedback:
     'How many echoes you hear. Low gives one or two quick repeats; high keeps them bouncing for a long time.',
   delay_mix: 'How loud the echoes are compared with the original sound.',
+  delay_pingpong:
+    'Straight keeps every echo in the middle. Ping-pong bounces them from side to side: the first echo comes from the left, the next from the right, then left again, so the sound seems to fly around your head. Best on headphones.',
   delay_time:
     'How far apart the echoes are, in note lengths: 1/16 is quick and close together, 1/2 is slow and far apart. Dotted times land a bit off the beat for a bouncy, galloping echo.',
   drive:

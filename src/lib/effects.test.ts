@@ -5,7 +5,7 @@ import { createEffects, DEFAULT_EFFECTS, impulse } from './effects.js'
 interface FakeNode {
   attack: FakeParam
   buffer?: unknown
-  connect(next: FakeNode): FakeNode
+  connect(next: FakeNode, output?: number, input?: number): FakeNode
   curve?: Float32Array
   delayTime: FakeParam
   frequency: FakeParam
@@ -13,6 +13,8 @@ interface FakeNode {
   kind: string
   knee: FakeParam
   outputs: FakeNode[]
+  // Which input of each output it feeds (a channel merger's side).
+  ports: number[]
   ratio: FakeParam
   release: FakeParam
   threshold: FakeParam
@@ -37,8 +39,10 @@ function fakeAudio() {
   const node = (kind: string): FakeNode => {
     const n: FakeNode = {
       attack: param(),
-      connect(next) {
+      // connect(next, output, input): only the input (a merger's side) matters here.
+      connect(next, ...ports) {
         n.outputs.push(next)
+        n.ports.push(ports[1] ?? 0)
         return next
       },
       delayTime: param(),
@@ -47,6 +51,7 @@ function fakeAudio() {
       kind,
       knee: param(),
       outputs: [],
+      ports: [],
       ratio: param(),
       release: param(),
       threshold: param()
@@ -61,6 +66,7 @@ function fakeAudio() {
       buffers.push({ channels, length })
       return { getChannelData: () => new Float32Array(length) }
     },
+    createChannelMerger: () => node('merger'),
     createConvolver: () => node('convolver'),
     createDelay: () => node('delay'),
     createDynamicsCompressor: () => node('compressor'),
@@ -90,6 +96,50 @@ test('nothing is built until an instrument asks for its channel; earlier setting
   expect(find(nodes, 'delay').delayTime.value).toBe(0.375) // a dotted 8th at 120 BPM
   const feedback = nodes.find((n) => n.kind === 'gain' && n.outputs.includes(find(nodes, 'delay')))
   expect(feedback?.gain.value).toBe(0.5)
+})
+
+// Which sides the first `n` repeats of a delayed sound come out of: follows the
+// graph from the left delay line (where the sends go) through every gain that's up,
+// to the merger (noting the side) or on into a delay line (the next repeat).
+function repeats(nodes: FakeNode[], n: number): string[] {
+  const merger = find(nodes, 'merger')
+  const lines = nodes.filter((x) => x.kind === 'delay')
+  let playing = lines.slice(0, 1)
+  const heard: string[] = []
+  for (let i = 0; i < n; i++) {
+    const sides = new Set<string>()
+    const next = new Set<FakeNode>()
+    const walk = (from: FakeNode) =>
+      from.outputs.forEach((to, k) => {
+        if (to.kind === 'gain' && to.gain.value === 0) return
+        if (to === merger) sides.add(from.ports[k] === 0 ? 'L' : 'R')
+        else if (lines.includes(to)) next.add(to)
+        else walk(to)
+      })
+    playing.forEach(walk)
+    heard.push([...sides].sort().join('+'))
+    playing = [...next]
+  }
+  return heard
+}
+
+test('ping-pong bounces each repeat to the other side; straight keeps them in the middle', () => {
+  const { getCtx, nodes } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.set({ ...DEFAULT_EFFECTS, delay_time: '1/4' }, 120)
+  bus.channel('synth')
+  expect(repeats(nodes, 4)).toStrictEqual(['L+R', 'L+R', 'L+R', 'L+R'])
+
+  bus.set({ ...DEFAULT_EFFECTS, delay_pingpong: true, delay_time: '1/4' }, 120)
+  expect(repeats(nodes, 4)).toStrictEqual(['L', 'R', 'L', 'R'])
+  // Both lines keep the delay time, so the bounces stay on the beat.
+  expect(nodes.filter((x) => x.kind === 'delay').map((d) => d.delayTime.value)).toStrictEqual([
+    0.5, 0.5
+  ])
+
+  // Feedback 0: one repeat, then nothing.
+  bus.set({ ...DEFAULT_EFFECTS, delay_feedback: 0, delay_pingpong: true }, 120)
+  expect(repeats(nodes, 3)).toStrictEqual(['L', '', ''])
 })
 
 test('a channel plays dry and into each effect at its send level', () => {

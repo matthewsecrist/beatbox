@@ -666,6 +666,7 @@
   "effects": {
     "delay_feedback": 0.35,
     "delay_mix": 0.5,
+    "delay_pingpong": true,
     "delay_time": "1/8t",
     "drums_delay": 0,
     "drums_reverb": 0.05,
