@@ -233,7 +233,8 @@
   }
 
   // Arrangement scene: pads in the section play from its boundary beat (already
-  // playing ones keep their phase); the rest stop exactly on it.
+  // playing ones keep their phase); the rest stop exactly on it. A section's
+  // synth filter lane shifts every note's cutoff over it (none: back to no shift).
   function onScene({ detail }: CustomEvent<Scene>) {
     players.forEach((p, slot) => {
       if (!p) return
@@ -244,15 +245,22 @@
         p.stopAt(detail.beat)
       }
     })
+    synth?.automateFilter(
+      detail.automation.synth_filter ?? null,
+      transport.timeAt(detail.beat),
+      transport.timeAt(detail.end)
+    )
   }
 
-  // Song-bar Play (with no arrangement: every filled pad) / Stop (them all).
+  // Song-bar Play (with no arrangement: every filled pad) / Stop (them all, and
+  // any cutoff shift the song was making).
   function onTransport(e: CustomEvent<TransportDetail>) {
     players.forEach((p, slot) => {
       if (!p) return
       if (e.detail.play && !p.playing) startPad(slot)
       if (!e.detail.play && p.playing) stopPad(slot)
     })
+    if (!e.detail.play) synth?.stopAutomation()
   }
 
   // A key goes down: it holds its note, or the chord built on it.

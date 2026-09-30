@@ -1,6 +1,9 @@
 {
   "arrangement": [
     {
+      "automation": {
+        "master_filter": [-0.7, 0]
+      },
       "bars": 4,
       "drums": false,
       "name": "Needle drop",
@@ -57,6 +60,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "master_filter": [0, -0.5]
+      },
       "bars": 4,
       "drums": false,
       "name": "Rain on the window",
@@ -64,6 +70,9 @@
       "pattern": 2
     },
     {
+      "automation": {
+        "master_filter": [-0.5, 0]
+      },
       "bars": 3,
       "drums": true,
       "name": "Coming back",
@@ -93,6 +102,9 @@
       "pattern": 2
     },
     {
+      "automation": {
+        "master_filter": [0, -0.8]
+      },
       "bars": 4,
       "bpm": 70,
       "drums": false,

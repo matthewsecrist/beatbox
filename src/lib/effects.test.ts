@@ -1,4 +1,4 @@
-import { expect, test, vi } from 'vitest'
+import { expect, type Mock, test, vi } from 'vitest'
 
 import { createEffects, DEFAULT_EFFECTS, impulse } from './effects.js'
 
@@ -24,7 +24,10 @@ interface FakeNode {
 }
 
 interface FakeParam {
+  cancelScheduledValues: Mock<(t: number) => void>
+  linearRampToValueAtTime: Mock<(value: number, t: number) => void>
   setTargetAtTime: (value: number, t: number, c: number) => void
+  setValueAtTime: Mock<(value: number, t: number) => void>
   value: number
 }
 
@@ -33,9 +36,12 @@ function fakeAudio() {
   const nodes: FakeNode[] = []
   const buffers: { channels: number; length: number }[] = []
   const param = (): FakeParam => ({
+    cancelScheduledValues: vi.fn(),
+    linearRampToValueAtTime: vi.fn(),
     setTargetAtTime: vi.fn(function (this: FakeParam, value: number) {
       this.value = value
     }),
+    setValueAtTime: vi.fn(),
     value: 0
   })
   const node = (kind: string): FakeNode => {
@@ -240,6 +246,75 @@ test('the DJ filter passes everything in the middle; left sweeps a low-pass down
   expect(cutoffs(-0.5)[0]).toBeCloseTo(1414.21) // halfway in pitch between 20 kHz and 100 Hz
   expect(cutoffs(0.5)).toStrictEqual([500, 400]) // halfway between 20 Hz and 8 kHz
   expect(cutoffs(1)).toStrictEqual([500, 8000])
+})
+
+test("a section's ramp moves a send in a line; song edits wait, and its setting comes back after", () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.2 }, 120)
+  const reverbSend = (bus.channel('synth') as unknown as FakeNode).outputs[0]?.outputs[2]
+  if (!reverbSend) throw new Error('no reverb send')
+  const { gain } = reverbSend
+
+  bus.automate({ synth_reverb: [0, 0.6] }, 2, 10)
+  expect(gain.setValueAtTime.mock.calls).toStrictEqual([[0, 2]])
+  expect(gain.linearRampToValueAtTime.mock.calls).toStrictEqual([[0.6, 10]])
+
+  // Moving the song's own send while it ramps doesn't fight the ramp.
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.4 }, 120)
+  expect(gain.setTargetAtTime).not.toHaveBeenCalled()
+
+  // The next section leaves it alone (announced early): the song's setting is
+  // back on its first beat. An edit before that beat doesn't touch the running
+  // ramp, but the reset on the beat lands on it.
+  bus.automate({}, 10, 18)
+  expect(gain.setValueAtTime.mock.calls.at(-1)).toStrictEqual([0.4, 10])
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.3 }, 120)
+  expect(gain.setTargetAtTime).not.toHaveBeenCalled()
+  expect(gain.setValueAtTime.mock.calls.at(-1)).toStrictEqual([0.3, 10])
+
+  // Once the beat has passed, edits apply straight away again.
+  const clock = getCtx() as unknown as { currentTime: number }
+  clock.currentTime = 10
+  bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.5 }, 120)
+  expect(gain.value).toBe(0.5)
+})
+
+test('stopping just before a section that lets go still cancels the ramp and its reset', () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  const reverbSend = (bus.channel('synth') as unknown as FakeNode).outputs[0]?.outputs[2]
+  if (!reverbSend) throw new Error('no reverb send')
+  const clock = getCtx() as unknown as { currentTime: number }
+
+  bus.automate({ synth_reverb: [0, 0.6] }, 0, 10)
+  clock.currentTime = 9.95
+  bus.automate({}, 10, 18) // the next section, announced 50 ms early
+  bus.stopAutomation()
+  expect(reverbSend.gain.cancelScheduledValues).toHaveBeenCalledWith(9.95)
+  expect(reverbSend.gain.value).toBe(DEFAULT_EFFECTS.synth_reverb)
+})
+
+test('the master filter ramps evenly in pitch, and stopping the song glides it back', () => {
+  const { getCtx, nodes } = fakeAudio() // Nyquist is 500 Hz
+  const bus = createEffects(getCtx)
+  bus.channel('drums')
+  const lowpass = find(nodes, 'compressor').outputs[0]
+  const highpass = lowpass?.outputs[0]
+  if (!lowpass || !highpass) throw new Error('no DJ filter')
+
+  bus.automate({ master_filter: [0, -1] }, 0, 4) // off to fully low-pass over 4 s
+  const ramp = lowpass.frequency.linearRampToValueAtTime.mock.calls
+  expect(lowpass.frequency.setValueAtTime.mock.calls).toStrictEqual([[500, 0]])
+  expect(ramp).toHaveLength(32)
+  expect(ramp[15]?.[0]).toBeCloseTo(1414.21) // halfway (2 s): halfway in pitch
+  expect(ramp[15]?.[1]).toBe(2)
+  expect(ramp.at(-1)).toStrictEqual([100, 4])
+  expect(highpass.frequency.linearRampToValueAtTime.mock.calls.every(([hz]) => hz === 0)).toBe(true)
+
+  bus.stopAutomation()
+  expect(lowpass.frequency.cancelScheduledValues).toHaveBeenCalledWith(0)
+  expect(lowpass.frequency.value).toBe(500) // gliding back to the song's setting: off
 })
 
 test('muting silences only that instrument, even before its channel exists', () => {

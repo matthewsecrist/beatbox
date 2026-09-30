@@ -4,9 +4,10 @@
   import { SvelteSet } from 'svelte/reactivity'
 
   import type { ArrangementSection, SongStore } from './song.svelte.js'
-  import type { Scene, StateDetail, TransportDetail } from './types.js'
+  import type { AutomationTarget, Ramp, Scene, StateDetail, TransportDetail } from './types.js'
 
   import { createArranger, type Position } from './arranger.js'
+  import { LANES, restingValue } from './automation.js'
   import { isAudible } from './drums/engine.js'
   import { effects, type Instrument } from './effects.js'
   import { help } from './help.js'
@@ -60,9 +61,13 @@
     window.dispatchEvent(new CustomEvent(name, { detail }))
   }
 
+  // Each scene goes to the instruments, and its effect ramps to the effects bus.
   const arranger = createArranger({
     onEnd: () => finished(),
-    onScene: (scene) => say('beatbox:scene', scene),
+    onScene: (scene) => {
+      say('beatbox:scene', scene)
+      effects.automate(scene.automation, transport.timeAt(scene.beat), transport.timeAt(scene.end))
+    },
     transport
   })
 
@@ -85,6 +90,7 @@
 
   function stop() {
     arranger.stop()
+    effects.stopAutomation()
     finished()
   }
 
@@ -125,12 +131,47 @@
   const setBars = (index: number, n: number) =>
     store.updateSection(index, { bars: Math.min(MAX_BARS, Math.max(1, n)) })
 
+  // Automation lanes: every lane a section ramps, plus ones added here to write
+  // into (a view setting, like the drums' added tracks: not saved).
+  type Lane = (typeof LANES)[number]
+
   // A section's own tempo; left empty, it plays at the song tempo.
   function setTempo(index: number, text: string) {
     const bpm = Math.round(Number(text))
     store.updateSection(index, {
       bpm: text.trim() === '' || !bpm ? null : Math.min(MAX_BPM, Math.max(MIN_BPM, bpm))
     })
+  }
+  const ENDS = [0, 1] as const
+  const addedLanes = new SvelteSet<AutomationTarget>()
+  const shownLanes = $derived(
+    LANES.filter((l) => addedLanes.has(l.id) || sections.some((s) => s.automation?.[l.id]))
+  )
+  const addableLanes = $derived(LANES.filter((l) => !shownLanes.includes(l)))
+  // A stored value as the lane shows it (percent, octaves).
+  const shown = (l: Lane, v: number) => Number((v * l.scale).toFixed(l.step < 1 ? 1 : 0))
+
+  // A section's new ramp starts and ends at the song's own setting.
+  function addRamp(index: number, id: AutomationTarget) {
+    const v = restingValue(id, store.effects)
+    store.setRamp(index, id, [v, v])
+  }
+
+  function removeLane(id: AutomationTarget) {
+    store.clearLane(id)
+    addedLanes.delete(id)
+  }
+
+  // One end of a ramp, typed in the lane's units; kept in its range (the box then
+  // shows what was kept, or the old value for something that isn't a number).
+  function setEnd(index: number, l: Lane, ramp: Ramp, end: 0 | 1, input: HTMLInputElement) {
+    const n = Number(input.value)
+    const next: Ramp = [ramp[0], ramp[1]]
+    if (input.value.trim() !== '' && Number.isFinite(n)) {
+      next[end] = Math.min(l.max, Math.max(l.min, n / l.scale))
+      store.setRamp(index, l.id, next)
+    }
+    input.value = String(shown(l, next[end]))
   }
 
   // Track names stay in view while the sections scroll sideways.
@@ -450,6 +491,97 @@
         </div>
       {/each}
       <div class="border-t border-zinc-800"></div>
+
+      <!-- Automation: a lane per setting a section ramps, start and end values per section. -->
+      {#each shownLanes as l (l.id)}
+        <div
+          id={'lane-' + l.id}
+          class={[cell, 'flex items-center gap-1.5 border-t border-zinc-800 py-1.5 pl-2 text-xs']}
+        >
+          <span class="truncate text-zinc-300"
+            >{l.label}{#if l.unit}<span class="ml-1 text-zinc-500">{l.unit}</span>{/if}</span
+          >
+          <Info label={l.label} text={help(l.id) ?? ''} />
+          {#if !store.readOnly}
+            <button
+              id={'lane-remove-' + l.id}
+              type="button"
+              class={[iconBtn, 'ml-auto size-6 hover:text-red-400']}
+              aria-label={`Remove the ${l.label} lane`}
+              title="Remove this lane from every section"
+              onclick={() => removeLane(l.id)}>✕</button
+            >
+          {/if}
+        </div>
+        {#each sections as section, i (section.id)}
+          {@const ramp = section.automation?.[l.id]}
+          <div class="flex items-center gap-1 border-t border-zinc-800 py-1.5">
+            {#if ramp}
+              {#each ENDS as end (end)}
+                {#if end}<span class="text-xs text-zinc-500">→</span>{/if}
+                <input
+                  type="number"
+                  min={l.min * l.scale}
+                  max={l.max * l.scale}
+                  step={l.step}
+                  value={shown(l, ramp[end])}
+                  readonly={store.readOnly}
+                  disabled={store.readOnly}
+                  onchange={(e) => setEnd(i, l, ramp, end, e.currentTarget)}
+                  aria-label={`Section ${i + 1}: ${l.label} at the ${end ? 'end' : 'start'}`}
+                  class="w-14 min-w-0 rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-right font-mono text-xs tabular-nums text-sky-300 focus:border-amber-400 focus:outline-none disabled:border-transparent"
+                />
+              {/each}
+              {#if !store.readOnly}
+                <button
+                  type="button"
+                  class={[iconBtn, 'size-6 hover:text-red-400']}
+                  aria-label={`Section ${i + 1}: stop automating ${l.label}`}
+                  title="Keep the song's own setting in this section"
+                  onclick={() => store.setRamp(i, l.id, null)}>✕</button
+                >
+              {/if}
+            {:else if !store.readOnly}
+              <button
+                type="button"
+                class="h-6 w-full rounded border border-dashed border-zinc-800 text-xs text-zinc-600 transition hover:border-zinc-600 hover:text-zinc-300"
+                aria-label={`Section ${i + 1}: automate ${l.label}`}
+                title="Ramp it over this section"
+                onclick={() => addRamp(i, l.id)}>+</button
+              >
+            {/if}
+          </div>
+        {/each}
+        <div class="border-t border-zinc-800"></div>
+      {/each}
+      {#if !store.readOnly && sections.length && addableLanes.length}
+        <label
+          class={[
+            cell,
+            'col-span-full flex w-fit items-center gap-2 border-t border-zinc-800 py-1.5 text-xs uppercase tracking-wider text-zinc-500'
+          ]}
+          for="add-lane"
+        >
+          <span class="flex items-center gap-1"
+            >Automate<Info label="Automation" text={help('automation') ?? ''} /></span
+          >
+          <select
+            id="add-lane"
+            value=""
+            onchange={(e) => {
+              const found = addableLanes.find((l) => l.id === e.currentTarget.value)
+              if (found) addedLanes.add(found.id)
+              e.currentTarget.value = ''
+            }}
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs normal-case text-zinc-200"
+          >
+            <option value="" disabled>Add a lane…</option>
+            {#each addableLanes as l (l.id)}
+              <option value={l.id}>{l.label}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
     </div>
   </div>
   {#if !sections.length}

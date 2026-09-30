@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 
+import { LANES } from './automation.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { help } from './help.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
@@ -46,7 +47,9 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ],
     'tap_tempo',
     // Arrangement
-    'section_bpm'
+    'section_bpm',
+    'automation',
+    ...LANES.map((l) => l.id)
   ]
   expect(keys.filter((key) => !help(key))).toStrictEqual([])
 })

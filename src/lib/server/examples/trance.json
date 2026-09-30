@@ -22,6 +22,10 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "master_filter": [0, 0.7],
+        "synth_delay": [0.25, 0.6]
+      },
       "bars": 8,
       "drums": true,
       "name": "Rise",
@@ -36,6 +40,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "synth_filter": [-2, 0]
+      },
       "bars": 8,
       "drums": false,
       "name": "Breakdown",
@@ -50,6 +57,10 @@
       "pattern": 2
     },
     {
+      "automation": {
+        "master_filter": [0, 0.7],
+        "synth_delay": [0.25, 0.6]
+      },
       "bars": 8,
       "drums": true,
       "name": "Rise again",
@@ -65,6 +76,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "master_filter": [0, -0.9]
+      },
       "bars": 8,
       "drums": true,
       "name": "Outro",
