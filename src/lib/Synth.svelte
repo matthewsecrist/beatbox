@@ -560,6 +560,7 @@
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
   const fmtEnvAmount = (v: number) => (v === 0 ? 'off' : fmtInt(Number(v.toFixed(2))) + ' oct')
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
+  const fmtSemis = (v: number) => (v === 0 ? 'off' : fmtInt(v) + ' st')
   const fmtPctOrOff = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   // Depth slider per LFO target: octaves of cutoff, cents of pitch, share of level.
   const LFO_DEPTH_STEP: Record<LfoTarget, number> = { amp: 0.01, filter: 0.05, pitch: 1 }
@@ -671,6 +672,11 @@
 
 {#snippet osc1()}{@render osc(1)}{/snippet}
 {#snippet osc2()}{@render osc(2)}{/snippet}
+
+{#snippet pitchEnv()}
+  {@render slider('pitch_env_amount', 'Amount', -48, 48, 1, fmtSemis)}
+  {@render slider('pitch_env_decay', 'Decay', 0.001, 2, 0.001, fmtSec)}
+{/snippet}
 
 {#snippet drive()}
   {@render caption('drive_type', 'Character')}
@@ -1024,6 +1030,7 @@
           {@render panel('Osc 1', osc1, 'osc')}
           {@render panel('Osc 2', osc2, 'osc')}
         </div>
+        {@render panel('Pitch Envelope', pitchEnv, 'pitch_env', 'sm:grid-cols-2')}
       {:else if tab === 'filter'}
         {@render panel('Filter', filter, 'filter', 'sm:grid-cols-2 lg:grid-cols-4')}
       {:else if tab === 'amp'}

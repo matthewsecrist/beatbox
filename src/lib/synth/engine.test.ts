@@ -12,6 +12,7 @@ interface FakeNode {
   frequency: FakeParam
   gain: FakeParam
   kind: string
+  offset: FakeParam
   outputs: (FakeNode | FakeParam)[]
   Q: FakeParam
   type?: string
@@ -52,6 +53,7 @@ function fakeAudio() {
       frequency: param(kind + '.frequency'),
       gain: param(kind + '.gain'),
       kind,
+      offset: param(kind + '.offset'),
       outputs: [],
       Q: param(kind + '.Q')
     }
@@ -60,6 +62,7 @@ function fakeAudio() {
   }
   const ctx = {
     createBiquadFilter: () => node('filter'),
+    createConstantSource: () => Object.assign(node('const'), { start: vi.fn(), stop: vi.fn() }),
     createGain: () => node('gain'),
     createOscillator: () => Object.assign(node('osc'), { start: vi.fn(), stop: vi.fn() }),
     createWaveShaper: () => node('shaper'),
@@ -107,6 +110,29 @@ test('amp tremolo swings a gain after the envelope', () => {
   expect(trem?.gain.value).toBe(0.75)
   expect(lfoDepth(nodes).gain.value).toBe(0.25)
   expect(nodes.some((n) => trem && n.kind === 'gain' && n.outputs.includes(trem))).toBe(true)
+})
+
+test('the pitch envelope starts a note its amount off and falls onto its pitch over the decay', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ pitch_env_amount: 12, pitch_env_decay: 0.2 }, () => ctx)
+  clock.currentTime = 1
+  synth.noteOn(60)
+
+  const [osc1, osc2] = nodes.filter((n) => n.kind === 'osc')
+  const penv = nodes.find((n) => n.kind === 'const')
+  // Both oscillators, in cents, on top of their own detune.
+  expect(penv?.outputs).toStrictEqual([osc1?.detune, osc2?.detune])
+  expect(penv?.offset.setValueAtTime).toHaveBeenCalledWith(1200, 1)
+  expect(penv?.offset.linearRampToValueAtTime).toHaveBeenCalledWith(0, 1.2)
+
+  // A loop pad's own sound brings its own envelope; off means no bend at all.
+  synth.noteOn(62, undefined, 'pad0:62', { pitch_env_amount: -5 })
+  expect(nodes.filter((n) => n.kind === 'const')[1]?.offset.setValueAtTime).toHaveBeenCalledWith(
+    -500,
+    1
+  )
+  synth.noteOn(64, undefined, 'pad1:64', { pitch_env_amount: 0 })
+  expect(nodes.filter((n) => n.kind === 'const')).toHaveLength(2)
 })
 
 // What a signal `x` from the oscillators comes out of the drive stage as: the

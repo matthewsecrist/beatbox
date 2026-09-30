@@ -86,10 +86,16 @@ export const HELP = {
     'An LFO is like an invisible hand that keeps turning a knob back and forth, slowly or quickly. It makes sounds wobble, wave or shimmer on their own.',
   panel_osc:
     'An oscillator is the part that actually makes the sound: it vibrates really fast, like a guitar string. The synth has two, and you hear them mixed together.',
+  panel_pitch_env:
+    'The pitch envelope bends each note at its start: the note begins higher (or lower) and quickly slides onto its real pitch. A big, fast bend makes a laser "pew" or a zap; a small one on a low note gives the booming drop of an 808 kick or bass.',
   panel_reverb:
     'The reverb makes it sound like the music is playing in a room, a hall or a huge cave, with the sound bouncing off the walls and ringing on after each note.',
   panel_sends:
     'Sends choose how much of each instrument goes into the echo and the room sound. Off keeps that instrument dry; turn one up to put it in the effect. The synth sends cover the loop pads too.',
+  pitch_env_amount:
+    'How far off each note starts, in semitones (12 is an octave). Above zero it starts high and swoops down; below zero it starts low and swoops up. Off keeps notes on pitch.',
+  pitch_env_decay:
+    'How long each note takes to slide from where the Amount starts it onto its real pitch. Short is a snappy zap or click; long is a slow, falling swoop.',
   release:
     'How long a note keeps ringing after you let go of the key. Short stops right away; long fades out like an echo in a big hall.',
   reverb_mix:

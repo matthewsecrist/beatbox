@@ -71,7 +71,8 @@ and the keys) stays at the bottom whichever track is open.
   mute and solo silence the instrument's echo and reverb sends too, and, like the
   drums', are for listening only: they aren't saved with the song.
 
-**Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level),
+**Synth**: two oscillators (sine, triangle, saw, square; octave, detune, level)
+with a pitch envelope,
 a drive (distortion), a resonant filter (low-pass, high-pass, band-pass or notch) with
 its own envelope, two LFOs, an ADSR envelope and 16 voices. **Drive** distorts the oscillators before the filter. **Amount** at 0 is
 clean; turning it up pushes the wave harder into the **Character**'s curve: **Soft**
@@ -102,10 +103,14 @@ into a note played while the last is still held (hold one key, press the next:
 the 303 slide Acid Bass uses), **Always** into every note. Chords don't slide
 within themselves, and the keyboard, the arpeggiator (which lets go of each note
 before the next, so it slides only on **Always**) and each loop pad glide
-separately. Play it with the on-screen keyboard or your computer keyboard. It comes
+separately. The **Pitch Envelope** (on the Osc tab) bends each note in from its
+**Amount** away (up to ±48 semitones; negative starts below, 0 is off) onto its
+pitch over its **Decay**, on top of glide and vibrato: a small, fast drop punches
+up an 808 (Dirty 808), a big one makes a laser (Laser) or a zap (Zap). Play it
+with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator, filter, envelope (**Amp**), LFO (**Mod**), drive and glide
-controls each have a tab in the synth editor.
+save your own. The oscillator (with the pitch envelope), filter, envelope (**Amp**),
+LFO (**Mod**), drive and glide controls each have a tab in the synth editor.
 
 **ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
 drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet), the

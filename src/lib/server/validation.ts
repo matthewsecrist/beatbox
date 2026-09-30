@@ -36,6 +36,8 @@ const params = z.object({
   osc2_level: z.number().exactOptional(),
   osc2_octave: z.number().exactOptional(),
   osc2_wave: wave.exactOptional(),
+  pitch_env_amount: z.number().min(-48).max(48).exactOptional(),
+  pitch_env_decay: z.number().min(0.001).max(2).exactOptional(),
   release: z.number().exactOptional(),
   sustain: z.number().exactOptional(),
   volume: z.number().exactOptional()
