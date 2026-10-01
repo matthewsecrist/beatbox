@@ -166,6 +166,13 @@ run of taps is one undo step.
   first), so no hit is ever moved or lost; it's one undo step. Euclid works over
   the grid's steps, and Loop Browser beats, Reset and songs saved before grids
   are 1/16.
+- **Length** (the box at the end of each row) sets how many steps that track
+  loops over, from 1 up to the grid: hats on 12 against a kick on 16 drift apart
+  and line up again every three bars (polymeter). Each track keeps counting across
+  bar lines from when the drums started, while patterns still change on the bar.
+  Steps past the end are dimmed and silent. Lengths are saved per pattern; Copy and
+  Paste carry them, and Clear, Randomize, Reset and changing the grid go back to
+  whole bars. Each change is one undo step.
 - **Euclid** spreads a number of hits as evenly as possible over a cycle of steps
   (Bjorklund's algorithm: 3 over 8 is the tresillo, 5 over 8 the cinquillo),
   turned **Rotate** steps later and repeated to fill the bar. Pick a track, and

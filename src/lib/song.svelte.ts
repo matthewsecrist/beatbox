@@ -20,6 +20,7 @@ import type {
   StepLocks,
   SynthParams,
   TrackId,
+  TrackLengths,
   Voices,
   VoiceTweak
 } from './types.js'
@@ -40,7 +41,8 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 //   performance  Y.Map      arp, arp_rate, chord (missing = default)
 //   effects      Y.Map      delay/reverb settings and send levels (missing = default)
 //   drums        Y.Map      bpm, volume, swing, humanize, kit, voices (track -> VoiceTweak: tune,
-//                           decay and any library instrument in place of the kit's; plain JSON)
+//                           decay and any library instrument in place of the kit's; plain JSON),
+//                           lengths (per pattern: track -> steps it loops over; plain JSON)
 //   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
 //   arrangement  Y.Array    Y.Map per section (id, name, bars, drums, pattern, pads)
@@ -93,6 +95,7 @@ export class SongStore {
     bpm: 0,
     humanize: 0,
     kit: 'classic',
+    lengths: [],
     patterns: [],
     swing: 50,
     voices: fillVoices(),
@@ -263,7 +266,8 @@ export class SongStore {
   }
 
   // Puts an empty pattern on another grid, as one undo step. A pattern with hits
-  // keeps its grid (Clear it first), so no hit is ever moved or lost.
+  // keeps its grid (Clear it first), so no hit is ever moved or lost. Its tracks
+  // go back to whole bars.
   setGrid(index: number, grid: DrumGrid): void {
     const map = this.patternsArray.get(index)
     const pattern = this.drums.patterns[index]
@@ -275,6 +279,7 @@ export class SongStore {
           id,
           Array.from({ length: grid }, () => ({ ...STEP }))
         )
+      this.writeLengths(index, {})
     }, true)
   }
 
@@ -301,6 +306,19 @@ export class SongStore {
       this.drumsMap.set('kit', kit)
       this.drumsMap.set('voices', fillVoices(voices))
     }, true)
+  }
+
+  // How many steps `track` loops over in pattern `index` (polymeter), kept to
+  // 1 up to its grid; the whole grid (or null) plays the whole bar again.
+  setLength(index: number, track: TrackId, length: null | number): void {
+    const pattern = this.drums.patterns[index]
+    const lengths = this.drums.lengths[index]
+    if (!pattern || !lengths) return
+    const grid = gridOf(pattern)
+    const next = { ...lengths }
+    if (length === null || length >= grid) delete next[track]
+    else next[track] = Math.max(1, Math.round(length))
+    this.edit(() => this.writeLengths(index, next), true)
   }
 
   // Points LFO `n` elsewhere, carrying its depth over as the same share of the
@@ -366,11 +384,13 @@ export class SongStore {
     this.writeSound(slot, params, true)
   }
 
-  setPattern(index: number, pattern: DrumPattern): void {
+  // Replaces pattern `index` and its track lengths (none: whole bars), as one undo step.
+  setPattern(index: number, pattern: DrumPattern, lengths: TrackLengths = {}): void {
     const map = this.patternsArray.get(index)
     if (!map) return
     this.edit(() => {
       for (const { id } of TRACKS) map.set(id, [...pattern[id]])
+      this.writeLengths(index, { ...lengths })
     }, true)
   }
 
@@ -440,6 +460,7 @@ export class SongStore {
     const synth = this.synthMap.toJSON() as Partial<SynthParams>
     const performance = this.performanceMap.toJSON() as Partial<Performance>
     const effects = this.effectsMap.toJSON() as Partial<Effects>
+    const { lengths, ...drumState } = this.drums
     return {
       arrangement: this.arrangement.map(
         ({ automation, bars, bpm, drums, name, pads, pattern }) => ({
@@ -455,11 +476,13 @@ export class SongStore {
         })
       ),
       drums: {
-        ...this.drums,
+        ...drumState,
         // Saved only when a pattern isn't on 16ths.
         ...(this.drums.patterns.some((p) => gridOf(p) !== STEPS)
           ? { grids: this.drums.patterns.map(gridOf) }
           : {}),
+        // Saved only when a track has a length of its own.
+        ...(lengths.some((l) => Object.keys(l).length) ? { lengths } : {}),
         // Steps with default settings and no locks save as plain on/off.
         patterns: this.drums.patterns.map((p) =>
           Object.fromEntries(
@@ -521,6 +544,7 @@ export class SongStore {
       bpm: get('bpm', 0),
       humanize: get('humanize', 0),
       kit: get<KitId>('kit', 'classic'),
+      lengths: get<TrackLengths[]>('lengths', []),
       patterns: this.patternsArray.map((p) => p.toJSON() as DrumPattern),
       swing: get('swing', 50),
       voices: get('voices', fillVoices()),
@@ -576,6 +600,10 @@ export class SongStore {
     this.drumsMap.set('humanize', drums?.humanize ?? 0)
     this.drumsMap.set('kit', drums?.kit ?? 'classic')
     this.drumsMap.set('voices', fillVoices(drums?.voices))
+    this.drumsMap.set(
+      'lengths',
+      Array.from({ length: DRUM_PATTERNS }, (_, i) => drums?.lengths?.[i] ?? {})
+    )
     const source = drums ? drums.patterns : [DEFAULT_PATTERN]
     this.patternsArray.push(
       Array.from({ length: DRUM_PATTERNS }, (_, i) => {
@@ -595,6 +623,13 @@ export class SongStore {
         }
         return map
       })
+    )
+  }
+
+  private writeLengths(index: number, lengths: TrackLengths) {
+    this.drumsMap.set(
+      'lengths',
+      this.drums.lengths.map((l, i) => (i === index ? lengths : l))
     )
   }
 

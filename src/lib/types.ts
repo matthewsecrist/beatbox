@@ -51,6 +51,8 @@ export interface Drums {
   humanize?: number
   // Absent in songs saved before kits: 'classic'.
   kit?: KitId
+  // Each pattern's track lengths, A-D; absent (or a pattern left out) is whole bars.
+  lengths?: TrackLengths[]
   // Patterns A-D; saved songs may omit tracks, and store plain on/off steps.
   patterns: Partial<Record<TrackId, SavedStep[]>>[]
   // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing
@@ -184,6 +186,7 @@ export type Ramp = [start: number, end: number]
 
 // A saved step: plain on/off when it has default settings.
 export type SavedStep = boolean | Partial<DrumStep>
+
 // Announced by the arranger ahead of each section boundary.
 export interface Scene {
   // The section's ramps (none on the final, empty scene).
@@ -198,7 +201,6 @@ export interface Scene {
   pads: number[]
   pattern: number
 }
-
 // One section of the arrangement.
 export interface Section {
   automation?: Automation
@@ -289,6 +291,10 @@ export interface SynthParams {
 
 export type TrackId =
   'conga' | 'cowbell' | 'crash' | 'ride' | 'rim' | 'shaker' | 'snap' | 'woodblock' | CoreTrackId
+
+// How many steps each track of a pattern loops over before it starts again
+// (polymeter); a track left out plays its pattern's whole bar.
+export type TrackLengths = Partial<Record<TrackId, number>>
 
 // Window events the instruments use to coordinate.
 export interface TransportDetail {

@@ -71,7 +71,7 @@ test('a queued pattern switch takes over exactly on its bar', () => {
     transport
   })
   const kickOn = (step: number) => () => ({
-    kick: Array.from({ length: 16 }, (_, i) => ({ ...STEP, on: i === step }))
+    steps: { kick: Array.from({ length: 16 }, (_, i) => ({ ...STEP, on: i === step })) }
   })
 
   drums.start(kickOn(0), 0, 0) // pattern A; grid starts at 0.05 s
@@ -107,7 +107,7 @@ test('swing delays odd steps, ratchets split the step, probability skips hits', 
   kick[1] = { ...STEP, on: true, ratchet: 2 }
   kick[4] = { ...STEP, on: true, probability: 0.5 }
 
-  drums.start(() => ({ kick }), 0)
+  drums.start(() => ({ steps: { kick } }), 0)
   clock.currentTime = 4
   vi.advanceTimersByTime(25)
   drums.stop()
@@ -129,7 +129,7 @@ test('a triplet grid spaces its steps in thirds of the beat, unswung; a grid cha
     Array.from({ length: steps }, (_, i) => ({ ...STEP, on: on.includes(i) }))
   // 16th triplets: six a beat. Steps 0-3 are the first beat's first four.
   let kick = row(24, [0, 1, 2, 3])
-  drums.start(() => ({ kick }), 0)
+  drums.start(() => ({ steps: { kick } }), 0)
   clock.currentTime = 0.3
   vi.advanceTimersByTime(25)
   expect(kicks).toStrictEqual([0.05, 0.133, 0.217, 0.3])
@@ -155,7 +155,7 @@ test('silencing every track keeps a triplet pattern on its grid, so unmuting lan
   // 8th triplets, a kick on every step: 1/6 s apart.
   const kick = Array.from({ length: 12 }, () => ({ ...STEP, on: true }))
 
-  drums.start(() => ({ kick }), 0)
+  drums.start(() => ({ steps: { kick } }), 0)
   clock.currentTime = 0.2 // scheduled up to 0.3 s: steps at 0.05 and 0.217 pass silently
   vi.advanceTimersByTime(25)
   heard = true
@@ -164,6 +164,26 @@ test('silencing every track keeps a triplet pattern on its grid, so unmuting lan
   drums.stop()
 
   expect(kicks).toStrictEqual([0.383, 0.55]) // still thirds of a beat, not 16ths
+})
+
+test('a track loops over its own length across bar lines, ignoring steps past it', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // 16th = 0.125 s, bar = 2 s; grid starts at 0.05 s
+  const drums = createDrums({ getCtx, onStep: vi.fn(), transport })
+  // Three steps long: step 1 every third 16th; step 6 is past the end, so never heard.
+  const kick = Array.from({ length: 16 }, (_, i) => ({ ...STEP, on: i === 0 || i === 5 }))
+
+  drums.start(() => ({ lengths: { kick: 3 }, steps: { kick } }), 0)
+  clock.currentTime = 2.6
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  // Steps 0, 3 … 15, then on through bar 2 (18, 21), not back to its downbeat.
+  expect(kicks).toStrictEqual([0.05, 0.425, 0.8, 1.175, 1.55, 1.925, 2.3, 2.675])
 })
 
 test('every kick hit is reported for the sidechain, with its level; other drums are not', () => {
@@ -185,7 +205,7 @@ test('every kick hit is reported for the sidechain, with its level; other drums 
   kick[4] = { ...STEP, on: true, ratchet: 2 }
   const snare = Array.from({ length: 16 }, (_, i) => ({ ...STEP, on: i === 2 }))
 
-  drums.start(() => ({ kick, snare }), 0)
+  drums.start(() => ({ steps: { kick, snare } }), 0)
   clock.currentTime = 1.9
   vi.advanceTimersByTime(25)
   drums.stop()
@@ -219,7 +239,7 @@ test('humanize moves each hit by up to 20 ms at full amount, a ratchet as one', 
   kick[2] = { ...STEP, on: true, ratchet: 2 }
 
   // Run the clock as it would, so hits are scheduled ahead of time and can land early.
-  drums.start(() => ({ kick }), 0)
+  drums.start(() => ({ steps: { kick } }), 0)
   for (; clock.currentTime < 0.4; clock.currentTime += 0.025) vi.advanceTimersByTime(25)
   drums.stop()
 
@@ -269,7 +289,7 @@ test("a step's locks replace its voice's tune and decay for that hit only", () =
   kick[4] = { ...STEP, decay: 2, on: true, tune: 7 }
   kick[8] = { ...STEP, on: true, tune: 0 } // locked to the kit's pitch, not the voice's
 
-  drums.start(() => ({ kick }), 0)
+  drums.start(() => ({ steps: { kick } }), 0)
   clock.currentTime = 1.9
   vi.advanceTimersByTime(25)
   drums.stop()
