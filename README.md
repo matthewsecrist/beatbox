@@ -372,13 +372,19 @@ since they have no owner.
 
 Settings come from the environment (or a `.env` file; see `.env.example`):
 
-| Variable             | What                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------- |
-| `BETTER_AUTH_SECRET` | Signs sessions. Required in production (`openssl rand -base64 32`)                       |
-| `BETTER_AUTH_URL`    | The site's public URL, used in sign-in links. Defaults to `http://localhost:5173` in dev |
-| `DATABASE_URL`       | SQLite file or libSQL URL; defaults to `file:beatbox.db`                                 |
-| `RESEND_API_KEY`     | Emails sign-in links with Resend. Unset, they're only printed in the server log          |
-| `EMAIL_FROM`         | Sender of those emails, on a domain verified in Resend. Required with `RESEND_API_KEY`   |
+| Variable             | What                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET` | Signs sessions. Required in production (`openssl rand -base64 32`)                          |
+| `BETTER_AUTH_URL`    | The site's public URL, used in sign-in links. Defaults to `http://localhost:5173` in dev    |
+| `DATABASE_URL`       | SQLite file or libSQL URL; defaults to `file:beatbox.db`                                    |
+| `RESEND_API_KEY`     | Emails sign-in links with Resend. Unset, they're only printed in the server log             |
+| `EMAIL_FROM`         | Sender of those emails, on a domain verified in Resend. Required with `RESEND_API_KEY`      |
+| `PUBLIC_POSTHOG_*`   | PostHog token and host. Set only for production, in `wrangler.jsonc`; unset, PostHog is off |
+
+PostHog server events run as best-effort background work with Worker `waitUntil`;
+analytics failures are logged without failing saved mutations. Browser identity
+follows the signed-in user and resets when the app becomes anonymous. Sign-out
+uses a native form submission and does not wait for analytics.
 
 ### Deploying
 
