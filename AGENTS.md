@@ -15,6 +15,11 @@ See README.md for layout and commands.
   undo/redo). Components read its mirrors and change the song only through its
   methods, never by keeping their own copy; UI-only state (playing, selection) stays
   local. New song data needs a place in the document and a store method.
+- Put each control where its setting lives. Settings for the whole song (the shared
+  delay/reverb and sends, sidechain, master stage) go in **Song settings**
+  (`Effects.svelte`, in the song bar). An instrument's own settings go in that
+  instrument's editor: the synth panel's tabs (as part of the sound, saved with
+  presets and loop pads, like Drive and FX) or the drums' tabs (like Kit's Crush).
 - Shared shapes live in `src/lib/types.ts`. Server-only code lives in `src/lib/server/`.
   Validate anything a client sends with the zod schemas in `src/lib/server/validation.ts`
   before storing it.
