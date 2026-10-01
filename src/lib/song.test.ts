@@ -501,3 +501,17 @@ test("a section's fill is saved only when it has one, and undoes as one step", (
   store.undo()
   expect(store.arrangement[0]?.fill).toBe(3)
 })
+
+test("a section's fill survives loading, duplicating and moving the section", () => {
+  const withFill: SongDoc = {
+    ...song,
+    arrangement: [{ bars: 8, drums: true, fill: 3, name: 'Drop', pads: [2], pattern: 1 }]
+  }
+  const store = new SongStore(withFill, vi.fn())
+  expect(store.arrangement[0]?.fill).toBe(3)
+  expect(store.toSongDoc().arrangement).toStrictEqual(withFill.arrangement)
+
+  store.duplicateSection(0)
+  store.moveSection(1, -1)
+  expect(store.arrangement.map((s) => s.fill)).toStrictEqual([3, 3])
+})

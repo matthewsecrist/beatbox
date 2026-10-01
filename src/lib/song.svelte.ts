@@ -678,6 +678,7 @@ function sectionMap(section: Section): Y.Map<unknown> {
   map.set('drums', section.drums)
   if (section.bpm) map.set('bpm', section.bpm)
   map.set('pattern', section.pattern)
+  if (section.fill != null) map.set('fill', section.fill)
   map.set('pads', [...section.pads])
   if (section.automation && Object.keys(section.automation).length) {
     map.set('automation', plain(section.automation))

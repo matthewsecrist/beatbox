@@ -33,3 +33,8 @@ test("every example's sections play only pads that have a loop and patterns it h
 test('an unknown slug is no example', () => {
   expect(getExample('nope')).toBeNull()
 })
+
+test('examples keep their sections’ drum fills through validation', () => {
+  const groove = getExample('acid-house')?.arrangement.find((s) => s.name === 'Groove')
+  expect(groove?.fill).toBe(3)
+})
