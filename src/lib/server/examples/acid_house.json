@@ -13,6 +13,7 @@
     {
       "bars": 8,
       "drums": true,
+      "fill": true,
       "name": "Groove",
       "pads": [0],
       "pattern": 0
@@ -90,6 +91,184 @@
   ],
   "drums": {
     "bpm": 126,
+    "fills": [
+      {
+        "chat": [
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
+        "kick": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          false,
+          true,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 2,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 2,
+            "velocity": 1
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          }
+        ],
+        "tom": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          false
+        ]
+      }
+    ],
     "kit": "909",
     "patterns": [
       {

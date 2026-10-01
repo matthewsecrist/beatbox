@@ -4,7 +4,7 @@ import type { Loop, SongDoc } from './types.js'
 
 import { STEPS } from './drums/engine.js'
 import { TRACKS } from './drums/kits.js'
-import { DEFAULT_PATTERN, SongStore, STEP } from './song.svelte.js'
+import { DEFAULT_PATTERN, fillOf, SongStore, STEP } from './song.svelte.js'
 
 const loop = (slot: number, midi = 60): Loop => ({
   bpm: 120,
@@ -489,4 +489,76 @@ test('a pad set to play once keeps its notes and sound, saves the setting and un
   expect(store.loops[2]?.once).toBe(true)
   store.setLoopOnce(5, true) // an empty pad: nothing to change
   expect(store.loops[5]).toBe(null)
+})
+
+test("a section's fill is saved only when it's on, and undoes as one step", () => {
+  const store = new SongStore(song, vi.fn())
+  store.updateSection(0, { fill: true })
+  expect(store.toSongDoc().arrangement[0]?.fill).toBe(true)
+
+  store.updateSection(0, { fill: false })
+  expect(store.toSongDoc().arrangement[0]).not.toHaveProperty('fill')
+  store.undo()
+  expect(store.arrangement[0]?.fill).toBe(true)
+})
+
+test("a section's fill survives loading, duplicating and moving the section", () => {
+  const withFill: SongDoc = {
+    ...song,
+    arrangement: [{ bars: 8, drums: true, fill: true, name: 'Drop', pads: [2], pattern: 1 }]
+  }
+  const store = new SongStore(withFill, vi.fn())
+  expect(store.arrangement[0]?.fill).toBe(true)
+  expect(store.toSongDoc().arrangement).toStrictEqual(withFill.arrangement)
+
+  store.duplicateSection(0)
+  store.moveSection(1, -1)
+  expect(store.arrangement.map((s) => s.fill)).toStrictEqual([true, true])
+})
+
+test("a pattern's fill is the pattern until it's edited, then its own, and Reset follows again", () => {
+  const store = new SongStore(song, vi.fn())
+  const fill = fillOf(0)
+  expect(store.drumPattern(fill)).toStrictEqual(store.drums.patterns[0])
+  expect(store.toSongDoc().drums).not.toHaveProperty('fills')
+
+  // The first edit copies the pattern, then changes only that step.
+  store.setStep(fill, 'snare', 12, { on: true })
+  expect(store.drums.customFills).toStrictEqual([true, false, false, false])
+  expect(store.drumPattern(fill)?.kick).toStrictEqual(store.drums.patterns[0]?.kick)
+  expect(store.drumPattern(fill)?.snare[12]?.on).toBe(true)
+  expect(store.drums.patterns[0]?.snare[12]?.on).toBe(false) // the pattern is untouched
+  const saved = store.toSongDoc().drums
+  expect(saved?.fills?.[0]?.snare?.[12]).toBe(true)
+  expect(saved?.fills?.slice(1)).toStrictEqual([null, null, null])
+
+  // Edited on its own from now: a change to the pattern no longer reaches it.
+  store.setStep(0, 'chat', 3, { on: true })
+  expect(store.drumPattern(fill)?.chat[3]?.on).toBe(false)
+
+  store.resetFill(0)
+  expect(store.drums.customFills[0]).toBe(false)
+  expect(store.drumPattern(fill)).toStrictEqual(store.drums.patterns[0])
+  store.undo()
+  expect(store.drumPattern(fill)?.snare[12]?.on).toBe(true)
+})
+
+test("a saved fill loads on its pattern's grid, with its own track lengths", () => {
+  const withFills: SongDoc = {
+    ...song,
+    drums: {
+      bpm: 120,
+      fillLengths: [{ snare: 6 }],
+      fills: [{ snare: [false, false, false, false, true] }],
+      patterns: [{ kick: [true] }],
+      volume: 0.5
+    }
+  }
+  const store = new SongStore(withFills, vi.fn())
+  expect(store.drumPattern(fillOf(0))?.snare).toHaveLength(STEPS)
+  expect(store.drumPattern(fillOf(0))?.snare[4]?.on).toBe(true)
+  expect(store.drumLengths(fillOf(0))).toStrictEqual({ snare: 6 })
+  expect(store.toSongDoc().drums?.fillLengths?.[0]).toStrictEqual({ snare: 6 })
+  // The other patterns' fills follow them.
+  expect(store.drums.customFills).toStrictEqual([true, false, false, false])
 })

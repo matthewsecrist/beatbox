@@ -38,6 +38,7 @@
     {
       "bars": 8,
       "drums": true,
+      "fill": true,
       "name": "Hook + Chip",
       "pads": [0, 1, 2, 3, 5, 6],
       "pattern": 0
@@ -62,6 +63,7 @@
     {
       "bars": 8,
       "drums": true,
+      "fill": true,
       "name": "Drop 2",
       "pads": [4, 5, 6, 7],
       "pattern": 2
@@ -87,6 +89,433 @@
   ],
   "drums": {
     "bpm": 125,
+    "fills": [
+      {
+        "chat": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
+        "clap": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          }
+        ],
+        "tom": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false
+        ]
+      },
+      null,
+      {
+        "chat": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          }
+        ],
+        "clap": [
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false
+        ],
+        "kick": [
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          {
+            "accent": true,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 1
+          },
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "snare": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 1,
+            "velocity": 0.5
+          },
+          false,
+          true,
+          true,
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 3,
+            "velocity": 1
+          },
+          {
+            "accent": false,
+            "on": true,
+            "probability": 1,
+            "ratchet": 4,
+            "velocity": 1
+          }
+        ],
+        "tom": [
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false
+        ]
+      }
+    ],
     "kit": "909",
     "patterns": [
       {

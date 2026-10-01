@@ -40,6 +40,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'swing',
       'humanize',
       'drums_crush',
+      'drums_fill',
       'drums_voice_pan',
       'kit',
       'drums_sound',
@@ -59,6 +60,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     // Arrangement
     'pad_once',
     'section_bpm',
+    'section_fill',
     'automation',
     ...LANES.map((l) => l.id)
   ]

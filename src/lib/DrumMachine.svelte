@@ -8,6 +8,7 @@
     DrumGrid,
     DrumPattern,
     DrumStep,
+    Fill,
     KitId,
     LoadKitReply,
     PresetSummary,
@@ -35,7 +36,7 @@
   import { effects, panLabel } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
-  import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
+  import { DEFAULT_PATTERN, fillOf, STEP } from './song.svelte.js'
   import Tabs from './Tabs.svelte'
 
   const build = (
@@ -166,13 +167,17 @@
   const swing = $derived(store.drums.swing)
   const humanize = $derived(store.drums.humanize)
   const crush = $derived(store.drums.crush)
-  let editing = $state(0) // tab shown in the grid
+  let picked = $state(0) // pattern tab picked (A-D)
+  let fillShown = $state(false) // showing that pattern's fill bar instead
+  // What the grid edits, as a pattern ref: the pattern, or its fill.
+  const editing = $derived(fillShown ? fillOf(picked) : picked)
+  const customFill = $derived(store.drums.customFills[picked] ?? false)
   let mode: Mode = $state('hits')
-  const shown = $derived(patterns[editing] ?? empty())
+  const shown = $derived(store.drumPattern(editing) ?? empty())
   // Steps per bar in the pattern being edited (16ths, or 16th or 8th triplets).
   const grid = $derived(gridOf(shown))
   // Steps each track of that pattern loops over (polymeter): its own, or the bar.
-  const lengths = $derived(store.drums.lengths[editing] ?? {})
+  const lengths = $derived(store.drumLengths(editing) ?? {})
   const lengthOf = (id: TrackId) => Math.min(lengths[id] ?? grid, grid)
   // The step the lock sliders edit (UI-only), with its settings and its voice.
   let lockStep: null | { step: number; track: TrackId } = $state(null)
@@ -250,8 +255,8 @@
   // Read on every step, so edits (and undo) are heard at once; mute and solo are
   // the engine's `audible`, so the pattern (and its grid) stays whole.
   const patternFn =
-    (i: number): PatternFn =>
-    () => ({ lengths: store.drums.lengths[i] ?? {}, steps: store.drums.patterns[i] ?? {} })
+    (ref: number): PatternFn =>
+    () => ({ lengths: store.drumLengths(ref) ?? {}, steps: store.drumPattern(ref) ?? {} })
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some((s) => s.on))
 
@@ -291,14 +296,20 @@
         engine.stopAt(detail.beat) // `playing` goes false via onStop on that beat
       }
     }
+    // A section's fill: its last bar plays its pattern's fill.
+    const onFill = ({ detail }: CustomEvent<Fill>) => {
+      engine.start(patternFn(fillOf(detail.pattern)), detail.beat, fillOf(detail.pattern))
+    }
     window.addEventListener('beatbox:transport', onTransport)
     window.addEventListener('beatbox:report', onReport)
     window.addEventListener('beatbox:scene', onScene)
+    window.addEventListener('beatbox:fill', onFill)
     window.addEventListener('beatbox:state', onState)
     return () => {
       window.removeEventListener('beatbox:transport', onTransport)
       window.removeEventListener('beatbox:report', onReport)
       window.removeEventListener('beatbox:scene', onScene)
+      window.removeEventListener('beatbox:fill', onFill)
       window.removeEventListener('beatbox:state', onState)
       engine.close()
       report(false)
@@ -319,10 +330,12 @@
   $effect(() => drums?.setCrush(crush))
   $effect(() => drums?.setKit(store.drums.kit, store.drums.voices))
 
-  // Pick the tab to edit; when playing on its own, also switch to it on the next bar.
-  function selectPattern(i: number) {
-    editing = i
-    if (playing && !songPlaying) drums?.start(patternFn(i), undefined, i)
+  // Pick the tab (or its fill) to edit; when playing on its own, also switch to
+  // it on the next bar, so a fill can be heard looping while it's written.
+  function selectPattern(i: number, fill = fillShown) {
+    picked = i
+    fillShown = fill
+    if (playing && !songPlaying) drums?.start(patternFn(editing), undefined, editing)
   }
 
   function toggle() {
@@ -462,12 +475,12 @@
             <button
               id={'drums-pattern-' + letter.toLowerCase()}
               type="button"
-              aria-pressed={editing === i}
-              aria-label={`Pattern ${letter}${playingPattern === i ? ' (playing)' : ''}`}
+              aria-pressed={picked === i}
+              aria-label={`Pattern ${letter}${playingPattern === i || playingPattern === fillOf(i) ? ' (playing)' : ''}`}
               onclick={() => selectPattern(i)}
               class={[
                 'relative h-8 w-10 rounded-md text-sm font-bold transition active:scale-95',
-                editing === i
+                picked === i
                   ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/20'
                   : isEmpty(patterns[i])
                     ? 'text-zinc-600 hover:bg-zinc-800 hover:text-zinc-300'
@@ -475,7 +488,7 @@
               ]}
             >
               {letter}
-              {#if playingPattern === i}
+              {#if playingPattern === i || playingPattern === fillOf(i)}
                 <span
                   class="absolute right-1 top-1 size-1.5 animate-pulse rounded-full bg-emerald-400"
                 ></span>
@@ -483,8 +496,37 @@
             </button>
           {/each}
         </div>
-        <span class="text-xs text-zinc-500"
-          >{store.readOnly ? 'Showing' : 'Editing'} {LETTERS[editing]}</span
+        <div
+          id="drum-fill-switch"
+          class="flex items-center gap-1 rounded-lg bg-zinc-900 p-1"
+          role="group"
+          aria-label="Pattern or its fill"
+        >
+          {#each [false, true] as fill (fill)}
+            <button
+              id={fill ? 'drums-show-fill' : 'drums-show-pattern'}
+              type="button"
+              aria-pressed={fillShown === fill}
+              onclick={() => selectPattern(picked, fill)}
+              class={[
+                'rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
+                fillShown === fill
+                  ? 'bg-zinc-100 text-zinc-900'
+                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+              ]}
+            >
+              {fill ? 'Fill' : 'Pattern'}
+            </button>
+          {/each}
+          <Info label="Fill" text={help('drums_fill') ?? ''} />
+        </div>
+        <span id="drums-editing" class="text-xs text-zinc-500"
+          >{store.readOnly ? 'Showing' : 'Editing'}
+          {LETTERS[picked]}{fillShown
+            ? customFill
+              ? ' fill'
+              : ` fill (the same as ${LETTERS[picked]} until you change it)`
+            : ''}</span
         >
         <label class="mr-auto flex items-center gap-1 text-xs text-zinc-500" for="drums-grid">
           <span class="flex items-center gap-1"
@@ -493,8 +535,12 @@
           <select
             id="drums-grid"
             value={grid}
-            disabled={store.readOnly || !isEmpty(shown)}
-            title={isEmpty(shown) ? undefined : 'Clear the pattern to change its grid'}
+            disabled={store.readOnly || fillShown || !isEmpty(shown)}
+            title={fillShown
+              ? 'A fill is on its pattern’s grid'
+              : isEmpty(shown)
+                ? undefined
+                : 'Clear the pattern to change its grid'}
             onchange={(e) => store.setGrid(editing, Number(e.currentTarget.value) as DrumGrid)}
             class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 disabled:opacity-60"
           >
@@ -540,8 +586,10 @@
           <button
             id="drums-reset"
             type="button"
-            class={btn}
-            onclick={() => setEditing(DEFAULT_PATTERN)}
+            class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
+            disabled={fillShown && !customFill}
+            title={fillShown ? 'Make the fill the same as its pattern again' : undefined}
+            onclick={() => (fillShown ? store.resetFill(picked) : setEditing(DEFAULT_PATTERN))}
           >
             Reset
           </button>

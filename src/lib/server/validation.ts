@@ -135,12 +135,34 @@ const lengths = z.object({
 
 const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 
+// One drum pattern (or fill): each track's steps.
+const pattern = z.object({
+  chat: steps.exactOptional(),
+  clap: steps.exactOptional(),
+  conga: steps.exactOptional(),
+  cowbell: steps.exactOptional(),
+  crash: steps.exactOptional(),
+  kick: steps.exactOptional(),
+  ohat: steps.exactOptional(),
+  ride: steps.exactOptional(),
+  rim: steps.exactOptional(),
+  shaker: steps.exactOptional(),
+  snap: steps.exactOptional(),
+  snare: steps.exactOptional(),
+  tom: steps.exactOptional(),
+  woodblock: steps.exactOptional()
+})
+
 // Drum machine state: tempo, feel, kit, level and patterns A-D, each on its own
 // grid (16ths, 16th or 8th triplets) with no more steps a bar than it has.
 const drums = z
   .object({
     bpm: z.int().min(60).max(200),
     crush: z.number().min(0).max(1).exactOptional(),
+    // Each pattern's fill's track lengths, A-D.
+    fillLengths: z.array(lengths).max(4).exactOptional(),
+    // Each pattern's fill bar, A-D, on its pattern's grid; null follows the pattern.
+    fills: z.array(pattern.nullable()).max(4).exactOptional(),
     grids: z
       .array(z.union([z.literal(12), z.literal(16), z.literal(24)]))
       .max(4)
@@ -150,39 +172,25 @@ const drums = z
     // Each pattern's track lengths, A-D.
     lengths: z.array(lengths).max(4).exactOptional(),
     // Patterns A-D (index 0-3); arrangement sections pick one by index.
-    patterns: z
-      .array(
-        z.object({
-          chat: steps.exactOptional(),
-          clap: steps.exactOptional(),
-          conga: steps.exactOptional(),
-          cowbell: steps.exactOptional(),
-          crash: steps.exactOptional(),
-          kick: steps.exactOptional(),
-          ohat: steps.exactOptional(),
-          ride: steps.exactOptional(),
-          rim: steps.exactOptional(),
-          shaker: steps.exactOptional(),
-          snap: steps.exactOptional(),
-          snare: steps.exactOptional(),
-          tom: steps.exactOptional(),
-          woodblock: steps.exactOptional()
-        })
-      )
-      .min(1)
-      .max(4),
+    patterns: z.array(pattern).min(1).max(4),
     swing: z.number().min(50).max(75).exactOptional(),
     voices: voices.exactOptional(),
     volume: z.number().min(0).max(1)
   })
   .refine(
-    ({ grids, patterns }) =>
-      patterns.every((p, i) => Object.values(p).every((row) => row.length <= (grids?.[i] ?? 16))),
+    ({ fills, grids, patterns }) => {
+      // A fill is on its pattern's grid.
+      const fits = (p: null | Partial<Record<string, unknown[]>>, i: number) =>
+        !p || Object.values(p).every((row) => (row?.length ?? 0) <= (grids?.[i] ?? 16))
+      return patterns.every(fits) && (fills ?? []).every(fits)
+    },
     { message: 'a pattern has more steps than its grid', path: ['patterns'] }
   )
   .refine(
-    ({ grids, lengths }) =>
-      (lengths ?? []).every((l, i) => Object.values(l).every((n) => n <= (grids?.[i] ?? 16))),
+    ({ fillLengths, grids, lengths }) =>
+      [lengths ?? [], fillLengths ?? []].every((all) =>
+        all.every((l, i) => Object.values(l).every((n) => n <= (grids?.[i] ?? 16)))
+      ),
     { message: 'a track is longer than its grid', path: ['lengths'] }
   )
 
@@ -286,6 +294,7 @@ const section = z.object({
   bars: z.int().min(1).max(64),
   bpm: z.int().min(60).max(200).nullable().exactOptional(),
   drums: z.boolean().default(false),
+  fill: z.boolean().exactOptional(),
   name: z.string().trim().max(30).nullable().exactOptional(),
   // Loop pad slots (0-7) playing in this section.
   pads: z.array(z.int().min(0).max(7)).max(8).default([]),

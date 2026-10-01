@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import type { Scene } from './types.js'
+import type { Fill, Scene } from './types.js'
 
 import { createArranger } from './arranger.js'
 import { createTransport } from './transport.js'
@@ -105,4 +105,36 @@ test('stopping mid-section goes back to the song tempo from there', () => {
   expect(transport.bpm).toBe(120)
   expect(transport.beatAt(2.05)).toBeCloseTo(2)
   expect(transport.timeAt(4)).toBeCloseTo(3.05) // two more beats at 120
+})
+
+test("a fill is announced just before its section's last bar, after the section's own scene", () => {
+  const clock = { currentTime: 0 }
+  const transport = createTransport(() => clock as unknown as BaseAudioContext)
+  transport.setBpm(120) // 2 s per bar; the grid starts at 0.05 s
+  const heard: (Fill | number)[] = [] // fills, and scenes by index
+  const arranger = createArranger({
+    onFill: (f) => heard.push(f),
+    onScene: (s) => heard.push(s.index),
+    transport
+  })
+
+  arranger.start([
+    { bars: 2, drums: true, fill: true, pads: [], pattern: 3 }, // beats 0-8: D's fill on beat 4
+    { bars: 1, drums: true, fill: true, pads: [], pattern: 1 }, // beats 8-12: the whole section
+    { bars: 2, drums: false, fill: true, pads: [] }, // no drums: no fill
+    { bars: 2, drums: true, fill: false, pads: [], pattern: 0 } // fill off
+  ])
+  expect(heard).toStrictEqual([0])
+
+  clock.currentTime = 1.96 // beat 4 is at 2.05 s: inside the lookahead
+  arranger.tick()
+  expect(heard).toStrictEqual([0, { beat: 4, pattern: 3 }])
+
+  clock.currentTime = 3.96 // beat 8 (4.05 s): the one-bar section, then its fill on the same beat
+  arranger.tick()
+  expect(heard).toStrictEqual([0, { beat: 4, pattern: 3 }, 1, { beat: 8, pattern: 1 }])
+
+  clock.currentTime = 13.9 // past every section
+  arranger.tick()
+  expect(heard.filter((h) => typeof h !== 'number')).toHaveLength(2)
 })
