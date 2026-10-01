@@ -18,8 +18,11 @@ export const LANES: {
   { id: 'synth_reverb', label: 'Synth to reverb', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'drums_delay', label: 'Drums to delay', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'drums_reverb', label: 'Drums to reverb', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
+  { id: 'synth_chorus', label: 'Synth to chorus', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
+  { id: 'drums_chorus', label: 'Drums to chorus', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'delay_mix', label: 'Delay mix', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
-  { id: 'reverb_mix', label: 'Reverb mix', max: 1, min: 0, scale: 100, step: 1, unit: '%' }
+  { id: 'reverb_mix', label: 'Reverb mix', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
+  { id: 'chorus_mix', label: 'Chorus mix', max: 1, min: 0, scale: 100, step: 1, unit: '%' }
 ]
 
 // The effect settings a lane can move (all but the synth filter).

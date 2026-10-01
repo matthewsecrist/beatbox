@@ -55,6 +55,66 @@ export function crushBits(amount: number): number {
   return amount > 0 ? Math.round(12 - 10 * amount) : 0
 }
 
+// Chorus / flanger: two short delay lines, one per side, whose times one LFO
+// swings in opposite directions, so two copies of the sound drift a little in
+// and out of tune around it and spread it wide. A flanger is the same with a
+// much shorter delay and feedback, for the metallic, sweeping "jet" sound. Only
+// the copies come out of `output` (stereo); the caller blends it in at its mix.
+const CHORUS_DELAY = 0.015 // s, swung by up to CHORUS_SWING each way at full depth
+const CHORUS_SWING = 0.006
+const FLANGER_DELAY = 0.003
+const FLANGER_SWING = 0.0025
+const FLANGER_FEEDBACK = 0.6
+
+export interface Chorus {
+  input: GainNode
+  output: ChannelMergerNode
+  // New settings, gliding there unless `now` (just made).
+  set(settings: ChorusSettings, now?: boolean): void
+  // Stops the LFO, for good.
+  stop(): void
+}
+
+export interface ChorusSettings {
+  depth: number // 0-1
+  flanger: boolean
+  rate: number // Hz
+}
+
+export function createChorus(ctx: BaseAudioContext, initial: ChorusSettings): Chorus {
+  const input = ctx.createGain()
+  const output = ctx.createChannelMerger(2)
+  const lfo = ctx.createOscillator()
+  const sides = [1, -1].map((sign, side) => {
+    const delay = ctx.createDelay(0.05)
+    const swing = ctx.createGain()
+    const feedback = ctx.createGain()
+    input.connect(delay)
+    delay.connect(feedback).connect(delay)
+    delay.connect(output, 0, side)
+    lfo.connect(swing).connect(delay.delayTime)
+    return { delay, feedback, sign, swing }
+  })
+
+  function set({ depth, flanger, rate }: ChorusSettings, now = false) {
+    const t = ctx.currentTime
+    const to = (param: AudioParam, value: number) => {
+      if (now) param.value = value
+      else param.setTargetAtTime(value, t, 0.02)
+    }
+    to(lfo.frequency, rate)
+    for (const { delay, feedback, sign, swing } of sides) {
+      to(delay.delayTime, flanger ? FLANGER_DELAY : CHORUS_DELAY)
+      to(swing.gain, sign * depth * (flanger ? FLANGER_SWING : CHORUS_SWING))
+      to(feedback.gain, flanger ? FLANGER_FEEDBACK : 0)
+    }
+  }
+
+  set(initial, true)
+  lfo.start()
+  return { input, output, set, stop: () => lfo.stop() }
+}
+
 // Arranger automation: moves `param` through `values`, evenly spaced from `t0`
 // to `t1`, in straight lines (two values: one straight ramp).
 export function rampThrough(param: AudioParam, values: number[], t0: number, t1: number): void {

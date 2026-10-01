@@ -7,7 +7,7 @@
   import { help } from './help.js'
   import Info from './Info.svelte'
 
-  // The song's effects (Song settings): the shared delay and reverb, how much of
+  // The song's effects (Song settings): the shared delay, reverb and chorus, how much of
   // each instrument goes to them (its sends), the sidechain, and the master stage
   // with its bitcrusher on the whole mix. Settings live in the song store (and its
   // undo history); Workspace keeps the effects bus in step.
@@ -22,6 +22,7 @@
   const fmtPct = (v: number) => Math.round(v * 100) + '%'
   const fmtSend = (v: number) => (v === 0 ? 'off' : fmtPct(v))
   const fmtSec = (v: number) => v.toFixed(1) + ' s'
+  const fmtRate = (v: number) => v.toFixed(2) + ' Hz'
   const fmtHz = (hz: number) =>
     hz >= 1000 ? (hz / 1000).toFixed(1) + ' kHz' : Math.round(hz) + ' Hz'
   // The DJ filter: which side and where its cutoff is.
@@ -74,7 +75,11 @@
 {/snippet}
 
 <!-- A two-way switch for an on/off setting; `labels` name its off and on sides. -->
-{#snippet toggle(key: 'comp_on' | 'delay_pingpong', label: string, labels: [string, string])}
+{#snippet toggle(
+  key: 'chorus_flanger' | 'comp_on' | 'delay_pingpong',
+  label: string,
+  labels: [string, string]
+)}
   <div class="space-y-1">
     <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
       >{label}{@render info(key, label)}</span
@@ -138,12 +143,21 @@
     {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
     {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
   </div>
+  <div id="fx-chorus" class={panel}>
+    {@render heading('chorus', 'Chorus')}
+    {@render toggle('chorus_flanger', 'Type', ['Chorus', 'Flanger'])}
+    {@render slider('chorus_rate', 'Rate', 5, fmtRate, 0.05, 0.05)}
+    {@render slider('chorus_depth', 'Depth', 1, fmtPct)}
+    {@render slider('chorus_mix', 'Mix', 1, fmtPct)}
+  </div>
   <div id="fx-sends" class={panel}>
     {@render heading('sends', 'Sends')}
     {@render slider('synth_delay', 'Synth to delay', 1, fmtSend)}
     {@render slider('synth_reverb', 'Synth to reverb', 1, fmtSend)}
+    {@render slider('synth_chorus', 'Synth to chorus', 1, fmtSend)}
     {@render slider('drums_delay', 'Drums to delay', 1, fmtSend)}
     {@render slider('drums_reverb', 'Drums to reverb', 1, fmtSend)}
+    {@render slider('drums_chorus', 'Drums to chorus', 1, fmtSend)}
   </div>
   <div id="fx-duck" class={panel}>
     {@render heading('duck', 'Sidechain')}

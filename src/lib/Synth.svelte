@@ -167,6 +167,10 @@
     ['bandpass', 'Band'],
     ['notch', 'Notch']
   ]
+  const CHORUS_TYPES: [boolean, string][] = [
+    [false, 'Chorus'],
+    [true, 'Flanger']
+  ]
   const GLIDE_MODES: [GlideMode, string][] = [
     ['legato', 'Legato'],
     ['always', 'Always']
@@ -572,6 +576,7 @@
   const fmtCents = (v: number) => fmtInt(v) + '¢'
   const fmtNum = (v: number) => Number(v).toFixed(1)
   const fmtRate = (v: number) => Number(v).toFixed(1) + ' Hz'
+  const fmtChorusRate = (v: number) => Number(v).toFixed(2) + ' Hz'
   const fmtOct = (v: number) => (v === 0 ? 'off' : Number(v).toFixed(2) + ' oct')
   const fmtEnvAmount = (v: number) => (v === 0 ? 'off' : fmtInt(Number(v.toFixed(2))) + ' oct')
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
@@ -918,6 +923,36 @@
   {@render slider('glide', 'Time', 0, 1, 0.005, fmtGlide)}
 {/snippet}
 
+{#snippet chorus()}
+  {@render caption('fx_chorus_flanger', 'Type')}
+  <div
+    id="synth-fx_chorus_flanger"
+    class="-mt-2 grid grid-cols-2 gap-1 rounded-lg bg-zinc-950/60 p-1"
+    role="group"
+    aria-label="Chorus type"
+  >
+    {#each CHORUS_TYPES as [flanger, label] (label)}
+      <button
+        type="button"
+        aria-pressed={edited.fx_chorus_flanger === flanger}
+        onclick={() => store.setParam('fx_chorus_flanger', flanger, soundPad)}
+        disabled={store.readOnly}
+        class={[
+          'rounded-md px-1 py-1 text-[11px] font-semibold uppercase tracking-wide transition disabled:pointer-events-none',
+          edited.fx_chorus_flanger === flanger
+            ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/30'
+            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+        ]}
+      >
+        {label}
+      </button>
+    {/each}
+  </div>
+  {@render slider('fx_chorus_rate', 'Rate', 0.05, 5, 0.05, fmtChorusRate)}
+  {@render slider('fx_chorus_depth', 'Depth', 0, 1, 0.01, fmtPct)}
+  {@render slider('fx_chorus_mix', 'Mix', 0, 1, 0.01, fmtPctOrOff)}
+{/snippet}
+
 {#snippet crush()}
   {@render slider('fx_crush', 'Amount', 0, 1, 0.1, fmtCrush)}
 {/snippet}
@@ -1150,7 +1185,8 @@
           {@render panel('Glide', glide, 'glide')}
         </div>
       {:else}
-        <div id="synth-fx" class="grid gap-4 sm:grid-cols-3">
+        <div id="synth-fx" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {@render panel('Chorus', chorus, 'sound_chorus')}
           {@render panel('Bitcrusher', crush, 'sound_crush')}
           {@render panel('Delay', echo, 'sound_delay')}
           {@render panel('Reverb', room, 'sound_reverb')}

@@ -18,6 +18,13 @@ export const HELP = {
     "Lets a setting change by itself while the song plays. Add a lane, then press + in a section and type where the setting starts and where it ends up: it slides smoothly from one to the other over that section, like turning a knob during a build-up. Sections without a value keep the song's own setting. It only moves when the song (or one section) plays, not a pad or the drums on their own.",
   chord:
     'Makes one key play a whole chord: several notes that sound good together, built up from the key you press. Major sounds happy and bright, Minor sad or mysterious, and 7ths jazzy. Off plays just the one note.',
+  chorus_depth:
+    'How far the chorus copies drift out of tune. A little gives a gentle shimmer; a lot makes a seasick, wobbly warble. As a flanger, it sets how far the swoosh sweeps.',
+  chorus_flanger:
+    'Chorus adds copies of the sound that drift slightly in and out of tune, so one instrument sounds like several playing together, wide and shimmery. Flanger is the same idea made shorter and fed back on itself: a metallic, swooshing sweep, like a jet plane flying over.',
+  chorus_mix: 'How loud the chorus copies are, on top of the sound itself.',
+  chorus_rate:
+    'How fast the chorus drifts. Slow is a lazy, gentle swirl; fast is a quick wobble. As a flanger, slow gives a long jet-plane swoosh.',
   comp_amount:
     'How hard the compressor squeezes. A little evens out the song so everything sits together; a lot flattens it into a dense, punchy wall where the quiet bits come up and the loud hits come down.',
   comp_on:
@@ -36,6 +43,8 @@ export const HELP = {
     'How much of the crunched sound you hear, blended with the clean one. 100% is all crunch. Lower keeps the clean sound underneath, so a bass stays deep and solid while the grit sits on top.',
   drive_type:
     'The kind of crunch. Soft is smooth and warm. Tube is warm too, but thicker, like an old amplifier. Hard is sharp and aggressive. Fold is wild and metallic, and it keeps changing as you turn up the Amount.',
+  drums_chorus:
+    'How much of the drums goes into the chorus. Usually off; as a flanger, a little makes hi-hats and cymbals swoosh.',
   drums_crush:
     "Makes the drums crunchy and lo-fi, like an old sampler or a video game console. Off is clean; turn it up and the sound gets grainier and fizzier, down to a harsh 2-bit buzz at the top. A little suits the Lo-fi kit. It's the drums' own: the echo and room sound get the crunch too.",
   drums_delay:
@@ -73,6 +82,14 @@ export const HELP = {
     'Which part of the sound the filter keeps. Low keeps the deep part and cuts the fizz (the usual synth sound). High keeps the bright part and cuts the bass, thin and airy. Band keeps only the sound around the Cutoff, nasal like a telephone or a "wah". Notch cuts a gap out at the Cutoff, hollow and phasey when it moves.',
   filter_velocity:
     'How much softer notes open the filter less. Off, every note gets the same "wow" from the envelope however hard it\'s played. Turned up, a soft note stays darker and a hard one opens bright, like hitting a real piano or guitar harder. Set how hard each note plays in the piano roll\'s Vel lane.',
+  fx_chorus_depth:
+    "How far this sound's chorus copies drift out of tune: a little shimmers, a lot warbles. As a flanger, how far the swoosh sweeps.",
+  fx_chorus_flanger:
+    "Chorus makes this sound wide and shimmery, like several instruments playing together. Flanger gives it a metallic, sweeping swoosh instead, like a jet plane. It's part of the sound, so presets and loop pads keep their own.",
+  fx_chorus_mix:
+    "How much of this sound's own chorus you hear. Off has none. Unlike the song's chorus, it belongs to the sound, so a preset or a loop pad brings it along.",
+  fx_chorus_rate:
+    "How fast this sound's chorus drifts. Slow is a lazy swirl; fast is a quick wobble.",
   fx_crush:
     "Makes this sound crunchy and lo-fi, like an old video game console or a cheap sampler. Off is clean; turn it up and it gets grainier and fizzier, down to a harsh 2-bit buzz at the top. It's part of the sound, so presets and loop pads keep their own.",
   fx_delay_feedback:
@@ -116,6 +133,8 @@ export const HELP = {
     'Moves this oscillator up or down by whole octaves. An octave up is the same note but higher, like a kid singing along with a grown-up.',
   osc_wave:
     'The shape of the vibration, which changes the character of the sound. Sine is soft and pure, like a whistle. Tri (triangle) is a bit brighter, like a flute. Saw is buzzy and bold, like a trumpet or a big synth. Square is hollow and beepy, like an old video game.',
+  panel_chorus:
+    'The chorus makes a sound wider and richer by adding copies of it that drift slightly in and out of tune, like a choir instead of one singer. Switched to Flanger, it makes a swooshing, jet-plane sweep instead. Each instrument has its own send to it.',
   panel_crush:
     "The bitcrusher makes the whole song sound like it's coming out of an old computer or game console: it rounds the sound off into a few steps, adding grit and fizz. The synth's sounds (in FX) and the drums (in Kit) have their own too.",
   panel_delay:
@@ -141,7 +160,9 @@ export const HELP = {
   panel_reverb:
     'The reverb makes it sound like the music is playing in a room, a hall or a huge cave, with the sound bouncing off the walls and ringing on after each note.',
   panel_sends:
-    'Sends choose how much of each instrument goes into the echo and the room sound. Off keeps that instrument dry; turn one up to put it in the effect. The synth sends cover the loop pads too.',
+    'Sends choose how much of each instrument goes into the echo, the room sound and the chorus. Off keeps that instrument dry; turn one up to put it in the effect. The synth sends cover the loop pads too.',
+  panel_sound_chorus:
+    "This sound's own chorus: it spreads the sound wide and makes it shimmer, or swoosh as a flanger. It's part of the sound, like Drive, so presets and loop pads bring it with them.",
   panel_sound_crush:
     "This sound's own bitcrusher: it makes it sound like it's coming out of an old computer or game console, rounding the sound off into a few steps for grit and fizz. Great for chiptune leads and lo-fi keys.",
   panel_sound_delay:
@@ -180,6 +201,8 @@ export const HELP = {
     'How loud a note stays while you keep holding the key. At 0% it fades out even if you hold on, like a piano or a bell.',
   swing:
     'Makes the beat bounce instead of marching straight. At 50% every step is evenly spaced; turn it up and every second step lands a little late, for a skippy, shuffly groove like hip-hop or jazz. It only swings patterns on the 1/16 grid: triplets already bounce.',
+  synth_chorus:
+    'How much of the synth (and the loop pads) goes into the chorus. Turn it up to make pads and keys wide and shimmery.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
   synth_filter:
     'Opens or closes the filter on every synth sound at once, the keys and all the loop pads, by up to 4 octaves each way. 0 leaves each sound as it is; below 0 makes them darker and more muffled, above 0 brighter. Ramp it up over a section for a build-up that opens the sound, or down for a breakdown.',
