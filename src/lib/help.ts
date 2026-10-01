@@ -143,6 +143,8 @@ export const HELP = {
     'Moves this oscillator up or down by whole octaves. An octave up is the same note but higher, like a kid singing along with a grown-up.',
   osc_wave:
     'The shape of the vibration, which changes the character of the sound. Sine is soft and pure, like a whistle. Tri (triangle) is a bit brighter, like a flute. Saw is buzzy and bold, like a trumpet or a big synth. Square is hollow and beepy, like an old video game.',
+  pad_once:
+    "A pad normally loops: it plays its notes over and over until you stop it. Click the arrow in a pad's corner (it turns into a 1) and the pad plays once instead, then stops by itself: right for a riser, a crash of sound or a one-off effect. In the arrangement it plays once from the start of each section it's in, and stays quiet for the rest.",
   panel_chorus:
     'The chorus makes a sound wider and richer by adding copies of it that drift slightly in and out of tune, like a choir instead of one singer. Switched to Flanger, it makes a swooshing, jet-plane sweep instead. Each instrument has its own send to it.',
   panel_crush:

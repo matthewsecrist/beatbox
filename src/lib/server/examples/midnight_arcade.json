@@ -56,14 +56,14 @@
       "bars": 8,
       "drums": true,
       "name": "Drop",
-      "pads": [4, 6],
+      "pads": [4, 6, 7],
       "pattern": 2
     },
     {
       "bars": 8,
       "drums": true,
       "name": "Drop 2",
-      "pads": [4, 5, 6],
+      "pads": [4, 5, 6, 7],
       "pattern": 2
     },
     {
@@ -3050,6 +3050,106 @@
         "sustain": 0.5
       },
       "slot": 6
+    },
+    {
+      "bpm": 125,
+      "events": [
+        {
+          "midi": 72,
+          "on": true,
+          "t": 0.0
+        },
+        {
+          "midi": 72,
+          "on": false,
+          "t": 0.096
+        },
+        {
+          "midi": 76,
+          "on": true,
+          "t": 0.12
+        },
+        {
+          "midi": 76,
+          "on": false,
+          "t": 0.216
+        },
+        {
+          "midi": 79,
+          "on": true,
+          "t": 0.24
+        },
+        {
+          "midi": 79,
+          "on": false,
+          "t": 0.336
+        },
+        {
+          "midi": 84,
+          "on": true,
+          "t": 0.36
+        },
+        {
+          "midi": 84,
+          "on": false,
+          "t": 0.6
+        }
+      ],
+      "length": 1.92,
+      "once": true,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.12,
+        "drive": 0,
+        "drive_mix": 1,
+        "drive_type": "soft",
+        "filter_attack": 0.005,
+        "filter_cutoff": 8000,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 0,
+        "filter_sustain": 0,
+        "filter_type": "lowpass",
+        "filter_velocity": 0,
+        "fx_chorus_depth": 0.5,
+        "fx_chorus_flanger": false,
+        "fx_chorus_mix": 0,
+        "fx_chorus_rate": 0.8,
+        "fx_crush": 0,
+        "fx_delay_feedback": 0.35,
+        "fx_delay_mix": 0.25,
+        "fx_delay_time": "1/8d",
+        "fx_reverb_mix": 0,
+        "fx_reverb_size": 2,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_note": "1/4",
+        "lfo1_rate": 4,
+        "lfo1_sync": false,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_note": "1/4",
+        "lfo2_rate": 5,
+        "lfo2_sync": false,
+        "lfo2_target": "pitch",
+        "noise_level": 0,
+        "osc1_detune": 0,
+        "osc1_level": 0.7,
+        "osc1_octave": 0,
+        "osc1_wave": "triangle",
+        "osc2_detune": 0,
+        "osc2_level": 0.3,
+        "osc2_octave": 0,
+        "osc2_wave": "square",
+        "pitch_env_amount": 48,
+        "pitch_env_decay": 0.05,
+        "release": 0.05,
+        "sub_level": 0,
+        "sustain": 0
+      },
+      "slot": 7
     }
   ],
   "name": "Midnight Arcade",

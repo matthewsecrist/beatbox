@@ -203,6 +203,7 @@ const loop = z.object({
     .max(4000),
   // Seconds; one full cycle of the loop.
   length: z.number().min(0.1).max(300),
+  once: z.boolean().exactOptional(),
   // Synth params captured at record time, so the loop keeps its own sound.
   params,
   slot: z.int().min(0).max(7)

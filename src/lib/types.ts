@@ -184,6 +184,9 @@ export interface Loop {
   events: LoopEvent[]
   // Seconds; one full cycle of the loop.
   length: number
+  // Plays through once and stops (a one-shot: a stinger, riser or sound effect)
+  // instead of looping; absent loops.
+  once?: boolean
   // Synth sound it was recorded with (without master volume).
   params: Partial<SynthParams>
   slot: number

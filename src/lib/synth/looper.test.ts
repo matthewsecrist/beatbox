@@ -475,3 +475,66 @@ test('timed notes land at their own times, in order; ones from before the take a
     { midi: 67, on: false, t: 0.875 }
   ])
 })
+
+test('a one-shot plays its loop once from where it starts, then stops by itself', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', { ...oneBar, once: true }, transport)
+
+  player.start() // grid starts at 0.05 s; one bar is 2 s
+  for (; clock.now < 6; clock.now += 0.025) player.tick()
+
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 1.05]
+  ])
+  expect(player.playing).toBe(false)
+  expect(transport.running).toBe(false) // it let go of the grid
+
+  // Tapped again: once more, from the next bar.
+  transport.acquire('other')
+  player.start()
+  for (; clock.now < 12; clock.now += 0.025) player.tick()
+  expect(synth.calls.filter(([kind]) => kind === 'on')).toHaveLength(2)
+  expect(player.playing).toBe(false)
+})
+
+test('a section boundary still stops a one-shot early', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const twoBars: Loop = {
+    ...oneBar,
+    events: [
+      { midi: 60, on: true, t: 0 },
+      { midi: 60, on: false, t: 3.5 }
+    ],
+    length: 4,
+    once: true
+  }
+  const player = createPlayer(synth, 'pad0:', twoBars, transport)
+  player.start(0) // two bars: beats 0-8
+  player.stopAt(4) // the section ends after one bar
+  for (; clock.now < 6; clock.now += 0.025) player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 0.05],
+    ['off', 2.05] // cut on the section boundary (beat 4)
+  ])
+  expect(player.playing).toBe(false)
+})
+
+test('a looping pad switched to play once finishes the cycle it is in, then stops', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const pad = createPlayer(synth, 'pad1:', oneBar, transport)
+  pad.start() // grid starts at 0.05 s; cycles every 2 s
+  clock.now = 2.1 // into the second cycle
+  pad.tick()
+  pad.setLoop({ ...oneBar, once: true })
+  for (; clock.now < 8; clock.now += 0.025) pad.tick()
+
+  expect(synth.calls.filter(([kind]) => kind === 'on')).toStrictEqual([
+    ['on', 60, 0.05],
+    ['on', 60, 2.05]
+  ])
+  expect(pad.playing).toBe(false)
+})

@@ -24,8 +24,9 @@ export interface Player {
 
 // Plays one loop ({ events, length, params, bpm }) on voices keyed `${prefix}${midi}`,
 // from a bar line. Loops saved before tempo sync have no `bpm`; they're taken to be
-// at the tempo in effect when they start.
-export type PlayerLoop = Pick<Loop, 'bpm' | 'events' | 'length' | 'params'>
+// at the tempo in effect when they start. A one-shot (`once`) plays a single cycle
+// from where it starts, then stops by itself.
+export type PlayerLoop = Pick<Loop, 'bpm' | 'events' | 'length' | 'once' | 'params'>
 
 export interface Recorder {
   finish(): null | Take
@@ -63,7 +64,12 @@ export function createPlayer(
   let startBeat = 0
   let cycleStart = 0
   let cursor = 0
-  let endBeat = Infinity // set by stopAt(); playback ends exactly on this beat
+  // Playback ends exactly on endBeat: the earlier of a stopAt() beat and, for a
+  // one-shot, the end of its cycle.
+  let endBeat = Infinity
+  let stopBeat = Infinity
+  let shotEnd = Infinity
+  const setEnd = () => (endBeat = Math.min(stopBeat, shotEnd))
   const sounding = new Set<string>()
 
   // Converts the loop to beats; loops recorded before tempo sync (no bpm) are
@@ -90,6 +96,12 @@ export function createPlayer(
     transport.release(prefix)
   }
 
+  // Where the cycle playing now ends (a one-shot switched on mid-loop finishes it).
+  function cycleEnd(): number {
+    const into = Math.max(0, transport.beatAt(transport.now()) - startBeat)
+    return startBeat + (Math.floor(into / lengthBeats) + 1) * lengthBeats
+  }
+
   return {
     get playing(): boolean {
       return playing
@@ -98,8 +110,15 @@ export function createPlayer(
       // Only the sound changed: notes already sounding take it on, nothing restarts.
       const sameNotes =
         next.events === loop.events && next.length === loop.length && next.bpm === loop.bpm
+      const onceChanged = !!next.once !== !!loop.once
       loop = next
-      if (sameNotes) return synth.setOwnParams(prefix, next.params)
+      if (sameNotes) {
+        if (onceChanged && playing) {
+          shotEnd = next.once ? cycleEnd() : Infinity
+          setEnd()
+        }
+        return synth.setOwnParams(prefix, next.params)
+      }
       if (!playing) return
       silence()
       load()
@@ -113,18 +132,23 @@ export function createPlayer(
         cursor = 0
         cycleStart += lengthBeats
       }
+      shotEnd = next.once ? cycleEnd() : Infinity
+      setEnd()
       tick()
     },
     // Starts at `atBeat` (default: next bar line). Already playing: just cancels a
-    // pending stopAt(), so the loop keeps its phase.
+    // pending stopAt(), so the loop keeps its phase (and a one-shot plays on to its end).
     start(atBeat = transport.nextBar()): void {
-      endBeat = Infinity
+      stopBeat = Infinity
+      setEnd()
       if (playing) return
       load()
       transport.acquire(prefix)
       playing = true
       startBeat = cycleStart = atBeat
       cursor = 0
+      shotEnd = loop.once ? atBeat + lengthBeats : Infinity
+      setEnd()
       tick()
     },
     // Stops now: releases held loop notes and silences any note scheduled but not
@@ -138,7 +162,9 @@ export function createPlayer(
     // Stops on `beat` (a section boundary): notes before it still play, anything
     // held is released exactly on it.
     stopAt(beat: number): void {
-      if (playing) endBeat = beat
+      if (!playing) return
+      stopBeat = beat
+      setEnd()
     },
     tick
   }
