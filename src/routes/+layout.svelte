@@ -2,13 +2,32 @@
   import type { Snippet } from 'svelte'
 
   import { resolve } from '$app/paths'
+  import { env } from '$env/dynamic/public'
   import { LogOut, Music, User } from '@lucide/svelte'
+  import posthog from 'posthog-js'
 
   import type { LayoutData } from './$types'
 
   import '../app.css'
 
   let { children, data }: { children: Snippet; data: LayoutData } = $props()
+
+  $effect(() => {
+    if (!env.PUBLIC_POSTHOG_PROJECT_TOKEN || !env.PUBLIC_POSTHOG_HOST) return
+    if (data.user) {
+      posthog.identify(data.user.id, {
+        email: data.user.email,
+        username: data.user.username
+      })
+    } else if (posthog.get_property('$user_state') === 'identified') {
+      posthog.reset()
+    }
+  })
+
+  function handleSignOut() {
+    posthog.capture('user_signed_out')
+    posthog.reset()
+  }
 </script>
 
 <header class="flex items-center gap-4 px-4 py-2 sm:px-6 lg:px-8">
@@ -30,7 +49,7 @@
       <User class="size-4" />
       {data.user.username}
     </span>
-    <form method="POST" action={resolve('/logout')}>
+    <form method="POST" action={resolve('/logout')} onsubmit={handleSignOut}>
       <button
         id="sign-out"
         type="submit"

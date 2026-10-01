@@ -3,6 +3,7 @@ import type { Cookies } from '@sveltejs/kit'
 import { resolve } from '$app/paths'
 import { listExamples } from '$lib/server/examples/index.js'
 import { listKits, listPresets, listSongs } from '$lib/server/music.js'
+import { captureServerEvent } from '$lib/server/posthog.js'
 import { getSharedSong, hasLiked, recordView, setLiked } from '$lib/server/sharing.js'
 import { fail, redirect } from '@sveltejs/kit'
 
@@ -63,7 +64,7 @@ export const load = (async ({ cookies, locals, params, url }) => {
 export const actions = {
   // Likes (liked=true) or unlikes the song. Needs an account; owners can't like
   // their own song.
-  like: async ({ locals, params, request, url }) => {
+  like: async ({ locals, params, platform, request, url }) => {
     const user = locals.user
     if (!user) {
       const login = new URL(resolve('/login'), url).pathname
@@ -73,6 +74,8 @@ export const actions = {
     if (!shared) return fail(404, { error: "This song isn't shared any more" })
     if (shared.ownerId === user.id) return fail(403, { error: "You can't like your own song" })
     const liked = (await request.formData()).get('liked') === 'true'
-    return { liked, likes: await setLiked(user.id, shared.id, liked) }
+    const likes = await setLiked(user.id, shared.id, liked)
+    captureServerEvent(platform, user.id, liked ? 'shared_song_liked' : 'shared_song_unliked')
+    return { liked, likes }
   }
 } satisfies Actions

@@ -10,7 +10,9 @@
   },
   "vars": {
     "BETTER_AUTH_URL": "https://beatbox.matthewsecrist.workers.dev",
-    "EMAIL_FROM": "Beatbox <noreply@beatbox.matthewsecrist.dev>"
+    "EMAIL_FROM": "Beatbox <noreply@beatbox.matthewsecrist.dev>",
+    "PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
+    "PUBLIC_POSTHOG_PROJECT_TOKEN": "phc_BbAXPNeVAzbHouEtj4SXT9QJmvYy6Ks7BknMXDe4D2uT"
   },
   "d1_databases": [
     {
