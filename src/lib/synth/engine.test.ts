@@ -8,6 +8,8 @@ interface FakeNode {
   buffer?: unknown
   connect(next: FakeNode | FakeParam): FakeNode | FakeParam
   curve?: Float32Array
+  // A delay line's time (createDelay).
+  delayTime?: FakeParam
   detune: FakeParam
   disconnect(): void
   frequency: FakeParam
@@ -70,6 +72,7 @@ function fakeAudio() {
     }),
     createBufferSource: () =>
       Object.assign(node('noise'), { buffer: null, loop: false, start: vi.fn(), stop: vi.fn() }),
+    createChannelMerger: () => node('merger'),
     createConstantSource: () => Object.assign(node('const'), { start: vi.fn(), stop: vi.fn() }),
     createConvolver: () => Object.assign(node('convolver'), { buffer: null }),
     createDelay: () => Object.assign(node('delay'), { delayTime: param('delay.delayTime') }),
@@ -586,4 +589,24 @@ test("each sound plays through its own effects, the live controls' and each loop
   expect(line?.delayTime.value).toBe(0.5)
   synth.setTempo(60)
   expect(line?.delayTime.setTargetAtTime).toHaveBeenLastCalledWith(1, 0, 0.02)
+})
+
+test("a sound's chorus is only built once its mix is up, then follows the sound", () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth(null, () => ctx)
+  synth.noteOn(60)
+  expect(nodes.filter((n) => n.kind === 'merger')).toStrictEqual([])
+
+  synth.setParams({ fx_chorus_flanger: true, fx_chorus_mix: 0.5 })
+  const merger = nodes.find((n) => n.kind === 'merger')
+  const mix = merger?.outputs[0]
+  const lines = nodes.filter((n) => n.kind === 'delay' && merger && n.outputs.includes(merger))
+  if (!mix || !('gain' in mix)) throw new Error('no chorus')
+  expect(mix.gain.value).toBe(0.5)
+  expect(lines.map((l) => l.delayTime?.value)).toStrictEqual([0.003, 0.003]) // a flanger
+
+  synth.setParams({ fx_chorus_flanger: false, fx_chorus_mix: 0.2 })
+  expect(mix.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.2, 0, 0.02)
+  expect(lines[0]?.delayTime?.setTargetAtTime).toHaveBeenLastCalledWith(0.015, 0, 0.02)
+  expect(nodes.filter((n) => n.kind === 'merger')).toHaveLength(1) // built once
 })

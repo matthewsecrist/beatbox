@@ -1,12 +1,20 @@
 import type { Automation, DelayTime, Effects, Ramp } from './types.js'
 
-import { createCrusher, type Crusher, getContext, rampThrough, settle } from './audio.js'
+import {
+  type Chorus,
+  createChorus,
+  createCrusher,
+  type Crusher,
+  getContext,
+  rampThrough,
+  settle
+} from './audio.js'
 import { EFFECT_TARGETS, type EffectTarget } from './automation.js'
 
 // Shared send effects on the page's AudioContext: every instrument plays into a
 // channel that goes to the master stage dry and, through a send level per effect,
-// into one tempo-synced delay (straight or ping-pong) and one reverb, whose
-// returns join it there. Each kick ducks the synth channel (dry and sends) for the
+// into one tempo-synced delay (straight or ping-pong), one reverb and one chorus
+// (or flanger), whose returns join it there. Each kick ducks the synth channel (dry and sends) for the
 // pumping sidechain sound. The master stage is a glue compressor (off by default),
 // a DJ filter, a bitcrusher blended into the whole mix (off by default) and then a fixed
 // limiter, so stacked sends and drive don't clip. Nothing is
@@ -14,16 +22,23 @@ import { EFFECT_TARGETS, type EffectTarget } from './automation.js'
 // settings made before then are kept and applied when it is.
 
 export type Instrument = 'drums' | 'synth'
+// The shared effects an instrument sends to.
+type Send = 'chorus' | 'delay' | 'reverb'
 
 // Every send at 0 and the compressor off: a song without effects sounds dry, as
 // before effects existed (the limiter only touches peaks that would clip).
 export const DEFAULT_EFFECTS: Effects = {
+  chorus_depth: 0.5,
+  chorus_flanger: false,
+  chorus_mix: 0.7,
+  chorus_rate: 0.8,
   comp_amount: 0.5,
   comp_on: false,
   delay_feedback: 0.35,
   delay_mix: 0.6,
   delay_pingpong: false,
   delay_time: '1/8d',
+  drums_chorus: 0,
   drums_delay: 0,
   drums_reverb: 0,
   duck_amount: 0,
@@ -33,6 +48,7 @@ export const DEFAULT_EFFECTS: Effects = {
   master_filter: 0,
   reverb_mix: 0.6,
   reverb_size: 2,
+  synth_chorus: 0,
   synth_delay: 0,
   synth_reverb: 0
 }
@@ -114,7 +130,9 @@ interface Bus {
   // Gain putting the left delay line on the right side too (straight delay).
   bothSides: GainNode
   // Per instrument: its ducking gain (after the mute), then its send levels.
-  channels: Partial<Record<Instrument, { delay: GainNode; duck: GainNode; reverb: GainNode }>>
+  channels: Partial<Record<Instrument, Record<'duck' | Send, GainNode>>>
+  chorus: Chorus
+  chorusOut: GainNode
   comp: DynamicsCompressorNode
   // Ping-pong feedback: each delay line into the other.
   crossLR: GainNode
@@ -217,9 +235,15 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     const reverbOut = ctx.createGain()
     reverb.connect(reverbOut).connect(master)
 
+    const chorus = createChorus(ctx, chorusSettings(settings))
+    const chorusOut = ctx.createGain()
+    chorus.output.connect(chorusOut).connect(master)
+
     const created: Bus = {
       bothSides,
       channels: {},
+      chorus,
+      chorusOut,
       comp,
       crossLR,
       crossRL,
@@ -279,6 +303,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       for (const [param, value] of drives(b, target)) to(param, value(settings[target]))
     }
     b.crush.set(settings.master_crush)
+    b.chorus.set(chorusSettings(settings), now)
     // A new impulse is only worth making when the size changes.
     if (b.size !== settings.reverb_size) {
       b.size = settings.reverb_size
@@ -310,15 +335,18 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       const duck = ctx.createGain()
       const delay = ctx.createGain()
       const reverb = ctx.createGain()
+      const chorus = ctx.createGain()
       input.gain.value = muted.has(instrument) ? 0 : 1
       input.connect(duck)
       duck.connect(b.master)
       duck.connect(delay).connect(b.delay)
       duck.connect(reverb).connect(b.reverb)
+      duck.connect(chorus).connect(b.chorus.input)
       delay.gain.value = settings[`${instrument}_delay`]
       reverb.gain.value = settings[`${instrument}_reverb`]
+      chorus.gain.value = settings[`${instrument}_chorus`]
       b.inputs[instrument] = input
-      b.channels[instrument] = { delay, duck, reverb }
+      b.channels[instrument] = { chorus, delay, duck, reverb }
       return input
     },
     duck(at: number, level: number): void {
@@ -363,6 +391,12 @@ export function impulse(ctx: BaseAudioContext, seconds: number, random = Math.ra
   return buffer
 }
 
+const chorusSettings = (s: Effects) => ({
+  depth: s.chorus_depth,
+  flanger: s.chorus_flanger,
+  rate: s.chorus_rate
+})
+
 export function masterFilterHz(x: number): number {
   return x < 0 ? 20000 * (100 / 20000) ** -x : 20 * (8000 / 20) ** x
 }
@@ -399,7 +433,8 @@ function drives(b: Bus, target: EffectTarget): [AudioParam, (x: number) => numbe
     ]
   if (target === 'delay_mix') return [[b.delayOut.gain, same]]
   if (target === 'reverb_mix') return [[b.reverbOut.gain, same]]
-  const [instrument, effect] = target.split('_') as [Instrument, 'delay' | 'reverb']
+  if (target === 'chorus_mix') return [[b.chorusOut.gain, same]]
+  const [instrument, effect] = target.split('_') as [Instrument, Send]
   const sends = b.channels[instrument]
   return sends ? [[sends[effect].gain, same]] : []
 }

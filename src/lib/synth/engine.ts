@@ -1,6 +1,8 @@
 import type { DriveType, LfoNote, LfoTarget, Ramp, SynthParams, Wave } from '../types.js'
 
 import {
+  type Chorus,
+  createChorus,
   createCrusher,
   type Crusher,
   getContext,
@@ -28,7 +30,11 @@ export const DEFAULT_PARAMS: SynthParams = {
   filter_type: 'lowpass',
   // How much a note's velocity scales its filter envelope, 0-1 (0: not at all).
   filter_velocity: 0,
-  // The sound's own effects, all off: bitcrusher, echo and reverb.
+  // The sound's own effects, all off: chorus, bitcrusher, echo and reverb.
+  fx_chorus_depth: 0.5,
+  fx_chorus_flanger: false,
+  fx_chorus_mix: 0,
+  fx_chorus_rate: 0.8,
   fx_crush: 0,
   fx_delay_feedback: 0.35,
   fx_delay_mix: 0,
@@ -123,15 +129,23 @@ function tremLevel(p: SynthParams): number {
   return Math.max(0, 1 - dip)
 }
 
+const chorusOf = (p: SynthParams) => ({
+  depth: p.fx_chorus_depth,
+  flanger: p.fx_chorus_flanger,
+  rate: p.fx_chorus_rate
+})
+
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
 const CHORD = 0.005 // s: notes starting this close together are one chord
 
 // A sound's own effects (the `fx_*` params), shared by the voices playing it:
-// in -> crusher -> master, and from the crusher into an echo and a reverb at
-// their mixes. Each echo comes back a little darker, as the song's delay does.
-// The reverb's impulse is only made once its mix is up.
+// in -> crusher -> master, and from the crusher into a chorus, an echo and a
+// reverb at their mixes. Each echo comes back a little darker, as the song's delay does.
+// The chorus (and its LFO) and the reverb's impulse are only made once their mix is up.
 interface SoundFx {
+  // The chorus, then the gain blending it in.
+  chorus: null | { mix: GainNode; unit: Chorus }
   crush: Crusher
   delay: DelayNode
   delaySend: GainNode
@@ -424,7 +438,18 @@ export function createSynth(
     crush.node.connect(delaySend).connect(delay).connect(damping).connect(feedback).connect(delay)
     damping.connect(master)
     crush.node.connect(reverbSend).connect(reverb).connect(master)
-    const fx: SoundFx = { crush, delay, delaySend, feedback, input, p, reverb, reverbSend, size: 0 }
+    const fx: SoundFx = {
+      chorus: null,
+      crush,
+      delay,
+      delaySend,
+      feedback,
+      input,
+      p,
+      reverb,
+      reverbSend,
+      size: 0
+    }
     applyFx(fx, p, true)
     fxs.set(name, fx)
     return fx
@@ -440,6 +465,17 @@ export function createSynth(
     }
     fx.p = p
     fx.crush.set(p.fx_crush)
+    if (p.fx_chorus_mix > 0 && !fx.chorus) {
+      const unit = createChorus(ctx, chorusOf(p))
+      const mix = ctx.createGain()
+      fx.crush.node.connect(unit.input)
+      unit.output.connect(mix).connect(ensureContext().master)
+      fx.chorus = { mix, unit }
+      mix.gain.value = p.fx_chorus_mix
+    } else if (fx.chorus) {
+      fx.chorus.unit.set(chorusOf(p), now)
+      to(fx.chorus.mix.gain, p.fx_chorus_mix)
+    }
     to(fx.delaySend.gain, p.fx_delay_mix)
     to(fx.feedback.gain, p.fx_delay_feedback)
     to(fx.delay.delayTime, Math.min(MAX_DELAY, (DELAY_BEATS[p.fx_delay_time] * 60) / bpm))
@@ -811,7 +847,10 @@ export function createSynth(
   function close(): void {
     master?.disconnect()
     master = null
-    for (const fx of fxs.values()) fx.input.disconnect()
+    for (const fx of fxs.values()) {
+      fx.input.disconnect()
+      fx.chorus?.unit.stop()
+    }
     fxs.clear()
     shift?.stop()
     shift = null

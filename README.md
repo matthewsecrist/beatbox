@@ -249,7 +249,7 @@ it starts an empty one-bar loop to draw in).
   **Done** goes back to the keyboard). Its notes change as you turn the controls,
   even while it plays; the keyboard keeps its own sound.
 
-**Effects**: a delay and a reverb shared by the synth (loop pads included) and
+**Effects**: a delay, a reverb and a chorus shared by the synth (loop pads included) and
 the drums, all in **Song settings** in the song bar. **Sends** sets how much of each
 instrument goes to each effect (all off in a new song), and each effect's **Mix**
 how loud it comes back. The delay's
@@ -257,17 +257,23 @@ how loud it comes back. The delay's
 the song tempo, with **Feedback** for how many repeats; each repeat comes back a
 little darker. **Bounce** keeps the repeats in the middle (**Straight**) or sends
 them from side to side (**Ping-pong**: the first from the left, the next from the
-right, and so on, each a delay time apart). The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
-Browser previews play through the same effects.
+right, and so on, each a delay time apart). The reverb's **Size** is how long its tail rings (0.3–6 s). The
+**Chorus** adds two copies of the sound, one on each side, whose delay (around
+15 ms) an LFO sweeps in opposite directions, so they drift in and out of tune and
+spread the sound wide: **Rate** is how fast (0.05–5 Hz), **Depth** how far.
+**Type** switches it to a **Flanger**: the same with a 3 ms delay and feedback,
+for the metallic jet-plane sweep. Loop Browser previews play through the same effects.
 
 **FX** (the synth's own effects, part of its sound like Drive, so presets and loop
-pads keep their own): a **Bitcrusher** (off, or 12-bit down to 2-bit), a
-**Delay** (a note-value **Time** at the tempo playing, **Feedback**, **Mix**) and a
-**Reverb** (**Size**, **Mix**), all off by default. They play on top of the song's
-shared delay and reverb, so a dub stab can bring its echo and a lo-fi key its
+pads keep their own): a **Chorus** (the same as the song's, chorus or flanger,
+with its own **Rate**, **Depth** and **Mix**), a **Bitcrusher** (off, or 12-bit
+down to 2-bit; bit depth only for now: no sample-rate reduction), a **Delay** (a
+note-value **Time** at the tempo playing, **Feedback**, **Mix**) and a **Reverb**
+(**Size**, **Mix**), all off by default. They play on top of the song's shared
+delay, reverb and chorus, so a dub stab can bring its echo and a lo-fi key its
 crunch wherever it goes: 8-Bit Lead, Lo-fi Keys and Dub Chord show them off, with
-loops built on them in the Loop Browser. Bit depth only for now: no sample-rate
-reduction.
+loops built on them in the Loop Browser. Electric Piano, Strings, Warm Pad and
+Supersaw Lead bring their own chorus, and Jet Lead a slow flanger.
 
 **Master bitcrusher** (also in Song settings) crunches the whole mix, after the
 master filter and before the limiter: **Bits** sets how crunchy (12-bit down to
@@ -311,8 +317,8 @@ end, and then stops; ← and → move a section.
   plays: **Synth filter** (shifts every synth sound's cutoff, keys and pads, by
   up to ±4 octaves), **Master filter** (−100 low-pass to +100 high-pass), **Master
   crush** (the master bitcrusher's Mix, in %), the
-  synth's and drums' sends to the delay and reverb, and the delay and reverb
-  **Mix** (in %). **+** in a section gives it a start and an end value (both
+  synth's and drums' sends to the delay, reverb and chorus, and the delay, reverb
+  and chorus **Mix** (in %). **+** in a section gives it a start and an end value (both
   starting at the song's own setting), and the setting ramps in a straight line
   from the section's first beat to its end (the master filter evenly in pitch).
   A section without a value plays the song's own setting from its first beat, so
@@ -455,9 +461,9 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                                  |
 | `src/lib/DrumMachine.svelte`                                                   | Drums editor: step sequencer, kit, saved kits                                                                               |
 | `src/lib/Arranger.svelte`                                                      | Track list (level, mute, solo) and the arrangement grid                                                                     |
-| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Song settings' effects panel, and the shared delay/reverb bus, bitcrushers and master stage every instrument plays into     |
+| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Song settings' effects panel, and the shared delay/reverb/chorus bus and master stage every instrument plays into           |
 | `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                                       |
-| `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                            |
+| `src/lib/audio.ts`                                                             | The single shared `AudioContext`, and the bitcrusher and chorus both buses build on                                         |
 | `src/lib/transport.ts`, `src/lib/tap_tempo.ts`                                 | Tempo, beat grid and metronome shared by every instrument; tap tempo                                                        |
 | `src/lib/LoopBrowser.svelte`, `src/lib/library.ts`, `src/lib/library_items.ts` | Loop Browser modal, its search/filters, and the premade loops and beats                                                     |
 | `src/lib/synth/`                                                               | Synth engine, loop recorder/player, arpeggiator and chords, piano-roll note conversion, factory presets                     |
@@ -481,13 +487,13 @@ How the pieces talk:
 Each example shows off a different corner of the app, and each sets up the
 keyboard (**Chord** and **Arp**) to play along:
 
-| Example                   | Style                         | Shows off                                                                                                                                                                                                                                                                                                    |
-| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, which winds down to 116 BPM, dotted-8th delay, bitcrushed arp and chip lead, an intro that boots up out of a crushed mix |
-| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills, congas on the peak, a shaker in the breakdown, a second peak pushed to 128 BPM                                                                        |
-| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a last outro slowed to 120 BPM                                                                                                                         |
-| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords (lightly crushed, in their own small room), heavy swing on the crushed Lo-fi kit, ghost snares, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) and wears out into crunch at the end                                   |
-| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem, Hoover riff (always-glide), Strings swell, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                                                                                           |
+| Example                   | Style                         | Shows off                                                                                                                                                                                                                                                                                                                            |
+| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, which winds down to 116 BPM, dotted-8th delay, a chorus on the synths, bitcrushed arp and chip lead, an intro that boots up out of a crushed mix |
+| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills, congas on the peak, a shaker and a flanger swept into the drums in the breakdown, a second peak pushed to 128 BPM                                                             |
+| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a last outro slowed to 120 BPM                                                                                                                                                 |
+| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords (lightly crushed, in their own small room, through a slow, deep chorus), heavy swing on the crushed Lo-fi kit, ghost snares, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) and wears out into crunch at the end                              |
+| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem (chorused wide), Hoover riff (always-glide), Strings swell, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                                                                                                   |
 
 The songs in `src/lib/server/examples/` are served from code, not the database:
 anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes

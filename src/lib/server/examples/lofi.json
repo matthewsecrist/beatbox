@@ -715,6 +715,9 @@
     "volume": 0.75
   },
   "effects": {
+    "chorus_depth": 0.7,
+    "chorus_mix": 0.6,
+    "chorus_rate": 0.35,
     "delay_feedback": 0.35,
     "delay_mix": 0.4,
     "delay_time": "1/4",
@@ -722,6 +725,7 @@
     "drums_reverb": 0.12,
     "reverb_mix": 0.5,
     "reverb_size": 3.5,
+    "synth_chorus": 0.35,
     "synth_delay": 0.15,
     "synth_reverb": 0.3
   },

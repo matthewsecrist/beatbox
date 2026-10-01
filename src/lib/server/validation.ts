@@ -27,6 +27,10 @@ const params = z.object({
   filter_sustain: z.number().exactOptional(),
   filter_type: z.enum(['bandpass', 'highpass', 'lowpass', 'notch']).exactOptional(),
   filter_velocity: z.number().min(0).max(1).exactOptional(),
+  fx_chorus_depth: z.number().min(0).max(1).exactOptional(),
+  fx_chorus_flanger: z.boolean().exactOptional(),
+  fx_chorus_mix: z.number().min(0).max(1).exactOptional(),
+  fx_chorus_rate: z.number().min(0.05).max(5).exactOptional(),
   fx_crush: z.number().min(0).max(1).exactOptional(),
   fx_delay_feedback: z.number().min(0).max(0.9).exactOptional(),
   fx_delay_mix: z.number().min(0).max(1).exactOptional(),
@@ -215,12 +219,17 @@ const performance = z.object({
 const level = z.number().min(0).max(1).exactOptional()
 const noteValue = delayTime.exactOptional()
 const effects = z.object({
+  chorus_depth: level,
+  chorus_flanger: z.boolean().exactOptional(),
+  chorus_mix: level,
+  chorus_rate: z.number().min(0.05).max(5).exactOptional(),
   comp_amount: level,
   comp_on: z.boolean().exactOptional(),
   delay_feedback: z.number().min(0).max(0.9).exactOptional(),
   delay_mix: level,
   delay_pingpong: z.boolean().exactOptional(),
   delay_time: noteValue,
+  drums_chorus: level,
   drums_delay: level,
   drums_reverb: level,
   duck_amount: level,
@@ -230,6 +239,7 @@ const effects = z.object({
   master_filter: z.number().min(-1).max(1).exactOptional(),
   reverb_mix: level,
   reverb_size: z.number().min(0.3).max(6).exactOptional(),
+  synth_chorus: level,
   synth_delay: level,
   synth_reverb: level
 })
@@ -246,12 +256,15 @@ function ramp(id: AutomationTarget) {
 const section = z.object({
   automation: z
     .object({
+      chorus_mix: ramp('chorus_mix'),
       delay_mix: ramp('delay_mix'),
+      drums_chorus: ramp('drums_chorus'),
       drums_delay: ramp('drums_delay'),
       drums_reverb: ramp('drums_reverb'),
       master_crush_mix: ramp('master_crush_mix'),
       master_filter: ramp('master_filter'),
       reverb_mix: ramp('reverb_mix'),
+      synth_chorus: ramp('synth_chorus'),
       synth_delay: ramp('synth_delay'),
       synth_filter: ramp('synth_filter'),
       synth_reverb: ramp('synth_reverb')

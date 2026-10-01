@@ -778,6 +778,9 @@
     "volume": 0.8
   },
   "effects": {
+    "chorus_depth": 0.6,
+    "chorus_mix": 0.7,
+    "chorus_rate": 0.7,
     "delay_feedback": 0.35,
     "delay_mix": 0.5,
     "delay_pingpong": true,
@@ -787,6 +790,7 @@
     "master_crush": 0.7,
     "reverb_mix": 0.5,
     "reverb_size": 2.8,
+    "synth_chorus": 0.3,
     "synth_delay": 0.2,
     "synth_reverb": 0.28
   },

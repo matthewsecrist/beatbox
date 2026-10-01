@@ -80,6 +80,7 @@ function fakeAudio() {
     createDelay: () => node('delay'),
     createDynamicsCompressor: () => node('compressor'),
     createGain: () => node('gain'),
+    createOscillator: () => Object.assign(node('lfo'), { start: vi.fn(), stop: vi.fn() }),
     createWaveShaper: () => node('clipper'),
     currentTime: 0,
     destination,
@@ -141,10 +142,10 @@ test('ping-pong bounces each repeat to the other side; straight keeps them in th
 
   bus.set({ ...DEFAULT_EFFECTS, delay_pingpong: true, delay_time: '1/4' }, 120)
   expect(repeats(nodes, 4)).toStrictEqual(['L', 'R', 'L', 'R'])
-  // Both lines keep the delay time, so the bounces stay on the beat.
-  expect(nodes.filter((x) => x.kind === 'delay').map((d) => d.delayTime.value)).toStrictEqual([
-    0.5, 0.5
-  ])
+  // Both lines keep the delay time, so the bounces stay on the beat (the chorus's
+  // own short lines come after them).
+  const echoLines = nodes.filter((x) => x.kind === 'delay').slice(0, 2)
+  expect(echoLines.map((d) => d.delayTime.value)).toStrictEqual([0.5, 0.5])
 
   // Feedback 0: one repeat, then nothing.
   bus.set({ ...DEFAULT_EFFECTS, delay_feedback: 0, delay_pingpong: true }, 120)
@@ -420,4 +421,51 @@ test('the impulse decays to silence', () => {
   expect(left?.[0]).toBe(1)
   expect(left?.[50]).toBeCloseTo(0.125)
   expect(left?.[99]).toBeCloseTo(0.000001)
+})
+
+test('the chorus: one LFO swings two lines in opposite directions; a flanger is shorter, with feedback', () => {
+  const { getCtx, nodes } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.set({ ...DEFAULT_EFFECTS, chorus_depth: 0.5, chorus_rate: 0.4, synth_chorus: 0.3 }, 110)
+  const input = bus.channel('synth') as unknown as FakeNode
+  // The chorus send comes after the delay and reverb sends, and feeds both lines.
+  const send = input.outputs[0]?.outputs[3]
+  const lines = send?.outputs[0]?.outputs ?? []
+  const [left, right] = lines
+  if (!send || !left || !right) throw new Error('no chorus')
+  expect(send.gain.value).toBe(0.3)
+  expect(lines.map((l) => [l.kind, l.delayTime.value])).toStrictEqual([
+    ['delay', 0.015],
+    ['delay', 0.015]
+  ])
+  // Each line on its own side of the stereo return.
+  const merger = left.outputs.find((o) => o.kind === 'merger')
+  expect([left, right].map((l) => l.ports[l.outputs.indexOf(merger ?? l)])).toStrictEqual([0, 1])
+
+  const lfo = find(nodes, 'lfo')
+  expect(lfo.frequency.value).toBe(0.4)
+  const swings = lfo.outputs.map((g) => [+g.gain.value.toFixed(4), g.outputs[0]])
+  expect(swings).toStrictEqual([
+    [0.003, left.delayTime],
+    [-0.003, right.delayTime]
+  ])
+  const feedback = (line: FakeNode) => line.outputs.find((o) => o.kind === 'gain')?.gain.value
+  expect([feedback(left), feedback(right)]).toStrictEqual([0, 0])
+
+  bus.set({ ...DEFAULT_EFFECTS, chorus_depth: 1, chorus_flanger: true }, 110)
+  expect([left.delayTime.value, feedback(left), feedback(right)]).toStrictEqual([0.003, 0.6, 0.6])
+  expect(lfo.outputs.map((g) => g.gain.value)).toStrictEqual([0.0025, -0.0025])
+})
+
+test("the chorus's mix and sends are arrangement lanes", () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  const input = bus.channel('drums') as unknown as FakeNode
+  const send = input.outputs[0]?.outputs[3]
+  const out = send?.outputs[0]?.outputs[0]?.outputs.find((o) => o.kind === 'merger')?.outputs[0]
+  if (!send || !out) throw new Error('no chorus')
+
+  bus.automate({ chorus_mix: [0.2, 1], drums_chorus: [0, 0.5] }, 2, 10)
+  expect(out.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(1, 10)
+  expect(send.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0.5, 10)
 })
