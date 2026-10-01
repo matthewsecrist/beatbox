@@ -87,13 +87,16 @@ const steps = z
   )
   .max(24)
 
+const pan = z.number().min(-1).max(1).exactOptional()
+
 const voice = z.object({
   decay: z.number().min(0.25).max(2).exactOptional(),
+  pan,
   sound: z.enum(INSTRUMENT_IDS).exactOptional(),
   tune: z.number().min(-12).max(12).exactOptional()
 })
 
-// Each drum track's tune, decay and library sound, on top of the kit.
+// Each drum track's tune, decay, pan and library sound, on top of the kit.
 const voices = z.object({
   chat: voice.exactOptional(),
   clap: voice.exactOptional(),
@@ -217,6 +220,7 @@ const performance = z.object({
 // Shared delay and reverb, how much of each instrument is sent to them, the
 // kick's sidechain ducking, and the master stage (compressor, filter, bitcrusher).
 const level = z.number().min(0).max(1).exactOptional()
+const eqGain = z.number().min(-12).max(12).exactOptional()
 const noteValue = delayTime.exactOptional()
 const effects = z.object({
   chorus_depth: level,
@@ -231,6 +235,10 @@ const effects = z.object({
   delay_time: noteValue,
   drums_chorus: level,
   drums_delay: level,
+  drums_eq_high: eqGain,
+  drums_eq_low: eqGain,
+  drums_eq_mid: eqGain,
+  drums_pan: pan,
   drums_reverb: level,
   duck_amount: level,
   duck_release: noteValue,
@@ -241,6 +249,10 @@ const effects = z.object({
   reverb_size: z.number().min(0.3).max(6).exactOptional(),
   synth_chorus: level,
   synth_delay: level,
+  synth_eq_high: eqGain,
+  synth_eq_low: eqGain,
+  synth_eq_mid: eqGain,
+  synth_pan: pan,
   synth_reverb: level
 })
 

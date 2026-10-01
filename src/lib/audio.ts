@@ -38,6 +38,17 @@ export interface Crusher {
   set(amount: number): void
 }
 
+// Pan as a balance: a mono sound plays on both sides (as it does unpanned) and
+// moving it one way fades the other side out, so the centre is exactly as before
+// and nothing ever gets louder. A StereoPannerNode would play a centred mono sound
+// 3 dB quieter on each side, and a hard-panned one louder.
+export interface Panner {
+  input: GainNode
+  output: ChannelMergerNode
+  // -1 (left) to 1 (right), gliding there unless `now` (just made).
+  set(pan: number, now?: boolean): void
+}
+
 export function createCrusher(ctx: BaseAudioContext, amount: number): Crusher {
   const node = ctx.createWaveShaper()
   node.oversample = 'none'
@@ -49,6 +60,40 @@ export function createCrusher(ctx: BaseAudioContext, amount: number): Crusher {
   }
   set(amount)
   return { node, set }
+}
+
+export function createPanner(ctx: BaseAudioContext, pan: number): Panner {
+  // Up-mixes a mono input to two equal sides first.
+  const input = ctx.createGain()
+  input.channelCount = 2
+  input.channelCountMode = 'explicit'
+  input.channelInterpretation = 'speakers'
+  const split = ctx.createChannelSplitter(2)
+  const output = ctx.createChannelMerger(2)
+  const side = (channel: number) => {
+    const g = ctx.createGain()
+    split.connect(g, channel)
+    g.connect(output, 0, channel)
+    return g
+  }
+  const left = side(0)
+  const right = side(1)
+  input.connect(split)
+
+  // A side's level: full until the pan moves away from it, then fading out.
+  const fade = (away: number) => (away > 0 ? Math.cos((away * Math.PI) / 2) : 1)
+  function set(next: number, now = false) {
+    for (const [g, level] of [
+      [left, fade(next)],
+      [right, fade(-next)]
+    ] as const) {
+      if (now) g.gain.value = level
+      else g.gain.setTargetAtTime(level, ctx.currentTime, 0.02)
+    }
+  }
+
+  set(pan, true)
+  return { input, output, set }
 }
 
 export function crushBits(amount: number): number {

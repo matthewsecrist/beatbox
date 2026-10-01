@@ -30,7 +30,8 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'sound_delay',
       'sound_reverb',
       'duck',
-      'master'
+      'master',
+      'mix'
     ].map((panel) => 'panel_' + panel),
     // Drum machine controls and step edit buttons
     ...[
@@ -39,6 +40,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'swing',
       'humanize',
       'drums_crush',
+      'drums_voice_pan',
       'kit',
       'drums_sound',
       'drums_tracks',

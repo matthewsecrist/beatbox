@@ -4,15 +4,18 @@ import {
   type Chorus,
   createChorus,
   createCrusher,
+  createPanner,
   type Crusher,
   getContext,
+  type Panner,
   rampThrough,
   settle
 } from './audio.js'
 import { EFFECT_TARGETS, type EffectTarget } from './automation.js'
 
 // Shared send effects on the page's AudioContext: every instrument plays into a
-// channel that goes to the master stage dry and, through a send level per effect,
+// channel (its 3-band EQ, then a pan on its dry sound) that goes to the master
+// stage dry and, through a send level per effect,
 // into one tempo-synced delay (straight or ping-pong), one reverb and one chorus
 // (or flanger), whose returns join it there. Each kick ducks the synth channel (dry and sends) for the
 // pumping sidechain sound. The master stage is a glue compressor (off by default),
@@ -40,6 +43,10 @@ export const DEFAULT_EFFECTS: Effects = {
   delay_time: '1/8d',
   drums_chorus: 0,
   drums_delay: 0,
+  drums_eq_high: 0,
+  drums_eq_low: 0,
+  drums_eq_mid: 0,
+  drums_pan: 0,
   drums_reverb: 0,
   duck_amount: 0,
   duck_release: '1/8',
@@ -50,6 +57,10 @@ export const DEFAULT_EFFECTS: Effects = {
   reverb_size: 2,
   synth_chorus: 0,
   synth_delay: 0,
+  synth_eq_high: 0,
+  synth_eq_low: 0,
+  synth_eq_mid: 0,
+  synth_pan: 0,
   synth_reverb: 0
 }
 
@@ -109,6 +120,13 @@ let clipCurve: Float32Array<ArrayBuffer> | null = null
 // from 20 kHz to 100 Hz, right sweeps a high-pass up from 20 Hz to 8 kHz, both
 // evenly in pitch; 0 is off. A little resonance at the cutoff, as on a DJ mixer.
 const FILTER_Q = 4 // dB
+
+// Channel EQ: a low shelf, a broad bell in the middle and a high shelf, each
+// boosting or cutting by its setting in dB.
+const EQ_LOW = 250 // Hz
+const EQ_MID = 1000
+const EQ_MID_Q = 0.7
+const EQ_HIGH = 4000
 export interface EffectsBus {
   // A section's ramps, from audio time `t0` to `t1` (arranger automation); any
   // setting the last section ramped and this one doesn't goes back to the song's at `t0`.
@@ -129,8 +147,9 @@ export interface EffectsBus {
 interface Bus {
   // Gain putting the left delay line on the right side too (straight delay).
   bothSides: GainNode
-  // Per instrument: its ducking gain (after the mute), then its send levels.
-  channels: Partial<Record<Instrument, Record<'duck' | Send, GainNode>>>
+  // Per instrument: its EQ (after the mute), its ducking gain, the pan on its dry
+  // sound, then its send levels.
+  channels: Partial<Record<Instrument, Channel>>
   chorus: Chorus
   chorusOut: GainNode
   comp: DynamicsCompressorNode
@@ -159,6 +178,15 @@ interface Bus {
   reverbOut: GainNode
   // Size the reverb's impulse response was made for.
   size: number
+}
+
+interface Channel {
+  chorus: GainNode
+  delay: GainNode
+  duck: GainNode
+  eq: Record<'high' | 'low' | 'mid', BiquadFilterNode>
+  pan: Panner
+  reverb: GainNode
 }
 
 export function createEffects(getCtx: () => BaseAudioContext = getContext): EffectsBus {
@@ -304,6 +332,12 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     }
     b.crush.set(settings.master_crush)
     b.chorus.set(chorusSettings(settings), now)
+    for (const [instrument, channel] of Object.entries(b.channels) as [Instrument, Channel][]) {
+      for (const band of ['high', 'low', 'mid'] as const) {
+        to(channel.eq[band].gain, settings[`${instrument}_eq_${band}`])
+      }
+      channel.pan.set(settings[`${instrument}_pan`], now)
+    }
     // A new impulse is only worth making when the size changes.
     if (b.size !== settings.reverb_size) {
       b.size = settings.reverb_size
@@ -336,9 +370,24 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       const delay = ctx.createGain()
       const reverb = ctx.createGain()
       const chorus = ctx.createGain()
+      const pan = createPanner(ctx, settings[`${instrument}_pan`])
+      const eq = {
+        high: ctx.createBiquadFilter(),
+        low: ctx.createBiquadFilter(),
+        mid: ctx.createBiquadFilter()
+      }
+      eq.low.type = 'lowshelf'
+      eq.low.frequency.value = EQ_LOW
+      eq.mid.type = 'peaking'
+      eq.mid.frequency.value = EQ_MID
+      eq.mid.Q.value = EQ_MID_Q
+      eq.high.type = 'highshelf'
+      eq.high.frequency.value = EQ_HIGH
       input.gain.value = muted.has(instrument) ? 0 : 1
-      input.connect(duck)
-      duck.connect(b.master)
+      // The sends leave before the pan: echoes and the room stay centred.
+      input.connect(eq.low).connect(eq.mid).connect(eq.high).connect(duck)
+      duck.connect(pan.input)
+      pan.output.connect(b.master)
       duck.connect(delay).connect(b.delay)
       duck.connect(reverb).connect(b.reverb)
       duck.connect(chorus).connect(b.chorus.input)
@@ -346,7 +395,10 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       reverb.gain.value = settings[`${instrument}_reverb`]
       chorus.gain.value = settings[`${instrument}_chorus`]
       b.inputs[instrument] = input
-      b.channels[instrument] = { chorus, delay, duck, reverb }
+      for (const band of ['high', 'low', 'mid'] as const) {
+        eq[band].gain.value = settings[`${instrument}_eq_${band}`]
+      }
+      b.channels[instrument] = { chorus, delay, duck, eq, pan, reverb }
       return input
     },
     duck(at: number, level: number): void {
@@ -399,6 +451,12 @@ const chorusSettings = (s: Effects) => ({
 
 export function masterFilterHz(x: number): number {
   return x < 0 ? 20000 * (100 / 20000) ** -x : 20 * (8000 / 20) ** x
+}
+
+// A pan setting as shown: C in the middle, else the side and how far (L 50, R 100).
+export function panLabel(pan: number): string {
+  const amount = Math.round(Math.abs(pan) * 100)
+  return amount === 0 ? 'C' : `${pan < 0 ? 'L' : 'R'} ${amount}`
 }
 
 function clipper(): Float32Array<ArrayBuffer> {

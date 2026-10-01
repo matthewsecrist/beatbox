@@ -21,6 +21,7 @@
   } from './types.js'
 
   import { crushBits } from './audio.js'
+  import Channel from './Channel.svelte'
   import {
     createDrums,
     type Drums,
@@ -31,7 +32,7 @@
   } from './drums/engine.js'
   import { euclid } from './drums/euclid.js'
   import { INSTRUMENT_IDS, INSTRUMENTS, KIT_SOUNDS, KITS, TRACKS } from './drums/kits.js'
-  import { effects } from './effects.js'
+  import { effects, panLabel } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
   import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
@@ -151,10 +152,11 @@
     store: SongStore
   } = $props()
 
-  type Tab = 'kit' | 'steps'
+  type Tab = 'kit' | 'mix' | 'steps'
   const TABS: [Tab, string][] = [
     ['steps', 'Steps'],
-    ['kit', 'Kit']
+    ['kit', 'Kit'],
+    ['mix', 'Mix']
   ]
   let tab: Tab = $state('steps')
 
@@ -884,7 +886,7 @@
           </select>
         </label>
       {/if}
-    {:else}
+    {:else if tab === 'kit'}
       <div id="kit-bar" class="flex flex-wrap items-center gap-2">
         <label
           class="flex min-w-60 items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
@@ -960,7 +962,7 @@
       </label>
       <div
         id="drum-voices"
-        class="grid max-w-3xl grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr] items-center gap-x-4 gap-y-2"
+        class="grid max-w-4xl grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr_1fr] items-center gap-x-4 gap-y-2"
       >
         <span></span>
         <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
@@ -969,6 +971,9 @@
         <span></span>
         <span class="text-[10px] uppercase tracking-wider text-zinc-500">Tune</span>
         <span class="text-[10px] uppercase tracking-wider text-zinc-500">Decay</span>
+        <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
+          >Pan<Info label="Pan" text={help('drums_voice_pan') ?? ''} /></span
+        >
         {#each TRACKS as track (track.id)}
           {@const voice = store.drums.voices[track.id]}
           <span class="text-xs font-semibold uppercase tracking-wide text-zinc-400"
@@ -1029,8 +1034,24 @@
             title={`Decay ${pct(voice.decay)}`}
             class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
           />
+          <input
+            id={'drums-pan-' + track.id}
+            type="range"
+            min="-1"
+            max="1"
+            step="0.05"
+            value={voice.pan ?? 0}
+            disabled={store.readOnly}
+            oninput={(e) => store.setVoice(track.id, { pan: Number(e.currentTarget.value) })}
+            ondblclick={() => store.setVoice(track.id, { pan: 0 })}
+            aria-label={`${track.label} pan`}
+            title={`Pan ${panLabel(voice.pan ?? 0)} (double-click to centre)`}
+            class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
+          />
         {/each}
       </div>
+    {:else}
+      <Channel instrument="drums" {store} />
     {/if}
   </Tabs>
 </section>

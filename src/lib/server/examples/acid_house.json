@@ -709,14 +709,25 @@
     ],
     "swing": 55,
     "voices": {
+      "chat": {
+        "pan": 0.25
+      },
+      "conga": {
+        "pan": -0.45
+      },
       "kick": {
         "decay": 1.2,
         "tune": -1
       },
       "ohat": {
-        "decay": 0.75
+        "decay": 0.75,
+        "pan": 0.25
+      },
+      "shaker": {
+        "pan": 0.45
       },
       "tom": {
+        "pan": -0.3,
         "tune": -2
       }
     },
@@ -732,10 +743,12 @@
     "delay_time": "1/8d",
     "drums_chorus": 0,
     "drums_delay": 0,
+    "drums_eq_low": 2,
     "drums_reverb": 0.12,
     "reverb_mix": 0.45,
     "reverb_size": 2,
     "synth_delay": 0.25,
+    "synth_eq_low": -1.5,
     "synth_reverb": 0.2
   },
   "loops": [

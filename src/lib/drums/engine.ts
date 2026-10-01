@@ -10,7 +10,14 @@ import type {
   VoiceTweak
 } from '../types.js'
 
-import { createCrusher, type Crusher, getContext, noiseBuffer } from '../audio.js'
+import {
+  createCrusher,
+  createPanner,
+  type Crusher,
+  getContext,
+  noiseBuffer,
+  type Panner
+} from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
 import { KIT_SOUNDS, TRACKS } from './kits.js'
 
@@ -59,10 +66,12 @@ export type PatternFn = () => {
   steps: Partial<Record<TrackId, DrumStep[]>>
 }
 
-// One hit as a voice plays it: when, how loud, and the voice's tune and decay.
+// One hit as a voice plays it: when, how loud, the voice's tune and decay, and
+// where it plays into (its track's pan, or straight into the drums' master).
 interface Hit {
   gain: number
   len: number // decay multiplier
+  out: AudioNode
   pitch: number // frequency multiplier
   t: number
 }
@@ -73,6 +82,8 @@ interface Output {
   ctx: BaseAudioContext
   master: GainNode
   noise: AudioBuffer
+  // Each track's pan, made once it's panned away from the centre.
+  pans: Map<TrackId, Panner>
 }
 
 // Schedules sounds slightly ahead on the audio clock ("A Tale of Two Clocks"),
@@ -134,17 +145,31 @@ export function createDrums({
       master.gain.value = volume
       const crusher = createCrusher(ctx, crush)
       master.connect(crusher.node).connect(output?.() ?? ctx.destination)
-      out = { crush: crusher, ctx, master, noise: noiseBuffer(ctx) }
+      out = { crush: crusher, ctx, master, noise: noiseBuffer(ctx), pans: new Map() }
     }
     return out
   }
 
-  function env({ ctx, master }: Output, t: number, peak: number, decay: number): GainNode {
-    const g = ctx.createGain()
+  function env(h: Hit, t: number, peak: number, decay: number): GainNode {
+    const g = ensureContext().ctx.createGain()
     g.gain.setValueAtTime(peak, t)
     g.gain.exponentialRampToValueAtTime(0.001, t + decay)
-    g.connect(master)
+    g.connect(h.out)
     return g
+  }
+
+  // Where a track's hits play into: its pan once it has been moved off the centre
+  // (and from then on), otherwise the master.
+  function trackOut(id: TrackId): AudioNode {
+    const { ctx, master, pans } = ensureContext()
+    let pan = pans.get(id)
+    const at = voices[id]?.pan ?? 0
+    if (!pan && at !== 0) {
+      pan = createPanner(ctx, at)
+      pan.output.connect(master)
+      pans.set(id, pan)
+    }
+    return pan?.input ?? master
   }
 
   function tone(
@@ -160,7 +185,7 @@ export function createDrums({
     o.type = type
     o.frequency.setValueAtTime(from * h.pitch, h.t)
     o.frequency.exponentialRampToValueAtTime(to * h.pitch, h.t + sweep)
-    const g = env(ensureContext(), h.t, peak * h.gain, decay * h.len)
+    const g = env(h, h.t, peak * h.gain, decay * h.len)
     o.connect(g)
     play(o, h.t, decay * h.len, g)
   }
@@ -175,7 +200,7 @@ export function createDrums({
     const f = ctx.createBiquadFilter()
     f.type = type
     f.frequency.value = freq * h.pitch
-    const g = env(output, t, peak * h.gain, decay * h.len)
+    const g = env(h, t, peak * h.gain, decay * h.len)
     src.connect(f).connect(g)
     play(src, t, decay * h.len, f, g)
   }
@@ -196,7 +221,7 @@ export function createDrums({
     const f = ctx.createBiquadFilter()
     f.type = type
     f.frequency.value = freq * h.pitch
-    const g = env(output, h.t, peak * h.gain, decay * h.len)
+    const g = env(h, h.t, peak * h.gain, decay * h.len)
     f.connect(g)
     for (const hz of pitches) {
       const o = ctx.createOscillator()
@@ -384,6 +409,7 @@ export function createDrums({
     SOUNDS[v?.sound ?? KIT_SOUNDS[kit][id]]({
       gain,
       len: locks.decay ?? v?.decay ?? 1,
+      out: trackOut(id),
       pitch: 2 ** ((locks.tune ?? v?.tune ?? 0) / 12),
       t
     })
@@ -508,6 +534,7 @@ export function createDrums({
   function setKit(next: KitId, tweaks: Partial<Record<TrackId, VoiceTweak>>): void {
     kit = next
     voices = tweaks
+    for (const [id, pan] of out?.pans ?? []) pan.set(voices[id]?.pan ?? 0)
   }
 
   function setCrush(amount: number): void {

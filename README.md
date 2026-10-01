@@ -62,7 +62,7 @@ settings**, New, Open) sits on top; **Song settings** opens the song's effects:
 delay, reverb, sends, bitcrusher, sidechain and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
 next to the arrangement: a column per section. Pick
 a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
-Amp, Mod, Drive & Glide** and **FX** tabs, the drums' **Steps** and **Kit** tabs. The keyboard bar (octave, Chord/Arp
+Amp, Mod, Drive & Glide**, **FX** and **Mix** tabs, the drums' **Steps**, **Kit** and **Mix** tabs. The keyboard bar (octave, Chord/Arp
 and the keys) stays at the bottom whichever track is open.
 
 - Each instrument track has a **level** (the synth's covers its loop pads), and **M**
@@ -204,10 +204,11 @@ run of taps is one undo step.
   instrument library: each kit's own kick, snare, hats, clap and tom, plus the
   percussion (808 Cowbell, Bongo, 909 Ride, …), grouped by part, so a song can
   play an 808 kick with a 909 snare. Picking one plays it, and ▶ plays it again.
-  Each track also has its own **Tune** (±12 semitones) and **Decay**. Picking a
-  kit resets all three.
+  Each track also has its own **Tune** (±12 semitones), **Decay** and **Pan**
+  (where it sits between the speakers: spread the hats and toms, keep the kick
+  and snare in the middle; double-click to centre). Picking a kit resets them all.
 - **Save kit** (next to the Kit menu) saves your mix as a kit of your own: the
-  kit it started from and every track's sound, tune and decay. Saved kits show
+  kit it started from and every track's sound, tune, decay and pan. Saved kits show
   under **Saved** in the Kit menu, to load into any song; saving under a name you
   already have overwrites that kit. A song keeps its own copy, so changing a saved
   kit later doesn't change songs that used it.
@@ -248,6 +249,15 @@ it starts an empty one-bar loop to draw in).
   own sound instead of the keyboard's ("Editing pad N's sound" shows at the top;
   **Done** goes back to the keyboard). Its notes change as you turn the controls,
   even while it plays; the keyboard keeps its own sound.
+
+**Mix** (a tab in each instrument's editor): where the whole instrument sits
+between the speakers (**Pan**; C is the middle, and moving it one way fades the
+other side out, so nothing gets louder) and a 3-band EQ: **EQ low** (a shelf
+below 250 Hz), **EQ mid** (a broad bell at 1 kHz) and **EQ high** (a shelf above
+4 kHz), each ±12 dB. The synth's covers the keyboard and every loop pad. The EQ
+shapes what goes into the effects too; the pan only moves the dry sound, so
+echoes and the room stay centred. Saved with the song (not with presets or
+kits); double-click a slider to reset it.
 
 **Effects**: a delay, a reverb and a chorus shared by the synth (loop pads included) and
 the drums, all in **Song settings** in the song bar. **Sends** sets how much of each
@@ -462,6 +472,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/DrumMachine.svelte`                                                   | Drums editor: step sequencer, kit, saved kits                                                                               |
 | `src/lib/Arranger.svelte`                                                      | Track list (level, mute, solo) and the arrangement grid                                                                     |
 | `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Song settings' effects panel, and the shared delay/reverb/chorus bus and master stage every instrument plays into           |
+| `src/lib/Channel.svelte`                                                       | Each instrument's Mix tab: its pan and 3-band EQ                                                                            |
 | `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                                       |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`, and the bitcrusher and chorus both buses build on                                         |
 | `src/lib/transport.ts`, `src/lib/tap_tempo.ts`                                 | Tempo, beat grid and metronome shared by every instrument; tap tempo                                                        |
@@ -494,6 +505,11 @@ keyboard (**Chord** and **Arp**) to play along:
 | **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s (driven in the second drop), ratcheted and chance hi-hats, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a last outro slowed to 120 BPM                                                                                                                                                 |
 | **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords (lightly crushed, in their own small room, through a slow, deep chorus), heavy swing on the crushed Lo-fi kit, ghost snares, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) and wears out into crunch at the end                              |
 | **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem (chorused wide), Hoover riff (always-glide), Strings swell, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                                                                                                   |
+
+Every example also spreads its hats, toms and hand percussion across the speakers
+(each drum's **Pan**), with the kick, snare and clap in the middle, and shapes its
+instruments with the **Mix** tab's EQ: a deeper kick in the house, trance, synthwave
+and trap songs, dulled drums and warmer keys in the lo-fi one.
 
 The songs in `src/lib/server/examples/` are served from code, not the database:
 anyone can open one at `/examples/<slug>`, signed in or not, and saving it makes

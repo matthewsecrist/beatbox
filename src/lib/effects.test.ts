@@ -76,6 +76,7 @@ function fakeAudio() {
       return { getChannelData: () => new Float32Array(length) }
     },
     createChannelMerger: () => node('merger'),
+    createChannelSplitter: () => node('splitter'),
     createConvolver: () => node('convolver'),
     createDelay: () => node('delay'),
     createDynamicsCompressor: () => node('compressor'),
@@ -95,6 +96,13 @@ const find = (nodes: FakeNode[], kind: string): FakeNode => {
   if (!n) throw new Error(`no ${kind}`)
   return n
 }
+
+// A pan's two sides (left, right): the gains between its splitter and merger.
+const sidesOf = (pan: FakeNode | undefined): FakeNode[] => pan?.outputs[0]?.outputs ?? []
+
+// A channel's ducking gain: past its mute and its three EQ filters.
+const duckOf = (channel: AudioNode): FakeNode | undefined =>
+  (channel as unknown as FakeNode).outputs[0]?.outputs[0]?.outputs[0]?.outputs[0]
 
 test('nothing is built until an instrument asks for its channel; earlier settings still apply', () => {
   const { getCtx, nodes } = fakeAudio()
@@ -160,8 +168,11 @@ test('a channel plays dry and into each effect at its send level', () => {
   const input = bus.channel('synth') as unknown as FakeNode
   expect(bus.channel('synth')).toBe(input) // one channel per instrument
   // Past the mute, the ducking gain feeds the dry path and both sends.
-  const [dry, delaySend, reverbSend] = input.outputs[0]?.outputs ?? []
-  expect(dry?.outputs).toStrictEqual([find(nodes, 'compressor')]) // the master stage
+  const [dry, delaySend, reverbSend] = duckOf(input as unknown as AudioNode)?.outputs ?? []
+  // The dry sound through its pan (split into sides, then merged) to the master stage.
+  expect(sidesOf(dry)[0]?.outputs[0]?.outputs[0]?.outputs).toStrictEqual([
+    find(nodes, 'compressor')
+  ])
   expect([delaySend?.gain.value, reverbSend?.gain.value]).toStrictEqual([0.25, 0.5])
   expect(delaySend?.outputs).toStrictEqual([find(nodes, 'delay')])
   expect(reverbSend?.outputs).toStrictEqual([find(nodes, 'convolver')])
@@ -275,7 +286,7 @@ test("a section's ramp moves a send in a line; song edits wait, and its setting 
   const { getCtx } = fakeAudio()
   const bus = createEffects(getCtx)
   bus.set({ ...DEFAULT_EFFECTS, synth_reverb: 0.2 }, 120)
-  const reverbSend = (bus.channel('synth') as unknown as FakeNode).outputs[0]?.outputs[2]
+  const reverbSend = duckOf(bus.channel('synth'))?.outputs[2]
   if (!reverbSend) throw new Error('no reverb send')
   const { gain } = reverbSend
 
@@ -306,7 +317,7 @@ test("a section's ramp moves a send in a line; song edits wait, and its setting 
 test('stopping just before a section that lets go still cancels the ramp and its reset', () => {
   const { getCtx } = fakeAudio()
   const bus = createEffects(getCtx)
-  const reverbSend = (bus.channel('synth') as unknown as FakeNode).outputs[0]?.outputs[2]
+  const reverbSend = duckOf(bus.channel('synth'))?.outputs[2]
   if (!reverbSend) throw new Error('no reverb send')
   const clock = getCtx() as unknown as { currentTime: number }
 
@@ -358,7 +369,7 @@ test('a kick ducks the synth (dry and sends) by the amount and it recovers over 
   const bus = createEffects(getCtx)
   // The gain after each channel's mute: its ducking gain.
   const duckCalls = (instrument: 'drums' | 'synth') => {
-    const duck = (bus.channel(instrument) as unknown as FakeNode).outputs[0]
+    const duck = duckOf(bus.channel(instrument))
     if (!duck) throw new Error('no ducking gain')
     return vi.mocked(duck.gain.setTargetAtTime).mock.calls
   }
@@ -429,7 +440,7 @@ test('the chorus: one LFO swings two lines in opposite directions; a flanger is 
   bus.set({ ...DEFAULT_EFFECTS, chorus_depth: 0.5, chorus_rate: 0.4, synth_chorus: 0.3 }, 110)
   const input = bus.channel('synth') as unknown as FakeNode
   // The chorus send comes after the delay and reverb sends, and feeds both lines.
-  const send = input.outputs[0]?.outputs[3]
+  const send = duckOf(input as unknown as AudioNode)?.outputs[3]
   const lines = send?.outputs[0]?.outputs ?? []
   const [left, right] = lines
   if (!send || !left || !right) throw new Error('no chorus')
@@ -461,11 +472,44 @@ test("the chorus's mix and sends are arrangement lanes", () => {
   const { getCtx } = fakeAudio()
   const bus = createEffects(getCtx)
   const input = bus.channel('drums') as unknown as FakeNode
-  const send = input.outputs[0]?.outputs[3]
+  const send = duckOf(input as unknown as AudioNode)?.outputs[3]
   const out = send?.outputs[0]?.outputs[0]?.outputs.find((o) => o.kind === 'merger')?.outputs[0]
   if (!send || !out) throw new Error('no chorus')
 
   bus.automate({ chorus_mix: [0.2, 1], drums_chorus: [0, 0.5] }, 2, 10)
   expect(out.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(1, 10)
   expect(send.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0.5, 10)
+})
+
+test("each channel's EQ shapes its sound, dry and sends, and its pan places only the dry sound", () => {
+  const { getCtx } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.set({ ...DEFAULT_EFFECTS, synth_eq_low: 3, synth_pan: -0.5 }, 110)
+  const input = bus.channel('synth') as unknown as FakeNode
+  const low = input.outputs[0]
+  const mid = low?.outputs[0]
+  const high = mid?.outputs[0]
+  const eq = [low, mid, high].map((f) => [f?.type, f?.frequency.value, f?.gain.value])
+  expect(eq).toStrictEqual([
+    ['lowshelf', 250, 3],
+    ['peaking', 1000, 0],
+    ['highshelf', 4000, 0]
+  ])
+  const duck = duckOf(input as unknown as AudioNode)
+  expect(high?.outputs).toStrictEqual([duck])
+  const [pan, ...sends] = duck?.outputs ?? []
+  // Half left: the right side fades to cos(45°), the left stays full.
+  expect(sidesOf(pan).map((g) => +g.gain.value.toFixed(3))).toStrictEqual([1, 0.707])
+  // Delay, reverb and the chorus's input, all unpanned.
+  expect(sends.map((s) => s.outputs[0]?.kind)).toStrictEqual(['delay', 'convolver', 'gain'])
+
+  bus.set({ ...DEFAULT_EFFECTS, synth_eq_high: -6, synth_eq_mid: 2, synth_pan: 1 }, 110)
+  expect([low, mid, high].map((f) => f?.gain.value)).toStrictEqual([0, 2, -6])
+  expect(sidesOf(pan).map((g) => +g.gain.value.toFixed(3))).toStrictEqual([0, 1])
+  bus.set(DEFAULT_EFFECTS, 110)
+  expect(sidesOf(pan).map((g) => g.gain.value)).toStrictEqual([1, 1]) // centred: as before
+  // The other instrument has its own.
+  const drums = bus.channel('drums') as unknown as FakeNode
+  expect(drums.outputs[0]).not.toBe(low)
+  expect(drums.outputs[0]?.gain.value).toBe(0)
 })
