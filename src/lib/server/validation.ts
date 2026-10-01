@@ -286,6 +286,7 @@ const section = z.object({
   bars: z.int().min(1).max(64),
   bpm: z.int().min(60).max(200).nullable().exactOptional(),
   drums: z.boolean().default(false),
+  fill: z.int().min(0).max(3).nullable().exactOptional(),
   name: z.string().trim().max(30).nullable().exactOptional(),
   // Loop pad slots (0-7) playing in this section.
   pads: z.array(z.int().min(0).max(7)).max(8).default([]),

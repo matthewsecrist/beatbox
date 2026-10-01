@@ -134,6 +134,12 @@ export interface Effects {
   synth_reverb: number
 }
 
+// A section's fill, announced just before its last bar like a scene.
+export interface Fill {
+  beat: number
+  pattern: number
+}
+
 // The synth filter's shape: lowpass keeps what's below the cutoff, highpass what's
 // above, bandpass a band around it, and notch cuts that band out.
 export type FilterType = 'bandpass' | 'highpass' | 'lowpass' | 'notch'
@@ -241,6 +247,9 @@ export interface Section {
   // Its own tempo; absent or null plays it at the song tempo.
   bpm?: null | number
   drums: boolean
+  // A drum pattern (0-3 = A-D) to play on its last bar instead, for a fill into
+  // the next section; absent or null plays `pattern` throughout.
+  fill?: null | number
   name?: null | string
   pads: number[]
   // Drum pattern index (0-3 = A-D) when `drums` is on.
@@ -367,6 +376,8 @@ export type Wave = 'sawtooth' | 'sine' | 'square' | 'triangle'
 
 declare global {
   interface WindowEventMap {
+    // A section's fill: the drums switch to its pattern on `beat` (its last bar).
+    'beatbox:fill': CustomEvent<Fill>
     'beatbox:report': CustomEvent<undefined>
     'beatbox:scene': CustomEvent<Scene>
     // Play song (song bar): the Arranger plays the arrangement from the start.

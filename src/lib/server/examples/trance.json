@@ -10,6 +10,7 @@
     {
       "bars": 16,
       "drums": true,
+      "fill": 3,
       "name": "Groove",
       "pads": [0, 1],
       "pattern": 1

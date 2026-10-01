@@ -59,6 +59,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     // Arrangement
     'pad_once',
     'section_bpm',
+    'section_fill',
     'automation',
     ...LANES.map((l) => l.id)
   ]

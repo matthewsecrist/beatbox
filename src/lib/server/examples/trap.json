@@ -25,18 +25,12 @@
       "pattern": 3
     },
     {
-      "bars": 15,
+      "bars": 16,
       "drums": true,
+      "fill": 3,
       "name": "Drop",
       "pads": [0, 1, 2, 6],
       "pattern": 0
-    },
-    {
-      "bars": 1,
-      "drums": true,
-      "name": "Roll",
-      "pads": [0, 1, 2],
-      "pattern": 3
     },
     {
       "bars": 16,

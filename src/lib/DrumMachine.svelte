@@ -8,6 +8,7 @@
     DrumGrid,
     DrumPattern,
     DrumStep,
+    Fill,
     KitId,
     LoadKitReply,
     PresetSummary,
@@ -291,14 +292,20 @@
         engine.stopAt(detail.beat) // `playing` goes false via onStop on that beat
       }
     }
+    // A section's fill: its last bar plays another pattern.
+    const onFill = ({ detail }: CustomEvent<Fill>) => {
+      engine.start(patternFn(detail.pattern), detail.beat, detail.pattern)
+    }
     window.addEventListener('beatbox:transport', onTransport)
     window.addEventListener('beatbox:report', onReport)
     window.addEventListener('beatbox:scene', onScene)
+    window.addEventListener('beatbox:fill', onFill)
     window.addEventListener('beatbox:state', onState)
     return () => {
       window.removeEventListener('beatbox:transport', onTransport)
       window.removeEventListener('beatbox:report', onReport)
       window.removeEventListener('beatbox:scene', onScene)
+      window.removeEventListener('beatbox:fill', onFill)
       window.removeEventListener('beatbox:state', onState)
       engine.close()
       report(false)

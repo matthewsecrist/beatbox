@@ -4,7 +4,14 @@
   import { SvelteSet } from 'svelte/reactivity'
 
   import type { ArrangementSection, SongStore } from './song.svelte.js'
-  import type { AutomationTarget, Ramp, Scene, StateDetail, TransportDetail } from './types.js'
+  import type {
+    AutomationTarget,
+    Fill,
+    Ramp,
+    Scene,
+    StateDetail,
+    TransportDetail
+  } from './types.js'
 
   import { createArranger, type Position } from './arranger.js'
   import { LANES, restingValue } from './automation.js'
@@ -54,6 +61,7 @@
 
   const totalBars = $derived(sections.reduce((n, s) => n + s.bars, 0))
 
+  function say(name: 'beatbox:fill', detail: Fill): void
   function say(name: 'beatbox:scene', detail: Scene): void
   function say(name: 'beatbox:state', detail: StateDetail): void
   function say(name: 'beatbox:transport', detail: TransportDetail): void
@@ -64,6 +72,7 @@
   // Each scene goes to the instruments, and its effect ramps to the effects bus.
   const arranger = createArranger({
     onEnd: () => finished(),
+    onFill: (fill) => say('beatbox:fill', fill),
     onScene: (scene) => {
       say('beatbox:scene', scene)
       effects.automate(scene.automation, transport.timeAt(scene.beat), transport.timeAt(scene.end))
@@ -488,6 +497,34 @@
               <option value={p}>Pattern {letter}</option>
             {/each}
           </select>
+          {#if section.drums}
+            <label
+              class="mt-1 flex items-center justify-between gap-1 rounded-md bg-zinc-950/60 py-0.5 pl-2 pr-1 text-[10px] uppercase tracking-wider text-zinc-500"
+            >
+              <span class="flex items-center gap-1"
+                >Fill<Info label="Fill" text={help('section_fill') ?? ''} /></span
+              >
+              <select
+                id={'section-fill-' + i}
+                value={section.fill ?? -1}
+                disabled={store.readOnly}
+                aria-label={`Section ${i + 1}: fill on the last bar`}
+                onchange={(e) => {
+                  const p = Number(e.currentTarget.value)
+                  store.updateSection(i, { fill: p < 0 ? null : p })
+                }}
+                class={[
+                  'rounded border border-transparent bg-transparent px-1 text-xs font-semibold normal-case transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none disabled:pointer-events-none [&_option]:bg-zinc-900 [&_option]:text-zinc-200',
+                  section.fill != null ? 'text-amber-300' : 'text-zinc-400'
+                ]}
+              >
+                <option value={-1}>None</option>
+                {#each DRUM_PATTERNS as letter, p (letter)}
+                  <option value={p}>{letter}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
         </div>
       {/each}
       <div class="border-t border-zinc-800"></div>

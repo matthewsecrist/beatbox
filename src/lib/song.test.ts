@@ -490,3 +490,14 @@ test('a pad set to play once keeps its notes and sound, saves the setting and un
   store.setLoopOnce(5, true) // an empty pad: nothing to change
   expect(store.loops[5]).toBe(null)
 })
+
+test("a section's fill is saved only when it has one, and undoes as one step", () => {
+  const store = new SongStore(song, vi.fn())
+  store.updateSection(0, { fill: 3 })
+  expect(store.toSongDoc().arrangement[0]?.fill).toBe(3)
+
+  store.updateSection(0, { fill: null })
+  expect(store.toSongDoc().arrangement[0]).not.toHaveProperty('fill')
+  store.undo()
+  expect(store.arrangement[0]?.fill).toBe(3)
+})

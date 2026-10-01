@@ -475,13 +475,15 @@ export class SongStore {
     const { lengths, ...drumState } = this.drums
     return {
       arrangement: this.arrangement.map(
-        ({ automation, bars, bpm, drums, name, pads, pattern }) => ({
+        ({ automation, bars, bpm, drums, fill, name, pads, pattern }) => ({
           // Saved only when the section automates something.
           ...(automation && Object.keys(automation).length ? { automation } : {}),
           bars,
           // Saved only when the section has its own tempo.
           ...(bpm ? { bpm } : {}),
           drums,
+          // Saved only when the section has one.
+          ...(fill != null ? { fill } : {}),
           name,
           pads,
           pattern

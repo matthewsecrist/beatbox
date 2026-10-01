@@ -197,6 +197,8 @@ export const HELP = {
     'How big the room sounds: small is a bedroom, big is a cathedral that rings for seconds.',
   section_bpm:
     "How fast this section goes, in beats per minute. Leave it empty to play it at the song tempo. Slow a bridge right down, or speed up a final chorus: when the song gets there, everything switches to this speed on the section's first beat, and back afterwards.",
+  section_fill:
+    "A different drum pattern for this section's last bar: a drum fill that leads into the next section, like a drummer's roll before the chorus. None keeps the section's pattern all the way through. Make the fill in one of the patterns A to D first.",
   step_accent:
     'Click a lit square to make that hit extra loud and punchy (it gets a red dot). Accents on the big beats help the rhythm stand out.',
   step_hits:
