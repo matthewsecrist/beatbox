@@ -370,6 +370,17 @@ export class SongStore {
     this.edit(() => this.loopsMap.set(String(loop.slot), plain(loop)), true)
   }
 
+  // Whether a pad plays its loop once and stops (a one-shot) or loops; kept on
+  // the loop, with its notes and sound.
+  setLoopOnce(slot: number, once: boolean): void {
+    const loop = this.loops[slot]
+    if (!loop) return
+    const next: Loop = { ...loop }
+    if (once) next.once = true
+    else delete next.once
+    this.setLoop(next)
+  }
+
   // One synth setting: of the keyboard's sound, or (`slot`) of that loop pad's own.
   setParam<K extends keyof SynthParams>(
     key: K,

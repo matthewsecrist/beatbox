@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Pencil } from '@lucide/svelte'
+  import { Pencil, Repeat, Repeat1 } from '@lucide/svelte'
   import { onMount, type Snippet, untrack } from 'svelte'
   import { SvelteMap } from 'svelte/reactivity'
 
@@ -110,6 +110,7 @@
     store.loops.map((loop, slot) => ({
       filled: !!loop,
       label: loop ? barsLabel(loop) : '',
+      once: !!loop?.once,
       playing: playback[slot]?.playing ?? false,
       pos: playback[slot]?.pos ?? 0
     }))
@@ -1069,10 +1070,11 @@
           id="loop-pads"
           class="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4"
         >
-          <p class="text-xs text-zinc-500">
+          <p class="flex items-center gap-1 text-xs text-zinc-500">
             {store.readOnly
               ? 'Tap a pad to play or stop its loop'
-              : 'Tap an empty pad to record, tap again to loop it · the pencil edits its notes'}
+              : 'Tap an empty pad to record, tap again to loop it · the pencil edits its notes · the corner arrow makes it play once'}
+            <Info label="Play once" text={help('pad_once') ?? ''} />
           </p>
           <div class="grid grid-cols-4 gap-2 sm:grid-cols-8">
             {#each pads as pad, slot (slot)}
@@ -1143,6 +1145,27 @@
                     ]}
                   >
                     <Pencil class="size-2.5" />
+                  </button>
+                {/if}
+                {#if pad.filled && (!store.readOnly || pad.once)}
+                  <button
+                    id={'loop-once-' + slot}
+                    type="button"
+                    aria-label={`Loop pad ${slot + 1}: play once`}
+                    aria-pressed={pad.once}
+                    disabled={store.readOnly}
+                    title={pad.once ? 'Plays once (click to loop)' : 'Loops (click to play once)'}
+                    onclick={() => store.setLoopOnce(slot, !pad.once)}
+                    class={[
+                      'absolute -bottom-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full border bg-zinc-900 transition group-hover:opacity-100 hover:border-amber-400 hover:text-amber-300 focus:opacity-100 disabled:pointer-events-none pointer-coarse:opacity-100',
+                      pad.once
+                        ? 'border-amber-400 text-amber-300 opacity-100'
+                        : 'border-zinc-600 text-zinc-400 opacity-0'
+                    ]}
+                  >
+                    {#if pad.once}<Repeat1 class="size-2.5" />{:else}<Repeat
+                        class="size-2.5"
+                      />{/if}
                   </button>
                 {/if}
               </div>

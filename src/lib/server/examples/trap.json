@@ -28,7 +28,7 @@
       "bars": 15,
       "drums": true,
       "name": "Drop",
-      "pads": [0, 1, 2],
+      "pads": [0, 1, 2, 6],
       "pattern": 0
     },
     {
@@ -73,7 +73,7 @@
       "bars": 16,
       "drums": true,
       "name": "Drop 2",
-      "pads": [5, 1, 3, 2],
+      "pads": [1, 2, 3, 5, 6],
       "pattern": 1
     },
     {
@@ -1884,6 +1884,96 @@
         "sustain": 0.55
       },
       "slot": 5
+    },
+    {
+      "bpm": 140,
+      "events": [
+        {
+          "midi": 74,
+          "on": true,
+          "t": 0.0
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 0.107
+        },
+        {
+          "midi": 74,
+          "on": true,
+          "t": 0.214
+        },
+        {
+          "midi": 74,
+          "on": false,
+          "t": 0.321
+        },
+        {
+          "midi": 69,
+          "on": true,
+          "t": 0.643
+        },
+        {
+          "midi": 69,
+          "on": false,
+          "t": 0.857
+        }
+      ],
+      "length": 1.714,
+      "once": true,
+      "params": {
+        "attack": 0.001,
+        "decay": 0.35,
+        "drive": 0,
+        "drive_mix": 1,
+        "drive_type": "soft",
+        "filter_attack": 0.005,
+        "filter_cutoff": 6000,
+        "filter_decay": 0.3,
+        "filter_env_amount": 0,
+        "filter_release": 0.3,
+        "filter_resonance": 2,
+        "filter_sustain": 0,
+        "filter_type": "lowpass",
+        "filter_velocity": 0,
+        "fx_chorus_depth": 0.5,
+        "fx_chorus_flanger": false,
+        "fx_chorus_mix": 0,
+        "fx_chorus_rate": 0.8,
+        "fx_crush": 0,
+        "fx_delay_feedback": 0.35,
+        "fx_delay_mix": 0.3,
+        "fx_delay_time": "1/8t",
+        "fx_reverb_mix": 0,
+        "fx_reverb_size": 2,
+        "glide": 0,
+        "glide_mode": "legato",
+        "lfo1_depth": 0,
+        "lfo1_note": "1/4",
+        "lfo1_rate": 4,
+        "lfo1_sync": false,
+        "lfo1_target": "filter",
+        "lfo2_depth": 0,
+        "lfo2_note": "1/4",
+        "lfo2_rate": 5,
+        "lfo2_sync": false,
+        "lfo2_target": "pitch",
+        "noise_level": 0,
+        "osc1_detune": 0,
+        "osc1_level": 0.6,
+        "osc1_octave": 0,
+        "osc1_wave": "square",
+        "osc2_detune": 10,
+        "osc2_level": 0.3,
+        "osc2_octave": 1,
+        "osc2_wave": "sawtooth",
+        "pitch_env_amount": 36,
+        "pitch_env_decay": 0.3,
+        "release": 0.1,
+        "sub_level": 0,
+        "sustain": 0
+      },
+      "slot": 6
     }
   ],
   "name": "Glass Casket",

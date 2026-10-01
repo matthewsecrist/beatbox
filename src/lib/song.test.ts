@@ -476,3 +476,17 @@ test('a run of taps is one undo step, however slow; the next run is another', ()
   expect(store.drums.bpm).toBe(110)
   vi.useRealTimers()
 })
+
+test('a pad set to play once keeps its notes and sound, saves the setting and undoes it', () => {
+  const store = new SongStore(song, vi.fn())
+  store.setLoopOnce(2, true)
+  expect(store.loops[2]).toStrictEqual({ ...loop(2), once: true })
+  expect(store.toSongDoc().loops[0]?.once).toBe(true)
+
+  store.setLoopOnce(2, false)
+  expect(store.toSongDoc().loops[0]).toStrictEqual(loop(2)) // looping again: nothing saved
+  store.undo()
+  expect(store.loops[2]?.once).toBe(true)
+  store.setLoopOnce(5, true) // an empty pad: nothing to change
+  expect(store.loops[5]).toBe(null)
+})

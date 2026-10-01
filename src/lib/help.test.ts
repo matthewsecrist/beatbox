@@ -57,6 +57,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
     ],
     'tap_tempo',
     // Arrangement
+    'pad_once',
     'section_bpm',
     'automation',
     ...LANES.map((l) => l.id)
