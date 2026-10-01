@@ -20,6 +20,11 @@ See README.md for layout and commands.
   (`Effects.svelte`, in the song bar). An instrument's own settings go in that
   instrument's editor: the synth panel's tabs (as part of the sound, saved with
   presets and loop pads, like Drive and FX) or the drums' tabs (like Kit's Crush).
+- A new effect or sound feature should be heard, not just available: use it in the
+  example songs it suits (`src/lib/server/examples/`, plus their row in the README
+  table), and update or add factory presets (`src/lib/synth/factory_presets.ts`)
+  and Loop Browser loops built on them (`src/lib/library_items.ts`). Leave it off
+  where it doesn't fit the genre.
 - Shared shapes live in `src/lib/types.ts`. Server-only code lives in `src/lib/server/`.
   Validate anything a client sends with the zod schemas in `src/lib/server/validation.ts`
   before storing it.
