@@ -100,6 +100,25 @@ const voices = z.object({
   woodblock: voice.exactOptional()
 })
 
+// Steps a track loops over (polymeter), no more than its pattern's grid.
+const length = z.int().min(1).max(24).exactOptional()
+const lengths = z.object({
+  chat: length,
+  clap: length,
+  conga: length,
+  cowbell: length,
+  crash: length,
+  kick: length,
+  ohat: length,
+  ride: length,
+  rim: length,
+  shaker: length,
+  snap: length,
+  snare: length,
+  tom: length,
+  woodblock: length
+})
+
 const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 
 // Drum machine state: tempo, feel, kit, level and patterns A-D, each on its own
@@ -113,6 +132,8 @@ const drums = z
       .exactOptional(),
     humanize: z.number().min(0).max(1).exactOptional(),
     kit: kit.exactOptional(),
+    // Each pattern's track lengths, A-D.
+    lengths: z.array(lengths).max(4).exactOptional(),
     // Patterns A-D (index 0-3); arrangement sections pick one by index.
     patterns: z
       .array(
@@ -143,6 +164,11 @@ const drums = z
     ({ grids, patterns }) =>
       patterns.every((p, i) => Object.values(p).every((row) => row.length <= (grids?.[i] ?? 16))),
     { message: 'a pattern has more steps than its grid', path: ['patterns'] }
+  )
+  .refine(
+    ({ grids, lengths }) =>
+      (lengths ?? []).every((l, i) => Object.values(l).every((n) => n <= (grids?.[i] ?? 16))),
+    { message: 'a track is longer than its grid', path: ['lengths'] }
   )
 
 // One recorded loop pad.

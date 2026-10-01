@@ -6,6 +6,7 @@ import type {
   KitId,
   StepLocks,
   TrackId,
+  TrackLengths,
   VoiceTweak
 } from '../types.js'
 
@@ -49,8 +50,12 @@ export interface Drums {
 
 const noop = (): void => undefined
 
-// Returns the pattern to play; read on every step so edits are heard at once.
-export type PatternFn = () => Partial<Record<TrackId, DrumStep[]>>
+// Returns the pattern to play and its track lengths (none: every track plays the
+// whole bar); read on every step so edits are heard at once.
+export type PatternFn = () => {
+  lengths?: TrackLengths
+  steps: Partial<Record<TrackId, DrumStep[]>>
+}
 
 // One hit as a voice plays it: when, how loud, and the voice's tune and decay.
 interface Hit {
@@ -78,6 +83,8 @@ export function createDrums({
   // Each kick the pattern plays, at its audio time and gain (the sidechain).
   onKick = noop,
   onPattern = noop,
+  // Each step as it sounds: how many of its grid's steps since the start (a
+  // track's step is that modulo its length); -1 once stopped.
   onStep,
   onStop = noop,
   // Where the drums play into (an effects channel); the speakers by default.
@@ -90,7 +97,7 @@ export function createDrums({
   id?: string
   onKick?: (at: number, level: number) => void
   onPattern?: (tag: number | undefined) => void
-  onStep: (step: number) => void
+  onStep: (count: number) => void
   onStop?: () => void
   output?: () => AudioNode
   random?: () => number
@@ -108,12 +115,12 @@ export function createDrums({
   let nextBeat = 0 // step times come from the shared transport grid, 4 beats a bar
   let origin = 0 // the beat it started on: bars (and each grid's steps) count from it
   let endBeat = Infinity // set by stopAt(): no steps from this beat on
-  let getPattern: PatternFn = () => ({})
+  let getPattern: PatternFn = () => ({ steps: {} })
   // Pattern switch waiting for its beat.
   let queued: null | { beat: number; fn: PatternFn; tag: number | undefined } = null
   // source -> start time; lets stop() silence lookahead hits
   const pending = new Map<AudioScheduledSourceNode, number>()
-  const queue: { step: number; time: number }[] = []
+  const queue: { count: number; time: number }[] = []
 
   function ensureContext(): Output {
     if (!out) {
@@ -399,7 +406,7 @@ export function createDrums({
         onPattern(queued.tag)
         queued = null
       }
-      const pattern = getPattern()
+      const { lengths = {}, steps: pattern } = getPattern()
       // Which step of the pattern's grid this is, counted from its bar line. After
       // the grid changes mid-bar, the next beat may sit between the new grid's
       // lines: it moves on to the next one.
@@ -411,11 +418,14 @@ export function createDrums({
         nextBeat = bar + (Math.ceil(exact) * 4) / steps
         continue
       }
+      // Steps of this grid since the start: each track loops over its own length
+      // from there (polymeter), while patterns still change on the bar line.
+      const count = Math.round((bar - origin) / 4) * steps + step
       // A ratcheted step spreads its hits up to where the next step lands.
       const from = nextBeat + late(step, steps)
       const span = nextBeat + 4 / steps + late(step + 1, steps) - from
       for (const { id } of TRACKS) {
-        const hitStep = pattern[id]?.[step]
+        const hitStep = pattern[id]?.[count % Math.min(lengths[id] ?? steps, steps)]
         if (!hitStep?.on || !audible(id) || hitStep.velocity <= 0) continue
         if (random() >= hitStep.probability) continue
         const gain = hitStep.velocity * (hitStep.accent ? ACCENT : 1)
@@ -429,7 +439,7 @@ export function createDrums({
           if (id === 'kick') onKick(at, level)
         }
       }
-      queue.push({ step, time: t })
+      queue.push({ count, time: t })
       // From the bar line, so a triplet grid's thirds don't add up rounding errors.
       nextBeat = bar + ((step + 1) * 4) / steps
     }
@@ -439,7 +449,7 @@ export function createDrums({
     const { ctx } = ensureContext()
     for (let next = queue[0]; next && next.time <= ctx.currentTime; next = queue[0]) {
       queue.shift()
-      onStep(next.step)
+      onStep(next.count)
     }
     raf = requestAnimationFrame(draw)
   }

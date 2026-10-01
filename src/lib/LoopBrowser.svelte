@@ -113,7 +113,7 @@
       drums.setHumanize(store.drums.humanize)
       drums.setVolume(store.drums.volume)
       const steps = beatPattern(item)
-      drums.start(() => steps)
+      drums.start(() => ({ steps }))
       return () => drums.stop()
     }
     const synth = (previewSynth ??= createSynth(

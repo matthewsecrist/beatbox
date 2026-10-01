@@ -15,6 +15,7 @@
     Scene,
     StateDetail,
     TrackId,
+    TrackLengths,
     TransportDetail,
     Voices
   } from './types.js'
@@ -168,6 +169,9 @@
   const shown = $derived(patterns[editing] ?? empty())
   // Steps per bar in the pattern being edited (16ths, or 16th or 8th triplets).
   const grid = $derived(gridOf(shown))
+  // Steps each track of that pattern loops over (polymeter): its own, or the bar.
+  const lengths = $derived(store.drums.lengths[editing] ?? {})
+  const lengthOf = (id: TrackId) => Math.min(lengths[id] ?? grid, grid)
   // The step the lock sliders edit (UI-only), with its settings and its voice.
   let lockStep: null | { step: number; track: TrackId } = $state(null)
   const locking = $derived.by(() => {
@@ -183,10 +187,10 @@
     locking && store.setLocks(editing, locking.track, locking.step, patch)
   let playingPattern = $state(-1) // pattern currently sounding, -1 when stopped
   // Raw: its steps go back into the song document, which can't take state proxies.
-  let clipboard: DrumPattern | null = $state.raw(null)
+  let clipboard: null | { lengths: TrackLengths; pattern: DrumPattern } = $state.raw(null)
   let songPlaying = false // while the arrangement plays, it picks the pattern
   let playing = $state(false)
-  let current = $state(-1)
+  let current = $state(-1) // steps played since the start; -1 when stopped
   let drums: Drums | null = null
   // The saved kit last loaded or saved, with the song's kit as it was then. The Kit
   // menu shows it only while the song's kit still matches (not after an edit or undo).
@@ -245,8 +249,7 @@
   // the engine's `audible`, so the pattern (and its grid) stays whole.
   const patternFn =
     (i: number): PatternFn =>
-    () =>
-      store.drums.patterns[i] ?? {}
+    () => ({ lengths: store.drums.lengths[i] ?? {}, steps: store.drums.patterns[i] ?? {} })
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some((s) => s.on))
 
@@ -325,7 +328,7 @@
     playing = true
   }
 
-  const setEditing = (p: DrumPattern) => store.setPattern(editing, p)
+  const setEditing = (p: DrumPattern, l?: TrackLengths) => store.setPattern(editing, p, l)
 
   // The Kit menu: a factory kit, or one of the user's saved kits ("saved:<id>").
   function pickKit(value: string) {
@@ -497,7 +500,12 @@
           </select>
         </label>
         {#if !store.readOnly}
-          <button id="drums-copy" type="button" class={btn} onclick={() => (clipboard = shown)}>
+          <button
+            id="drums-copy"
+            type="button"
+            class={btn}
+            onclick={() => (clipboard = { lengths, pattern: shown })}
+          >
             Copy
           </button>
           <button
@@ -505,7 +513,7 @@
             type="button"
             class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
             disabled={!clipboard}
-            onclick={() => clipboard && setEditing(clipboard)}
+            onclick={() => clipboard && setEditing(clipboard.pattern, clipboard.lengths)}
           >
             Paste
           </button>
@@ -717,8 +725,18 @@
       {/if}
 
       <div id="drum-grid" class="space-y-1.5 overflow-x-auto">
+        <div class="flex min-w-[40rem] items-center justify-end gap-2">
+          <span
+            class="flex w-16 shrink-0 items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
+            >Length<Info label="Length" text={help('drums_length') ?? ''} /></span
+          >
+          {#if !store.readOnly}
+            <span class="size-7 shrink-0"></span>
+          {/if}
+        </div>
         {#each rows as track (track.id)}
           {@const heard = isAudible(track.id, muted, soloed)}
+          {@const len = lengthOf(track.id)}
           <div class="flex min-w-[40rem] items-center gap-2">
             <button
               type="button"
@@ -778,7 +796,12 @@
                     step.on &&
                       step.probability < 1 &&
                       'outline-dashed outline-2 -outline-offset-4 outline-zinc-900/70',
-                    current === i && editing === playingPattern && 'ring-2 ring-zinc-100/80',
+                    // Past the track's length: never played.
+                    i >= len && 'brightness-50',
+                    current >= 0 &&
+                      current % len === i &&
+                      editing === playingPattern &&
+                      'ring-2 ring-zinc-100/80',
                     mode === 'lock' &&
                       locking?.track === track.id &&
                       locking.step === i &&
@@ -799,6 +822,22 @@
                 </button>
               {/each}
             </div>
+            <input
+              id={'drums-length-' + track.id}
+              type="number"
+              min="1"
+              max={grid}
+              value={len}
+              disabled={store.readOnly}
+              aria-label={`${track.label} length`}
+              title={`${track.label} loops over ${len} steps`}
+              onchange={(e) => {
+                store.setLength(editing, track.id, e.currentTarget.valueAsNumber || null)
+                // Out of range (or unchanged), the store keeps its value: show it again.
+                e.currentTarget.value = String(lengthOf(track.id))
+              }}
+              class="w-16 shrink-0 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs tabular-nums text-zinc-200 disabled:opacity-60"
+            />
             {#if !store.readOnly}
               {#if !track.core && !shown[track.id].some((s) => s.on)}
                 <button

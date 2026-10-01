@@ -133,6 +133,27 @@ test("only an empty pattern's grid changes; the grid saves and undoes", () => {
   expect(store.toSongDoc().drums?.grids).toBe(undefined) // all 16ths: saved as before
 })
 
+test('a track length stays within its grid, saves only when set, and resets with the grid', () => {
+  const store = new SongStore(song)
+  expect(store.toSongDoc().drums?.lengths).toBe(undefined)
+
+  store.setLength(1, 'chat', 12)
+  store.setLength(1, 'kick', 0) // at least one step
+  store.setLength(1, 'snare', 99) // the whole bar: no length of its own
+  expect(store.drums.lengths[1]).toStrictEqual({ chat: 12, kick: 1 })
+
+  const saved = store.toSongDoc().drums
+  expect(saved?.lengths).toStrictEqual([{}, { chat: 12, kick: 1 }, {}, {}])
+  const reopened = new SongStore({ ...song, drums: saved ?? null })
+  expect(reopened.drums.lengths[1]).toStrictEqual({ chat: 12, kick: 1 })
+
+  // Pattern B is empty: a new grid starts its tracks on whole bars again.
+  store.setGrid(1, 12)
+  expect(store.drums.lengths[1]).toStrictEqual({})
+  store.undo()
+  expect(store.drums.lengths[1]).toStrictEqual({ chat: 12, kick: 1 })
+})
+
 test('a step keeps its locks through saving; clearing one gives it back, undoably', () => {
   const store = new SongStore(song)
   store.setLocks(0, 'tom', 5, { tune: 7 })
