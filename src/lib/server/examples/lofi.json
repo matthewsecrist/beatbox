@@ -94,6 +94,9 @@
       "pattern": 1
     },
     {
+      "automation": {
+        "master_crush_mix": [0, 0.35]
+      },
       "bars": 4,
       "bpm": 76,
       "drums": true,
@@ -103,6 +106,7 @@
     },
     {
       "automation": {
+        "master_crush_mix": [0.35, 0.8],
         "master_filter": [0, -0.8]
       },
       "bars": 4,
@@ -115,6 +119,7 @@
   ],
   "drums": {
     "bpm": 82,
+    "crush": 0.4,
     "kit": "lofi",
     "patterns": [
       {
@@ -1089,6 +1094,9 @@
         "filter_resonance": 1,
         "filter_sustain": 0.2,
         "filter_velocity": 0.4,
+        "fx_crush": 0.2,
+        "fx_reverb_mix": 0.15,
+        "fx_reverb_size": 2,
         "glide": 0,
         "glide_mode": "legato",
         "lfo1_depth": 0.35,

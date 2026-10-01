@@ -2,6 +2,7 @@
   "arrangement": [
     {
       "automation": {
+        "master_crush_mix": [1, 0],
         "synth_filter": [-1.5, 0]
       },
       "bars": 4,
@@ -783,6 +784,7 @@
     "delay_time": "1/8d",
     "drums_delay": 0,
     "drums_reverb": 0.1,
+    "master_crush": 0.7,
     "reverb_mix": 0.5,
     "reverb_size": 2.8,
     "synth_delay": 0.2,
@@ -1925,6 +1927,7 @@
         "filter_resonance": 8,
         "filter_sustain": 0,
         "filter_velocity": 0.5,
+        "fx_crush": 0.4,
         "glide": 0,
         "glide_mode": "legato",
         "lfo1_depth": 0,
@@ -2493,6 +2496,7 @@
         "filter_release": 0.3,
         "filter_resonance": 0,
         "filter_sustain": 0,
+        "fx_crush": 0.6,
         "glide": 0,
         "glide_mode": "legato",
         "lfo1_depth": 0,
