@@ -1,33 +1,23 @@
 <script lang="ts">
-  import type { Instrument } from './effects.js'
   import type { SongStore } from './song.svelte.js'
   import type { DelayTime, Effects } from './types.js'
 
-  import { masterFilterHz } from './effects.js'
+  import { crushBits } from './audio.js'
+  import { DELAY_TIMES, masterFilterHz } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
 
-  // One part of the song's effects: the shared delay and reverb, the sidechain
-  // and the master stage (`master`), or how much of one instrument goes to them
-  // (its sends). Settings live in the song store (and its undo history); Workspace
-  // keeps the effects bus in step.
-  let { part, store }: { part: 'master' | Instrument; store: SongStore } = $props()
+  // The song's effects (Song settings): the shared delay and reverb, how much of
+  // each instrument goes to them (its sends), the sidechain, and the master stage
+  // with its bitcrusher on the whole mix. Settings live in the song store (and its
+  // undo history); Workspace keeps the effects bus in step.
+  let { store }: { store: SongStore } = $props()
 
   type NumericSetting = {
     [K in keyof Effects]: Effects[K] extends number ? K : never
   }[keyof Effects]
 
   const settings = $derived(store.effects)
-
-  const DELAY_TIMES: [DelayTime, string][] = [
-    ['1/16', '1/16'],
-    ['1/8t', '1/8T'],
-    ['1/8', '1/8'],
-    ['1/8d', '1/8 dotted'],
-    ['1/4', '1/4'],
-    ['1/4d', '1/4 dotted'],
-    ['1/2', '1/2']
-  ]
 
   const fmtPct = (v: number) => Math.round(v * 100) + '%'
   const fmtSend = (v: number) => (v === 0 ? 'off' : fmtPct(v))
@@ -37,6 +27,7 @@
   // The DJ filter: which side and where its cutoff is.
   const fmtFilter = (v: number) =>
     v === 0 ? 'off' : `${v < 0 ? 'Low-pass' : 'High-pass'} ${fmtHz(masterFilterHz(v))}`
+  const fmtBits = (v: number) => crushBits(v) + '-bit'
   const panel = 'space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4'
 </script>
 
@@ -134,36 +125,40 @@
   </label>
 {/snippet}
 
-{#if part === 'master'}
-  <div id="effects" class="grid gap-4 sm:grid-cols-2">
-    <div class={panel}>
-      {@render heading('delay', 'Delay')}
-      {@render noteSelect('delay_time', 'Time')}
-      {@render toggle('delay_pingpong', 'Bounce', ['Straight', 'Ping-pong'])}
-      {@render slider('delay_feedback', 'Feedback', 0.9, fmtPct)}
-      {@render slider('delay_mix', 'Mix', 1, fmtPct)}
-    </div>
-    <div class={panel}>
-      {@render heading('reverb', 'Reverb')}
-      {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
-      {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
-    </div>
-    <div id="fx-duck" class={panel}>
-      {@render heading('duck', 'Sidechain')}
-      {@render slider('duck_amount', 'Amount', 1, fmtSend)}
-      {@render noteSelect('duck_release', 'Release')}
-    </div>
-    <div id="fx-master" class={panel}>
-      {@render heading('master', 'Master')}
-      {@render toggle('comp_on', 'Compressor', ['Off', 'On'])}
-      {@render slider('comp_amount', 'Amount', 1, fmtPct)}
-      {@render slider('master_filter', 'Filter', 1, fmtFilter, -1)}
-    </div>
+<div id="effects" class="grid gap-4 sm:grid-cols-2">
+  <div class={panel}>
+    {@render heading('delay', 'Delay')}
+    {@render noteSelect('delay_time', 'Time')}
+    {@render toggle('delay_pingpong', 'Bounce', ['Straight', 'Ping-pong'])}
+    {@render slider('delay_feedback', 'Feedback', 0.9, fmtPct)}
+    {@render slider('delay_mix', 'Mix', 1, fmtPct)}
   </div>
-{:else}
-  <div id={'sends-' + part} class={[panel, 'max-w-md']}>
+  <div class={panel}>
+    {@render heading('reverb', 'Reverb')}
+    {@render slider('reverb_size', 'Size', 6, fmtSec, 0.3, 0.1)}
+    {@render slider('reverb_mix', 'Mix', 1, fmtPct)}
+  </div>
+  <div id="fx-sends" class={panel}>
     {@render heading('sends', 'Sends')}
-    {@render slider(`${part}_delay`, 'To delay', 1, fmtSend)}
-    {@render slider(`${part}_reverb`, 'To reverb', 1, fmtSend)}
+    {@render slider('synth_delay', 'Synth to delay', 1, fmtSend)}
+    {@render slider('synth_reverb', 'Synth to reverb', 1, fmtSend)}
+    {@render slider('drums_delay', 'Drums to delay', 1, fmtSend)}
+    {@render slider('drums_reverb', 'Drums to reverb', 1, fmtSend)}
   </div>
-{/if}
+  <div id="fx-duck" class={panel}>
+    {@render heading('duck', 'Sidechain')}
+    {@render slider('duck_amount', 'Amount', 1, fmtSend)}
+    {@render noteSelect('duck_release', 'Release')}
+  </div>
+  <div id="fx-crush" class={panel}>
+    {@render heading('crush', 'Bitcrusher')}
+    {@render slider('master_crush', 'Bits', 1, fmtBits, 0.1, 0.1)}
+    {@render slider('master_crush_mix', 'Mix', 1, fmtSend)}
+  </div>
+  <div id="fx-master" class={panel}>
+    {@render heading('master', 'Master')}
+    {@render toggle('comp_on', 'Compressor', ['Off', 'On'])}
+    {@render slider('comp_amount', 'Amount', 1, fmtPct)}
+    {@render slider('master_filter', 'Filter', 1, fmtFilter, -1)}
+  </div>
+</div>

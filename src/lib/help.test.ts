@@ -23,6 +23,10 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'delay',
       'reverb',
       'sends',
+      'crush',
+      'sound_crush',
+      'sound_delay',
+      'sound_reverb',
       'duck',
       'master'
     ].map((panel) => 'panel_' + panel),
@@ -32,6 +36,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'drums_level',
       'swing',
       'humanize',
+      'drums_crush',
       'kit',
       'drums_sound',
       'drums_tracks',

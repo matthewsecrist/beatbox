@@ -9,6 +9,7 @@ import { LFO_NOTES } from '../synth/engine.js'
 const wave = z.enum(['sawtooth', 'sine', 'square', 'triangle'])
 const lfoTarget = z.enum(['amp', 'filter', 'pitch'])
 const lfoNote = z.enum(LFO_NOTES)
+const delayTime = z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16'])
 
 // Synth params the app knows about; anything else sent by a client is dropped.
 const params = z.object({
@@ -26,6 +27,12 @@ const params = z.object({
   filter_sustain: z.number().exactOptional(),
   filter_type: z.enum(['bandpass', 'highpass', 'lowpass', 'notch']).exactOptional(),
   filter_velocity: z.number().min(0).max(1).exactOptional(),
+  fx_crush: z.number().min(0).max(1).exactOptional(),
+  fx_delay_feedback: z.number().min(0).max(0.9).exactOptional(),
+  fx_delay_mix: z.number().min(0).max(1).exactOptional(),
+  fx_delay_time: delayTime.exactOptional(),
+  fx_reverb_mix: z.number().min(0).max(1).exactOptional(),
+  fx_reverb_size: z.number().min(0.3).max(6).exactOptional(),
   glide: z.number().min(0).max(1).exactOptional(),
   glide_mode: z.enum(['always', 'legato']).exactOptional(),
   lfo1_depth: z.number().exactOptional(),
@@ -126,6 +133,7 @@ const kit = z.enum(['606', '808', '909', 'classic', 'lofi', 'trap'])
 const drums = z
   .object({
     bpm: z.int().min(60).max(200),
+    crush: z.number().min(0).max(1).exactOptional(),
     grids: z
       .array(z.union([z.literal(12), z.literal(16), z.literal(24)]))
       .max(4)
@@ -203,9 +211,9 @@ const performance = z.object({
 })
 
 // Shared delay and reverb, how much of each instrument is sent to them, the
-// kick's sidechain ducking, and the master compressor.
+// kick's sidechain ducking, and the master stage (compressor, filter, bitcrusher).
 const level = z.number().min(0).max(1).exactOptional()
-const noteValue = z.enum(['1/2', '1/4', '1/4d', '1/8', '1/8d', '1/8t', '1/16']).exactOptional()
+const noteValue = delayTime.exactOptional()
 const effects = z.object({
   comp_amount: level,
   comp_on: z.boolean().exactOptional(),
@@ -217,6 +225,8 @@ const effects = z.object({
   drums_reverb: level,
   duck_amount: level,
   duck_release: noteValue,
+  master_crush: z.number().min(0.1).max(1).exactOptional(),
+  master_crush_mix: level,
   master_filter: z.number().min(-1).max(1).exactOptional(),
   reverb_mix: level,
   reverb_size: z.number().min(0.3).max(6).exactOptional(),
@@ -239,6 +249,7 @@ const section = z.object({
       delay_mix: ramp('delay_mix'),
       drums_delay: ramp('drums_delay'),
       drums_reverb: ramp('drums_reverb'),
+      master_crush_mix: ramp('master_crush_mix'),
       master_filter: ramp('master_filter'),
       reverb_mix: ramp('reverb_mix'),
       synth_delay: ramp('synth_delay'),

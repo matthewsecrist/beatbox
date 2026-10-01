@@ -36,6 +36,8 @@ export const HELP = {
     'How much of the crunched sound you hear, blended with the clean one. 100% is all crunch. Lower keeps the clean sound underneath, so a bass stays deep and solid while the grit sits on top.',
   drive_type:
     'The kind of crunch. Soft is smooth and warm. Tube is warm too, but thicker, like an old amplifier. Hard is sharp and aggressive. Fold is wild and metallic, and it keeps changing as you turn up the Amount.',
+  drums_crush:
+    "Makes the drums crunchy and lo-fi, like an old sampler or a video game console. Off is clean; turn it up and the sound gets grainier and fizzier, down to a harsh 2-bit buzz at the top. A little suits the Lo-fi kit. It's the drums' own: the echo and room sound get the crunch too.",
   drums_delay:
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
   drums_euclid:
@@ -71,6 +73,18 @@ export const HELP = {
     'Which part of the sound the filter keeps. Low keeps the deep part and cuts the fizz (the usual synth sound). High keeps the bright part and cuts the bass, thin and airy. Band keeps only the sound around the Cutoff, nasal like a telephone or a "wah". Notch cuts a gap out at the Cutoff, hollow and phasey when it moves.',
   filter_velocity:
     'How much softer notes open the filter less. Off, every note gets the same "wow" from the envelope however hard it\'s played. Turned up, a soft note stays darker and a hard one opens bright, like hitting a real piano or guitar harder. Set how hard each note plays in the piano roll\'s Vel lane.',
+  fx_crush:
+    "Makes this sound crunchy and lo-fi, like an old video game console or a cheap sampler. Off is clean; turn it up and it gets grainier and fizzier, down to a harsh 2-bit buzz at the top. It's part of the sound, so presets and loop pads keep their own.",
+  fx_delay_feedback:
+    'How many echoes of this sound you hear. Low gives one or two quick repeats; high keeps them bouncing for a long time.',
+  fx_delay_mix:
+    "How loud this sound's own echoes are. Off has none. Unlike the song's delay, it belongs to the sound, so a preset or a loop pad brings its echo with it.",
+  fx_delay_time:
+    "How far apart this sound's echoes are, in note lengths at the song tempo: 1/16 is quick and close together, 1/2 slow and far apart. Dotted times land a bit off the beat for a bouncy echo.",
+  fx_reverb_mix:
+    "How much of this sound's own room sound you hear. Off has none. It belongs to the sound, so a preset or a loop pad brings its room with it.",
+  fx_reverb_size:
+    "How big this sound's room is: small is a bedroom, big is a cathedral that rings for seconds.",
   glide:
     'How long the slide from one note to the next takes. Off means notes jump straight to their pitch.',
   glide_mode:
@@ -87,6 +101,10 @@ export const HELP = {
     "Hz sets the wobble's speed by itself. Sync locks it to the song's beat instead, so it speeds up and slows down with the tempo (and a section's own tempo): the way a dubstep wobble or a gated pad keeps in time.",
   lfo_target:
     'What the LFO moves. Filter makes a "wub wub" wobble. Pitch makes the note wave up and down, like a singer\'s vibrato. Amp makes the volume pulse, like a tremolo.',
+  master_crush:
+    'How crunchy the whole-song bitcrusher is: 12-bit is a light, gritty edge, 2-bit a harsh buzz, like an old game console or a cheap sampler. Mix sets how much of it you hear.',
+  master_crush_mix:
+    'How much of the crunched sound replaces the clean one: off is all clean, 100% all crunched. Ramp it up across a section to grind the build-up, or down for a clean drop.',
   master_filter:
     "A DJ filter on the whole song. Slide left and the sound gets darker and more muffled, as if it's coming through a wall, until only the bass is left; slide right and the bass drains away, leaving it thin and tinny. Sweep it slowly for build-ups and breakdowns, and drag it back to the middle (off) for the drop.",
   noise_level:
@@ -98,6 +116,8 @@ export const HELP = {
     'Moves this oscillator up or down by whole octaves. An octave up is the same note but higher, like a kid singing along with a grown-up.',
   osc_wave:
     'The shape of the vibration, which changes the character of the sound. Sine is soft and pure, like a whistle. Tri (triangle) is a bit brighter, like a flute. Saw is buzzy and bold, like a trumpet or a big synth. Square is hollow and beepy, like an old video game.',
+  panel_crush:
+    "The bitcrusher makes the whole song sound like it's coming out of an old computer or game console: it rounds the sound off into a few steps, adding grit and fizz. The synth's sounds (in FX) and the drums (in Kit) have their own too.",
   panel_delay:
     'The delay is an echo: it plays back what you hear a little later, again and again, like shouting in a canyon. The echoes line up with the beat.',
   panel_drive:
@@ -122,6 +142,12 @@ export const HELP = {
     'The reverb makes it sound like the music is playing in a room, a hall or a huge cave, with the sound bouncing off the walls and ringing on after each note.',
   panel_sends:
     'Sends choose how much of each instrument goes into the echo and the room sound. Off keeps that instrument dry; turn one up to put it in the effect. The synth sends cover the loop pads too.',
+  panel_sound_crush:
+    "This sound's own bitcrusher: it makes it sound like it's coming out of an old computer or game console, rounding the sound off into a few steps for grit and fizz. Great for chiptune leads and lo-fi keys.",
+  panel_sound_delay:
+    "This sound's own echo, on top of the song's shared one. It's part of the sound, so presets and loop pads keep their own echo.",
+  panel_sound_reverb:
+    "This sound's own room sound, on top of the song's shared reverb. It's part of the sound, so presets and loop pads keep their own room.",
   panel_sub_noise:
     'Two more sounds to mix in with the oscillators: a deep sub underneath for weight, and noise on top for breath and hiss. Both are off until you turn them up.',
   pitch_env_amount:

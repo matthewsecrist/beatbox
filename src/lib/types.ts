@@ -12,11 +12,13 @@ export type ArpRate = '1/4' | '1/8' | '1/8t' | '1/16' | '1/16t' | '1/32'
 export type Automation = Partial<Record<AutomationTarget, Ramp>>
 
 // What an arranger lane can move: the synth's filter (an offset in octaves on
-// every sound's own cutoff), the effect sends and mixes, and the master filter.
+// every sound's own cutoff), the effect sends and mixes, the master filter and
+// the master bitcrusher's mix.
 export type AutomationTarget =
   | 'delay_mix'
   | 'drums_delay'
   | 'drums_reverb'
+  | 'master_crush_mix'
   | 'master_filter'
   | 'reverb_mix'
   | 'synth_delay'
@@ -45,6 +47,8 @@ export type DrumPattern = Record<TrackId, DrumStep[]>
 
 export interface Drums {
   bpm: number
+  // 0-1: the drums' own bitcrusher (0 = off, 1 the crunchiest).
+  crush?: number
   // Each pattern's grid, A-D; absent (or a pattern left out) is 16ths.
   grids?: DrumGrid[]
   // 0-1: how far each hit drifts, at random, from its time and velocity (0 = exact).
@@ -80,8 +84,9 @@ export interface DrumStep {
 
 // Shared send effects: a tempo-synced delay and a reverb, each fed by a send
 // level per instrument and returned at `*_mix`, then the master stage: a glue
-// compressor (`comp_on`, squeezing harder as `comp_amount` goes up) and a fixed
-// limiter. Sends, mixes and the amount are 0-1. Sidechain: each kick ducks the
+// compressor (`comp_on`, squeezing harder as `comp_amount` goes up), a DJ filter,
+// a bitcrusher on the whole mix (blended in at `master_crush_mix`, 0 = off) and a fixed limiter.
+// Sends, mixes and the amounts are 0-1. Sidechain: each kick ducks the
 // synth by `duck_amount` (0 = off) and it comes back over `duck_release`.
 export interface Effects {
   comp_amount: number
@@ -96,6 +101,10 @@ export interface Effects {
   duck_amount: number
   // A note value at the tempo playing, like the delay time.
   duck_release: DelayTime
+  // The whole mix's bitcrusher: its depth, 0.1 (12-bit) to 1 (2-bit), and how much
+  // of the crushed copy is blended in place of the clean one (0 = off, 1 = all crushed).
+  master_crush: number
+  master_crush_mix: number
   // DJ filter, -1 to 1: left sweeps a low-pass down, right a high-pass up; 0 is off.
   master_filter: number
   reverb_mix: number
@@ -252,6 +261,15 @@ export interface SynthParams {
   filter_type: FilterType
   // How much a note's velocity scales the filter envelope amount, 0-1 (0: not at all).
   filter_velocity: number
+  // The sound's own effects, after the amp: a bitcrusher (0-1, 0 = off), then an
+  // echo (`fx_delay_mix` 0 = off; a note value at the tempo playing; feedback
+  // 0-0.9) and a reverb (`fx_reverb_mix` 0 = off; size in seconds, 0.3-6).
+  fx_crush: number
+  fx_delay_feedback: number
+  fx_delay_mix: number
+  fx_delay_time: DelayTime
+  fx_reverb_mix: number
+  fx_reverb_size: number
   // Seconds to slide from the last note's pitch; 0 = off.
   glide: number
   glide_mode: GlideMode

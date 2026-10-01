@@ -20,6 +20,7 @@
     Voices
   } from './types.js'
 
+  import { crushBits } from './audio.js'
   import {
     createDrums,
     type Drums,
@@ -31,7 +32,6 @@
   import { euclid } from './drums/euclid.js'
   import { INSTRUMENT_IDS, INSTRUMENTS, KIT_SOUNDS, KITS, TRACKS } from './drums/kits.js'
   import { effects } from './effects.js'
-  import Effects from './Effects.svelte'
   import { help } from './help.js'
   import Info from './Info.svelte'
   import { DEFAULT_PATTERN, STEP } from './song.svelte.js'
@@ -151,11 +151,10 @@
     store: SongStore
   } = $props()
 
-  type Tab = 'effects' | 'kit' | 'steps'
+  type Tab = 'kit' | 'steps'
   const TABS: [Tab, string][] = [
     ['steps', 'Steps'],
-    ['kit', 'Kit'],
-    ['effects', 'Effects']
+    ['kit', 'Kit']
   ]
   let tab: Tab = $state('steps')
 
@@ -164,6 +163,7 @@
   const volume = $derived(store.drums.volume)
   const swing = $derived(store.drums.swing)
   const humanize = $derived(store.drums.humanize)
+  const crush = $derived(store.drums.crush)
   let editing = $state(0) // tab shown in the grid
   let mode: Mode = $state('hits')
   const shown = $derived(patterns[editing] ?? empty())
@@ -270,6 +270,7 @@
     engine.setVolume(volume)
     engine.setSwing(swing)
     engine.setHumanize(humanize)
+    engine.setCrush(crush)
     engine.setKit(store.drums.kit, store.drums.voices)
     // Song-bar Play (with no arrangement) / Stop, and its state reports.
     const onTransport = (e: CustomEvent<TransportDetail>) => {
@@ -313,6 +314,7 @@
   $effect(() => drums?.setVolume(volume))
   $effect(() => drums?.setSwing(swing))
   $effect(() => drums?.setHumanize(humanize))
+  $effect(() => drums?.setCrush(crush))
   $effect(() => drums?.setKit(store.drums.kit, store.drums.voices))
 
   // Pick the tab to edit; when playing on its own, also switch to it on the next bar.
@@ -882,7 +884,7 @@
           </select>
         </label>
       {/if}
-    {:else if tab === 'kit'}
+    {:else}
       <div id="kit-bar" class="flex flex-wrap items-center gap-2">
         <label
           class="flex min-w-60 items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
@@ -934,6 +936,28 @@
           <span id="kit-status" class="text-xs text-zinc-400" aria-live="polite">{status}</span>
         {/if}
       </div>
+      <label
+        class="flex max-w-sm items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
+        for="drums-crush"
+      >
+        <span class="flex items-center gap-1"
+          >Crush<Info label="Crush" text={help('drums_crush') ?? ''} /></span
+        >
+        <input
+          id="drums-crush"
+          type="range"
+          min="0"
+          max="1"
+          step="0.1"
+          value={crush}
+          disabled={store.readOnly}
+          oninput={(e) => store.setDrums({ crush: Number(e.currentTarget.value) })}
+          class="min-w-0 flex-1 cursor-pointer accent-amber-400 disabled:cursor-default"
+        />
+        <span class="w-12 font-mono text-amber-300 tabular-nums"
+          >{crush ? `${crushBits(crush)}-bit` : 'off'}</span
+        >
+      </label>
       <div
         id="drum-voices"
         class="grid max-w-3xl grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr] items-center gap-x-4 gap-y-2"
@@ -1007,8 +1031,6 @@
           />
         {/each}
       </div>
-    {:else}
-      <Effects part="drums" {store} />
     {/if}
   </Tabs>
 </section>
