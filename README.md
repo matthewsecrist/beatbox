@@ -148,11 +148,21 @@ song (not with presets, which leave them alone).
 grid, plus eight percussion tracks (rim shot, snap, shaker, conga, cowbell, wood
 block, ride and crash), with four patterns (**A–D**). Copy/Paste lets you build
 variations, and Randomize, Clear and Reset act on the pattern you're editing.
-Switching patterns while the drums play changes over on the next bar. The song
-bar's **Tempo** slider sets the tempo for the whole song (a section can have its
-own; see **Arrangement**). **Tap** next to it sets the tempo from the average gap
-between your last five taps; after a 2 s pause the next tap starts over, and each
-run of taps is one undo step.
+Switching patterns while the drums play changes over on the next bar.
+
+- Every pattern also has a **Fill**: one more bar that a section can play last
+  (its **Fill** in the arrangement) to roll into the next section. **Pattern /
+  Fill** next to A–D switches the grid between the two. A fill starts as the same
+  as its pattern; the first change makes it its own (a snare roll, a tom run, a
+  crash), and **Reset** makes it the same as its pattern again. Every edit, Copy,
+  Paste, Clear, Randomize, Euclid and the step locks work on a fill as on a
+  pattern; it's on its pattern's grid. While the drums play on their own they
+  loop whichever one you're editing, so you can hear a fill as you write it.
+  Only fills that differ from their pattern are saved. The song
+  bar's **Tempo** slider sets the tempo for the whole song (a section can have its
+  own; see **Arrangement**). **Tap** next to it sets the tempo from the average gap
+  between your last five taps; after a 2 s pause the next tap starts over, and each
+  run of taps is one undo step.
 
 - The grid shows the six core tracks and any percussion the pattern uses. **Add
   track** gives another one a row to write into; the **×** on an empty percussion
@@ -324,12 +334,11 @@ pad's row. **Play song** plays the sections in order, and every change lands on 
 section boundary. The ▶ at the top of a section plays just that one, through to its
 end, and then stops; ← and → move a section.
 
-- A section's **Fill** (under its drum pattern) plays another pattern on its
-  last bar, for a drum fill into the next section: write the fill in a spare
-  pattern, pick it, and the section plays its own pattern up to its last bar
-  and the fill on it (a one-bar section plays only the fill). **None** keeps
-  its pattern throughout. The switch lands exactly on the bar line, like any
-  pattern change.
+- A section's **Fill** (under its drum pattern) turned **On** plays its
+  pattern up to the last bar and that pattern's fill on it, for a drum fill into
+  the next section (a one-bar section plays only the fill). **Off** keeps the
+  pattern throughout. The switch lands exactly on the bar line, like any pattern
+  change.
 - A section's **Tempo** plays it at its own speed (60–200 BPM); left empty, it
   follows the song's Tempo slider. Everything (drums, pads, arp, metronome and
   the delay's timing) switches exactly on the section's first beat and back to

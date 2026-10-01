@@ -52,6 +52,11 @@ export interface Drums {
   bpm: number
   // 0-1: the drums' own bitcrusher (0 = off, 1 the crunchiest).
   crush?: number
+  // Each pattern's fill's track lengths, A-D, as for `lengths`.
+  fillLengths?: TrackLengths[]
+  // Each pattern's fill bar, A-D, saved like a pattern and on its grid; null (or
+  // left out) for a fill never edited, which plays its pattern.
+  fills?: (null | Partial<Record<TrackId, SavedStep[]>>)[]
   // Each pattern's grid, A-D; absent (or a pattern left out) is 16ths.
   grids?: DrumGrid[]
   // 0-1: how far each hit drifts, at random, from its time and velocity (0 = exact).
@@ -134,7 +139,8 @@ export interface Effects {
   synth_reverb: number
 }
 
-// A section's fill, announced just before its last bar like a scene.
+// A section's fill, announced just before its last bar like a scene: `pattern`'s
+// fill plays from `beat`.
 export interface Fill {
   beat: number
   pattern: number
@@ -247,9 +253,9 @@ export interface Section {
   // Its own tempo; absent or null plays it at the song tempo.
   bpm?: null | number
   drums: boolean
-  // A drum pattern (0-3 = A-D) to play on its last bar instead, for a fill into
-  // the next section; absent or null plays `pattern` throughout.
-  fill?: null | number
+  // Plays its pattern's fill on its last bar (a drum fill into the next section);
+  // absent or false plays `pattern` throughout.
+  fill?: boolean
   name?: null | string
   pads: number[]
   // Drum pattern index (0-3 = A-D) when `drums` is on.
@@ -376,7 +382,7 @@ export type Wave = 'sawtooth' | 'sine' | 'square' | 'triangle'
 
 declare global {
   interface WindowEventMap {
-    // A section's fill: the drums switch to its pattern on `beat` (its last bar).
+    // A section's fill: the drums switch to its pattern's fill on `beat` (its last bar).
     'beatbox:fill': CustomEvent<Fill>
     'beatbox:report': CustomEvent<undefined>
     'beatbox:scene': CustomEvent<Scene>

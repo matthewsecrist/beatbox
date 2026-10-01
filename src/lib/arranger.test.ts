@@ -119,10 +119,10 @@ test("a fill is announced just before its section's last bar, after the section'
   })
 
   arranger.start([
-    { bars: 2, drums: true, fill: 3, pads: [], pattern: 0 }, // beats 0-8: fill on beat 4
-    { bars: 1, drums: true, fill: 1, pads: [], pattern: 2 }, // beats 8-12: the whole section
-    { bars: 2, drums: false, fill: 3, pads: [] }, // no drums: no fill
-    { bars: 2, drums: true, fill: 0, pads: [], pattern: 0 } // its own pattern: nothing to do
+    { bars: 2, drums: true, fill: true, pads: [], pattern: 3 }, // beats 0-8: D's fill on beat 4
+    { bars: 1, drums: true, fill: true, pads: [], pattern: 1 }, // beats 8-12: the whole section
+    { bars: 2, drums: false, fill: true, pads: [] }, // no drums: no fill
+    { bars: 2, drums: true, fill: false, pads: [], pattern: 0 } // fill off
   ])
   expect(heard).toStrictEqual([0])
 

@@ -40,6 +40,7 @@ test('every synth, chord/arp and effects setting, and every panel, has a plain-E
       'swing',
       'humanize',
       'drums_crush',
+      'drums_fill',
       'drums_voice_pan',
       'kit',
       'drums_sound',

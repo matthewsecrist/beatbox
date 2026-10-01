@@ -35,6 +35,8 @@ test('an unknown slug is no example', () => {
 })
 
 test('examples keep their sections’ drum fills through validation', () => {
-  const groove = getExample('acid-house')?.arrangement.find((s) => s.name === 'Groove')
-  expect(groove?.fill).toBe(3)
+  const example = getExample('acid-house')
+  const groove = example?.arrangement.find((s) => s.name === 'Groove')
+  expect(groove?.fill).toBe(true)
+  expect(example?.drums?.fills?.[groove?.pattern ?? -1]).toBeTruthy()
 })

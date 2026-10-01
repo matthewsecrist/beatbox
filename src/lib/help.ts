@@ -57,6 +57,8 @@ export const HELP = {
     'Turns the middle of the drums up or down: the crack of the snare and the knock of the toms and congas. Down sounds scooped and hollow; up pushes the drums forward.',
   drums_euclid:
     'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
+  drums_fill:
+    "Every pattern has a fill: one more bar that a section can play last instead, for a drum fill into the next section (turn Fill on in the arrangement). Pattern shows the pattern, Fill its fill. A fill starts as the same as its pattern; change it (a snare roll, a tom run, a crash) and it becomes its own. Reset makes it the same as the pattern again. While the drums play on their own, they loop whichever one you're editing.",
   drums_grid:
     'How many squares a bar has in this pattern. 1/16 is 16, four to a beat, for most beats. 1/16 triplets fits six in a beat, for rolling trap hi-hats and fast drum rolls; 1/8 triplets fits three, for a shuffle, a 12/8 blues or a swung, loping groove. Pick it before you start: it only changes while the pattern is empty, so no hit ever moves. To switch a pattern with hits, Clear it first.',
   drums_length:
@@ -198,7 +200,7 @@ export const HELP = {
   section_bpm:
     "How fast this section goes, in beats per minute. Leave it empty to play it at the song tempo. Slow a bridge right down, or speed up a final chorus: when the song gets there, everything switches to this speed on the section's first beat, and back afterwards.",
   section_fill:
-    "A different drum pattern for this section's last bar: a drum fill that leads into the next section, like a drummer's roll before the chorus. None keeps the section's pattern all the way through. Make the fill in one of the patterns A to D first.",
+    "Plays this section's drum pattern with its fill on the last bar: a drum fill that leads into the next section, like a drummer's roll before the chorus. Off keeps the pattern all the way through. Write the fill on the drums' Steps tab: pick the pattern, then Fill.",
   step_accent:
     'Click a lit square to make that hit extra loud and punchy (it gets a red dot). Accents on the big beats help the rhythm stand out.',
   step_hits:

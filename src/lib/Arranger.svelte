@@ -498,32 +498,32 @@
             {/each}
           </select>
           {#if section.drums}
-            <label
+            <div
               class="mt-1 flex items-center justify-between gap-1 rounded-md bg-zinc-950/60 py-0.5 pl-2 pr-1 text-[10px] uppercase tracking-wider text-zinc-500"
             >
               <span class="flex items-center gap-1"
                 >Fill<Info label="Fill" text={help('section_fill') ?? ''} /></span
               >
-              <select
+              <button
                 id={'section-fill-' + i}
-                value={section.fill ?? -1}
+                type="button"
+                aria-pressed={!!section.fill}
                 disabled={store.readOnly}
-                aria-label={`Section ${i + 1}: fill on the last bar`}
-                onchange={(e) => {
-                  const p = Number(e.currentTarget.value)
-                  store.updateSection(i, { fill: p < 0 ? null : p })
-                }}
+                aria-label={`Section ${i + 1}: play pattern ${DRUM_PATTERNS[section.pattern] ?? ''}'s fill on the last bar`}
+                title={section.fill
+                  ? `Its last bar plays pattern ${DRUM_PATTERNS[section.pattern] ?? ''}'s fill`
+                  : 'No fill'}
+                onclick={() => store.updateSection(i, { fill: !section.fill })}
                 class={[
-                  'rounded border border-transparent bg-transparent px-1 text-xs font-semibold normal-case transition hover:border-zinc-700 focus:border-amber-400 focus:outline-none disabled:pointer-events-none [&_option]:bg-zinc-900 [&_option]:text-zinc-200',
-                  section.fill != null ? 'text-amber-300' : 'text-zinc-400'
+                  'rounded px-2 py-0.5 text-xs font-semibold normal-case transition disabled:pointer-events-none',
+                  section.fill
+                    ? 'bg-amber-400/20 text-amber-300 hover:bg-amber-400/30'
+                    : 'text-zinc-400 hover:bg-zinc-800'
                 ]}
               >
-                <option value={-1}>None</option>
-                {#each DRUM_PATTERNS as letter, p (letter)}
-                  <option value={p}>{letter}</option>
-                {/each}
-              </select>
-            </label>
+                {section.fill ? 'On' : 'Off'}
+              </button>
+            </div>
           {/if}
         </div>
       {/each}

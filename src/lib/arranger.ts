@@ -33,8 +33,8 @@ export interface Position {
 // on the end beat and `onEnd` fires once that beat has passed. A section with a
 // `bpm` of its own plays at that tempo: the transport's tempo map changes on its
 // boundary beats, set up front so every instrument's timing already knows it.
-// A section with drums and a `fill` switches the drums to that pattern for its
-// last bar: announced through `onFill` just as early, after its own scene.
+// A section with drums and `fill` on switches the drums to its pattern's fill for
+// its last bar: announced through `onFill` just as early, after its own scene.
 export function createArranger({
   onEnd = noop,
   onFill = noop,
@@ -76,8 +76,8 @@ export function createArranger({
       const offset = transport.nextBar()
       boundaries = boundaries.map((b) => b + offset)
       fills = sections.flatMap((s, i) =>
-        s.drums && s.fill != null && s.fill !== (s.pattern ?? 0)
-          ? [{ beat: at(boundaries, i + 1) - BEATS_PER_BAR, pattern: s.fill }]
+        s.drums && s.fill
+          ? [{ beat: at(boundaries, i + 1) - BEATS_PER_BAR, pattern: s.pattern ?? 0 }]
           : []
       )
       nextFill = 0
