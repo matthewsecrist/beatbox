@@ -651,7 +651,8 @@
     "swing": 52,
     "voices": {
       "chat": {
-        "decay": 0.8
+        "decay": 0.8,
+        "pan": 0.15
       },
       "clap": {
         "decay": 0.9
@@ -661,12 +662,20 @@
         "tune": 1
       },
       "ohat": {
-        "decay": 0.7
+        "decay": 0.7,
+        "pan": 0.15
+      },
+      "rim": {
+        "pan": -0.3
+      },
+      "snap": {
+        "pan": 0.3
       },
       "snare": {
         "tune": -2
       },
       "tom": {
+        "pan": -0.35,
         "tune": 1
       }
     },
@@ -678,6 +687,8 @@
     "delay_pingpong": true,
     "delay_time": "1/8t",
     "drums_delay": 0,
+    "drums_eq_high": 1.5,
+    "drums_eq_low": 2,
     "drums_reverb": 0.05,
     "reverb_mix": 0.5,
     "reverb_size": 3.5,

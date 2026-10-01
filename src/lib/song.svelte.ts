@@ -437,7 +437,7 @@ export class SongStore {
     )
   }
 
-  setVoice(track: TrackId, patch: Partial<Pick<VoiceTweak, 'decay' | 'tune'>>): void {
+  setVoice(track: TrackId, patch: Partial<Pick<VoiceTweak, 'decay' | 'pan' | 'tune'>>): void {
     const voices = this.drums.voices
     this.edit(() =>
       this.drumsMap.set('voices', { ...voices, [track]: { ...voices[track], ...patch } })

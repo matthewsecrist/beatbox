@@ -18,17 +18,30 @@ function fakeAudio() {
     setValueAtTime: onSet,
     value: 0
   })
-  const node = () => ({
-    connect: <T>(n: T) => n,
-    disconnect: vi.fn(),
-    frequency: param(),
-    gain: param()
-  })
+  // Every node made, with what it's connected to.
+  const made: { gain: ReturnType<typeof param>; kind: string; outputs: unknown[] }[] = []
+  const node = (kind = 'node') => {
+    const n = {
+      connect: <T>(next: T) => {
+        n.outputs.push(next)
+        return next
+      },
+      disconnect: vi.fn(),
+      frequency: param(),
+      gain: param(),
+      kind,
+      outputs: [] as unknown[]
+    }
+    made.push(n)
+    return n
+  }
   const ctx = {
-    createBiquadFilter: node,
+    createBiquadFilter: () => node('filter'),
     createBuffer: () => ({ getChannelData: () => new Float32Array(100) }),
     createBufferSource: () => ({ ...node(), start: vi.fn(), stop: vi.fn() }),
-    createGain: node,
+    createChannelMerger: () => node('merger'),
+    createChannelSplitter: () => node('splitter'),
+    createGain: () => node('gain'),
     createOscillator() {
       let hz = 0
       let from = 0
@@ -42,14 +55,14 @@ function fakeAudio() {
         stop: (t: number) => tones.push([+hz.toFixed(2), +(t - from).toFixed(3)])
       }
     },
-    createWaveShaper: node,
+    createWaveShaper: () => node('shaper'),
     get currentTime() {
       return clock.currentTime
     },
     destination: {},
     sampleRate: 100
   }
-  return { clock, getCtx: () => ctx as unknown as BaseAudioContext, kicks, tones }
+  return { clock, getCtx: () => ctx as unknown as BaseAudioContext, kicks, made, tones }
 }
 
 afterEach(() => {
@@ -304,4 +317,25 @@ test("a step's locks replace its voice's tune and decay for that hit only", () =
   // Auditioning a step plays its locks too.
   drums.trigger('kick', { tune: 12 })
   expect(tones.at(-1)).toStrictEqual([300, 0.5])
+})
+
+test('a panned track plays through its own pan; centred ones go straight to the drums', () => {
+  const { getCtx, made } = fakeAudio()
+  const drums = createDrums({ getCtx, onStep: vi.fn() })
+  const tweak = { decay: 1, tune: 0 }
+  const splitters = () => made.filter((n) => n.kind === 'splitter')
+  drums.setKit('classic', { chat: { ...tweak, pan: -0.5 }, kick: tweak })
+
+  drums.trigger('kick')
+  expect(splitters()).toHaveLength(0)
+  drums.trigger('chat')
+  drums.trigger('chat')
+  expect(splitters()).toHaveLength(1) // made once, for the hats
+  // Half left: the right side fades to cos(45°).
+  const sides = (splitters()[0]?.outputs ?? []) as typeof made
+  expect(sides.map((g) => +g.gain.value.toFixed(3))).toStrictEqual([1, 0.707])
+
+  // Back to the middle: the pan glides there.
+  drums.setKit('classic', { chat: tweak })
+  expect(sides[1]?.gain.setTargetAtTime).toHaveBeenLastCalledWith(1, 0, 0.02)
 })

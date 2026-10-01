@@ -28,6 +28,7 @@
   } from './types.js'
 
   import { crushBits } from './audio.js'
+  import Channel from './Channel.svelte'
   import { DELAY_TIMES, effects } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
@@ -65,7 +66,7 @@
     store: SongStore
   } = $props()
 
-  type Tab = 'amp' | 'drive' | 'filter' | 'fx' | 'mod' | 'osc' | 'pads'
+  type Tab = 'amp' | 'drive' | 'filter' | 'fx' | 'mix' | 'mod' | 'osc' | 'pads'
   const TABS: [Tab, string][] = [
     ['pads', 'Pads'],
     ['osc', 'Osc'],
@@ -73,7 +74,8 @@
     ['amp', 'Amp'],
     ['mod', 'Mod'],
     ['drive', 'Drive & Glide'],
-    ['fx', 'FX']
+    ['fx', 'FX'],
+    ['mix', 'Mix']
   ]
   let tab: Tab = $state('pads')
 
@@ -1184,13 +1186,15 @@
           {@render panel('Drive', drive, 'drive')}
           {@render panel('Glide', glide, 'glide')}
         </div>
-      {:else}
+      {:else if tab === 'fx'}
         <div id="synth-fx" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {@render panel('Chorus', chorus, 'sound_chorus')}
           {@render panel('Bitcrusher', crush, 'sound_crush')}
           {@render panel('Delay', echo, 'sound_delay')}
           {@render panel('Reverb', room, 'sound_reverb')}
         </div>
+      {:else}
+        <Channel instrument="synth" {store} />
       {/if}
     </Tabs>
   </section>

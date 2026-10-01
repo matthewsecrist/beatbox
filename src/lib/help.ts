@@ -49,6 +49,12 @@ export const HELP = {
     "Makes the drums crunchy and lo-fi, like an old sampler or a video game console. Off is clean; turn it up and the sound gets grainier and fizzier, down to a harsh 2-bit buzz at the top. A little suits the Lo-fi kit. It's the drums' own: the echo and room sound get the crunch too.",
   drums_delay:
     'How much of the drums goes into the echo. Most songs keep this low or off so the beat stays tight.',
+  drums_eq_high:
+    'Turns the top of the drums up or down: the sizzle of the hi-hats and cymbals and the snap of the snare. Up is crisper; down is softer and duller, like an old record.',
+  drums_eq_low:
+    'Turns the bottom of the drums up or down: the boom of the kick and the body of the toms. Up hits you in the chest; down makes room for a big bass.',
+  drums_eq_mid:
+    'Turns the middle of the drums up or down: the crack of the snare and the knock of the toms and congas. Down sounds scooped and hollow; up pushes the drums forward.',
   drums_euclid:
     'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
   drums_grid:
@@ -56,12 +62,16 @@ export const HELP = {
   drums_length:
     'How many squares this track plays before it starts over. Every track plays the whole bar by default; a shorter one loops on its own and drifts against the others, like hi-hats over 12 squares against a kick over 16, so the beat changes from bar to bar before it lines up again. Squares past the end are dimmed and stay silent. Patterns still change on the bar line.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
+  drums_pan:
+    'Where the whole drum kit sits between the left and right speakers. C is the middle; turning it one way fades the other side out. Each drum also has its own Pan in the Kit tab.',
   drums_reverb:
     'How much of the drums goes into the room sound (the reverb). A little makes them sound less dry, like a real drum kit in a room.',
   drums_sound:
     'Which drum sound this track plays. Each kit starts every track with its own, but you can pick any sound from any kit, like an 808 kick with a 909 snare, or a bongo on the Tom track. Changing it plays the new sound so you can hear it.',
   drums_tracks:
     'More drums to play: rim shot, snap, shaker, conga, cowbell, wood block, ride and crash. Adding one gives it a row in the grid; it stays once you give it some hits, and the × hides it again while it has none.',
+  drums_voice_pan:
+    'Where this drum sits between the left and right speakers. Real drum kits are spread out: hi-hats a little to one side, toms from one side to the other, kick and snare in the middle. Double-click to centre it again.',
   duck_amount:
     'How far the synth drops each time the kick hits. Off leaves it alone; a little gently makes room for the kick; a lot makes the synth nearly vanish on every kick for a big, obvious pump. Softer kicks duck it less.',
   duck_release:
@@ -108,7 +118,7 @@ export const HELP = {
     'Legato only slides when you press the next key while still holding the last one, so you choose when it slides. Always slides into every note.',
   humanize:
     'Makes the drums sound played by a person instead of a machine: every hit lands a tiny bit early or late, and a little softer or harder, different each time round. A little loosens the beat up; a lot sounds like a sloppy drummer. Off keeps every hit exactly on the grid.',
-  kit: "Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit gives every track that kit's sound again, and resets the Tune and Decay knobs on each drum. Made your own mix? Name it and press Save kit, and it shows under Saved, ready for any song.",
+  kit: "Which set of drums plays: each kit has its own kick, snare and hi-hats. 808 is deep and booming, like hip-hop and trap; 909 is punchy, like house and techno; Lo-fi is dusty and soft. Picking a kit gives every track that kit's sound again, and resets the Tune, Decay and Pan knobs on each drum. Made your own mix? Name it and press Save kit, and it shows under Saved, ready for any song.",
   lfo_depth:
     'How big the wobble is. Off means nothing moves; turn it up for a bigger wave. What the number means depends on what it moves.',
   lfo_note:
@@ -153,6 +163,8 @@ export const HELP = {
     'An LFO is like an invisible hand that keeps turning a knob back and forth, slowly or quickly. It makes sounds wobble, wave or shimmer on their own.',
   panel_master:
     'The last stop before your speakers, for the whole song: a compressor that glues everything together, a DJ filter for sweeps, then a limiter that is always on and stops the loudest peaks from distorting when lots of sounds, echoes and drive pile up.',
+  panel_mix:
+    "The instrument's place in the mix. Pan sets where it sits between the left and right speakers, so instruments spread out instead of crowding the middle. The EQ is a tone control with three knobs, like on a stereo: Low for the deep bass, Mid for the middle and High for the bright top. Double-click a knob to put it back.",
   panel_osc:
     'An oscillator is the part that actually makes the sound: it vibrates really fast, like a guitar string. The synth has two, and you hear them mixed together.',
   panel_pitch_env:
@@ -204,8 +216,16 @@ export const HELP = {
   synth_chorus:
     'How much of the synth (and the loop pads) goes into the chorus. Turn it up to make pads and keys wide and shimmery.',
   synth_delay: 'How much of the synth (and the loop pads) goes into the echo.',
+  synth_eq_high:
+    'Turns the top of the synth (and the loop pads) up or down: the fizz and air. Up is brighter and crisper; down is warmer and darker.',
+  synth_eq_low:
+    'Turns the bottom of the synth (and the loop pads) up or down: the bass and warmth. Down cleans up a muddy mix when the drums carry the low end.',
+  synth_eq_mid:
+    'Turns the middle of the synth (and the loop pads) up or down, where most notes live. Up pushes it forward; down tucks it behind the drums.',
   synth_filter:
     'Opens or closes the filter on every synth sound at once, the keys and all the loop pads, by up to 4 octaves each way. 0 leaves each sound as it is; below 0 makes them darker and more muffled, above 0 brighter. Ramp it up over a section for a build-up that opens the sound, or down for a breakdown.',
+  synth_pan:
+    'Where the synth (and the loop pads) sits between the left and right speakers. C is the middle; turning it one way fades the other side out.',
   synth_reverb: 'How much of the synth (and the loop pads) goes into the room sound (the reverb).',
   tap_tempo:
     'Tap this button along with the beat, four or more times, and the song tempo follows your taps. Stop for two seconds and the next tap starts counting again. Handy when you know how fast a song should feel but not its number.',

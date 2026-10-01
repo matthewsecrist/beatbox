@@ -107,6 +107,12 @@ export interface Effects {
   delay_time: DelayTime
   drums_chorus: number
   drums_delay: number
+  // Each instrument's channel: a 3-band EQ (dB, -12 to 12; 0 = flat) and where it
+  // sits left to right (-1 to 1; 0 = centre).
+  drums_eq_high: number
+  drums_eq_low: number
+  drums_eq_mid: number
+  drums_pan: number
   drums_reverb: number
   duck_amount: number
   // A note value at the tempo playing, like the delay time.
@@ -121,6 +127,10 @@ export interface Effects {
   reverb_size: number // decay in seconds, 0.3-6
   synth_chorus: number
   synth_delay: number
+  synth_eq_high: number
+  synth_eq_low: number
+  synth_eq_mid: number
+  synth_pan: number
   synth_reverb: number
 }
 
@@ -342,6 +352,8 @@ export type Voices = Partial<Record<TrackId, Partial<VoiceTweak>>>
 export interface VoiceTweak {
   // Multiplier on the kit's decay times (0.25-2).
   decay: number
+  // Left (-1) to right (1); absent is the centre.
+  pan?: number
   // An instrument from the library in place of the kit's own; absent follows the kit.
   sound?: InstrumentId
   // Semitones (-12 to 12).
