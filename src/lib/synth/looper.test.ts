@@ -47,6 +47,8 @@ function fakeAudio() {
   }
   const ctx = {
     createBiquadFilter: () => node(),
+    createConvolver: () => node(),
+    createDelay: () => ({ ...node(), delayTime: param() }),
     createGain: () => node(),
     createOscillator() {
       const o = node()

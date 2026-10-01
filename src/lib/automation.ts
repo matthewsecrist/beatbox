@@ -13,6 +13,7 @@ export const LANES: {
 }[] = [
   { id: 'synth_filter', label: 'Synth filter', max: 4, min: -4, scale: 1, step: 0.1, unit: 'oct' },
   { id: 'master_filter', label: 'Master filter', max: 1, min: -1, scale: 100, step: 1, unit: '' },
+  { id: 'master_crush_mix', label: 'Master crush', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'synth_delay', label: 'Synth to delay', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'synth_reverb', label: 'Synth to reverb', max: 1, min: 0, scale: 100, step: 1, unit: '%' },
   { id: 'drums_delay', label: 'Drums to delay', max: 1, min: 0, scale: 100, step: 1, unit: '%' },

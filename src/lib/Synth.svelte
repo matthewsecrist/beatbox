@@ -11,6 +11,7 @@
     ArpMode,
     ArpRate,
     ChordShape,
+    DelayTime,
     DriveType,
     FilterType,
     GlideMode,
@@ -26,8 +27,8 @@
     Wave
   } from './types.js'
 
-  import { effects } from './effects.js'
-  import Effects from './Effects.svelte'
+  import { crushBits } from './audio.js'
+  import { DELAY_TIMES, effects } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
   import PianoRoll from './PianoRoll.svelte'
@@ -64,7 +65,7 @@
     store: SongStore
   } = $props()
 
-  type Tab = 'amp' | 'drive' | 'effects' | 'filter' | 'mod' | 'osc' | 'pads'
+  type Tab = 'amp' | 'drive' | 'filter' | 'fx' | 'mod' | 'osc' | 'pads'
   const TABS: [Tab, string][] = [
     ['pads', 'Pads'],
     ['osc', 'Osc'],
@@ -72,7 +73,7 @@
     ['amp', 'Amp'],
     ['mod', 'Mod'],
     ['drive', 'Drive & Glide'],
-    ['effects', 'Effects']
+    ['fx', 'FX']
   ]
   let tab: Tab = $state('pads')
 
@@ -576,6 +577,7 @@
   const fmtVibrato = (v: number) => (v === 0 ? 'off' : '±' + Math.round(v) + '¢')
   const fmtSemis = (v: number) => (v === 0 ? 'off' : fmtInt(v) + ' st')
   const fmtPctOrOff = (v: number) => (v === 0 ? 'off' : fmtPct(v))
+  const fmtCrush = (v: number) => (v === 0 ? 'off' : crushBits(v) + '-bit')
   // Depth slider per LFO target: octaves of cutoff, cents of pitch, share of level.
   const LFO_DEPTH_STEP: Record<LfoTarget, number> = { amp: 0.01, filter: 0.05, pitch: 1 }
   const LFO_DEPTH_FORMAT: Record<LfoTarget, (v: number) => string> = {
@@ -916,6 +918,37 @@
   {@render slider('glide', 'Time', 0, 1, 0.005, fmtGlide)}
 {/snippet}
 
+{#snippet crush()}
+  {@render slider('fx_crush', 'Amount', 0, 1, 0.1, fmtCrush)}
+{/snippet}
+
+{#snippet echo()}
+  <label class="block space-y-1" for="synth-fx_delay_time">
+    <span class="flex items-center gap-1 text-xs uppercase tracking-wider text-zinc-400"
+      >Time{@render info('fx_delay_time', 'Time')}</span
+    >
+    <select
+      id="synth-fx_delay_time"
+      value={edited.fx_delay_time}
+      disabled={store.readOnly}
+      onchange={(e) =>
+        store.setParam('fx_delay_time', e.currentTarget.value as DelayTime, soundPad)}
+      class={select + ' w-full'}
+    >
+      {#each DELAY_TIMES as [value, text] (value)}
+        <option {value}>{text}</option>
+      {/each}
+    </select>
+  </label>
+  {@render slider('fx_delay_feedback', 'Feedback', 0, 0.9, 0.01, fmtPct)}
+  {@render slider('fx_delay_mix', 'Mix', 0, 1, 0.01, fmtPctOrOff)}
+{/snippet}
+
+{#snippet room()}
+  {@render slider('fx_reverb_size', 'Size', 0.3, 6, 0.1, fmtSec)}
+  {@render slider('fx_reverb_mix', 'Mix', 0, 1, 0.01, fmtPctOrOff)}
+{/snippet}
+
 <div class="contents">
   <section
     id="synth"
@@ -1117,7 +1150,11 @@
           {@render panel('Glide', glide, 'glide')}
         </div>
       {:else}
-        <Effects part="synth" {store} />
+        <div id="synth-fx" class="grid gap-4 sm:grid-cols-3">
+          {@render panel('Bitcrusher', crush, 'sound_crush')}
+          {@render panel('Delay', echo, 'sound_delay')}
+          {@render panel('Reverb', room, 'sound_reverb')}
+        </div>
       {/if}
     </Tabs>
   </section>

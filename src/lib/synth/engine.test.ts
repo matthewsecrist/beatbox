@@ -71,6 +71,8 @@ function fakeAudio() {
     createBufferSource: () =>
       Object.assign(node('noise'), { buffer: null, loop: false, start: vi.fn(), stop: vi.fn() }),
     createConstantSource: () => Object.assign(node('const'), { start: vi.fn(), stop: vi.fn() }),
+    createConvolver: () => Object.assign(node('convolver'), { buffer: null }),
+    createDelay: () => Object.assign(node('delay'), { delayTime: param('delay.delayTime') }),
     createGain: () => node('gain'),
     createOscillator: () => Object.assign(node('osc'), { start: vi.fn(), stop: vi.fn() }),
     createWaveShaper: () => node('shaper'),
@@ -395,6 +397,16 @@ test('the filter envelope sweeps the cutoff in octaves, and releases from where 
   expect(detune?.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 0.55)
 })
 
+// Each voice's filter, in order: the one feeding a gain (its amp) that feeds a gain
+// (the tremolo). A voice's DC blocker feeds its filter, and a sound's echo damping
+// feeds a gain into its delay line.
+const isGain = (x: FakeNode | FakeParam | undefined): x is FakeNode =>
+  x !== undefined && 'kind' in x && x.kind === 'gain'
+const voiceFilters = (nodes: FakeNode[]): FakeNode[] =>
+  nodes.filter(
+    (n) => n.kind === 'filter' && isGain(n.outputs[0]) && isGain(n.outputs[0].outputs[0])
+  )
+
 test("velocity scales a note's level, and its filter sweep as far as filter_velocity says", () => {
   const { clock, ctx, nodes } = fakeAudio()
   const synth = createSynth(
@@ -404,8 +416,7 @@ test("velocity scales a note's level, and its filter sweep as far as filter_velo
   synth.noteOn(60, 0, 'soft', null, 0.5)
   synth.noteOn(64, 0, 'hard') // full velocity
 
-  // Each voice makes its filter, then the drive stage's DC blocker; the amp follows the filter.
-  const [soft, , hard] = nodes.filter((n) => n.kind === 'filter')
+  const [soft, hard] = voiceFilters(nodes)
   const amp = (filter: FakeNode | undefined) => {
     const out = filter?.outputs[0]
     return out && 'gain' in out ? out.gain : undefined
@@ -449,8 +460,7 @@ test('each note takes the filter type, with resonance meaning the same for every
   synth.noteOn(60)
   synth.noteOn(64, undefined, 'pad0:64', { filter_resonance: 20, filter_type: 'bandpass' })
 
-  // Each voice makes its filter, then the drive stage's DC blocker.
-  const [low, , band] = nodes.filter((n) => n.kind === 'filter')
+  const [low, band] = voiceFilters(nodes)
   expect([low?.type, low?.Q.value]).toStrictEqual(['lowpass', 20]) // dB
   expect([band?.type, band?.Q.value]).toStrictEqual(['bandpass', 10]) // 20 dB as a ratio
 })
@@ -535,4 +545,45 @@ test('a chord glides voice by voice, each note from the nearest note of the last
   expect(glideOf(nodes, 3)).toBe(null) // C stays put
   expect(glideOf(nodes, 4)).toStrictEqual([330, 349, 0.1]) // E -> F
   expect(glideOf(nodes, 5)).toStrictEqual([392, 440, 0.1]) // G -> A
+})
+
+test("each sound plays through its own effects, the live controls' and each loop's, following their settings and the tempo", () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ fx_delay_mix: 0.4, fx_delay_time: '1/4' }, () => ctx)
+  synth.setTempo(120)
+  synth.noteOn(60)
+  const own = { fx_crush: 1, fx_reverb_mix: 0.5 }
+  synth.noteOn(64, 0, 'pad0:64', own)
+  synth.noteOn(67, 0, 'pad0:67', own)
+
+  // The node a node feeds first (a graph walk, so params are skipped).
+  const next = (n: FakeNode | undefined, i = 0) => {
+    const out = n?.outputs[i]
+    return out && 'outputs' in out ? out : undefined
+  }
+  // A voice's filter -> amp -> tremolo -> its sound's effects.
+  const fxOf = (filter: FakeNode | undefined) => next(next(next(filter)))
+  const [live, pad, pad2] = voiceFilters(nodes).map(fxOf)
+  expect(pad2).toBe(pad) // one per sound, shared by its notes
+  expect(live).not.toBe(pad)
+
+  // input -> crusher, which feeds the dry path, the echo and the reverb.
+  const liveCrush = next(live)
+  const padCrush = next(pad)
+  expect(liveCrush?.curve).toBe(null) // off
+  expect(new Set(padCrush?.curve).size).toBe(5) // 2-bit
+  const [, liveEcho, liveRoom] = liveCrush?.outputs ?? []
+  const [, padEcho, padRoom] = padCrush?.outputs ?? []
+  expect(liveEcho && 'gain' in liveEcho ? liveEcho.gain.value : null).toBe(0.4)
+  expect(padEcho && 'gain' in padEcho ? padEcho.gain.value : null).toBe(0) // the default: off
+  // The reverb's impulse is only made for a sound whose reverb is up.
+  expect(next(liveRoom && 'outputs' in liveRoom ? liveRoom : undefined)?.buffer).toBe(null)
+  expect(next(padRoom && 'outputs' in padRoom ? padRoom : undefined)?.buffer).not.toBe(null)
+
+  // A quarter note at 120 BPM, then at 60.
+  const line = nodes.find((n) => n.kind === 'delay') as
+    (FakeNode & { delayTime: FakeParam }) | undefined
+  expect(line?.delayTime.value).toBe(0.5)
+  synth.setTempo(60)
+  expect(line?.delayTime.setTargetAtTime).toHaveBeenLastCalledWith(1, 0, 0.02)
 })

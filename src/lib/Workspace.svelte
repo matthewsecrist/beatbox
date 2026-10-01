@@ -411,7 +411,7 @@
     </button>
   {/if}
 
-  <!-- Settings for the whole song: the master delay, reverb and compressor. -->
+  <!-- Settings for the whole song: its effects (delay, reverb, sends, bitcrusher, sidechain, master). -->
   <details id="song-settings" class="group relative">
     <summary
       class="flex cursor-pointer list-none items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 group-open:border-amber-400/60"
@@ -423,7 +423,7 @@
     <div
       class="absolute right-0 z-20 mt-2 w-[min(40rem,calc(100vw-2rem))] rounded-xl border border-zinc-700 bg-zinc-950 p-4 shadow-xl shadow-black/60"
     >
-      <Effects part="master" {store} />
+      <Effects {store} />
     </div>
   </details>
 

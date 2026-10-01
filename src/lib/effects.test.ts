@@ -171,6 +171,28 @@ test('a channel plays dry and into each effect at its send level', () => {
   expect(drums).not.toBe(input)
 })
 
+test("the whole mix's bitcrusher crossfades with the clean mix at its Mix, which a section can ramp", () => {
+  const { getCtx, nodes } = fakeAudio()
+  const bus = createEffects(getCtx)
+  bus.channel('drums')
+  // After both DJ filters: the clean path and the crusher, which feeds the crushed one.
+  const [dry, crush] = find(nodes, 'compressor').outputs[0]?.outputs[0]?.outputs ?? []
+  const wet = crush?.outputs[0]
+  if (!dry || !crush || !wet) throw new Error('no bitcrusher')
+  const mix = () => [dry.gain.value, wet.gain.value]
+  expect(mix()).toStrictEqual([1, 0]) // off by default: all clean
+  expect(new Set(crush.curve).size).toBe(2 ** 6 + 1) // 6-bit: 32 steps each way, and 0
+
+  bus.set({ ...DEFAULT_EFFECTS, master_crush: 1, master_crush_mix: 0.25 }, 110)
+  expect([...new Set(crush.curve)].sort((a, b) => a - b)).toStrictEqual([-1, -0.5, 0, 0.5, 1])
+  expect(mix()).toStrictEqual([0.75, 0.25])
+
+  // A section fades it from clean to all crushed, from audio time 2 s to 10 s.
+  bus.automate({ master_crush_mix: [0, 1] }, 2, 10)
+  expect(wet.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(1, 10)
+  expect(dry.gain.linearRampToValueAtTime).toHaveBeenLastCalledWith(0, 10)
+})
+
 test('everything reaches the speakers through the compressor, the limiter and the clipper', () => {
   const { destination, getCtx, nodes } = fakeAudio()
   const bus = createEffects(getCtx)

@@ -303,6 +303,16 @@ export const LOOP_SPECS: LoopSpec[] = [
     ].join(' | '),
     sound: 'Chiptune'
   },
+  {
+    genre: 'Chiptune',
+    instrument: 'Lead',
+    name: '8-Bit Quest Theme',
+    score: [
+      'E5 . G5 . C6 - - . B5 . G5 . E5 - D5 -',
+      'C5 . E5 . G5 - A5 . G5 - E5 . D5 - - .'
+    ].join(' | '),
+    sound: '8-Bit Lead'
+  },
 
   // Disco
   {
@@ -851,6 +861,16 @@ export const LOOP_SPECS: LoopSpec[] = [
     ].join(' | '),
     sound: 'Vinyl Keys'
   },
+  {
+    genre: 'Lo-fi',
+    instrument: 'Chords',
+    name: 'Crunchy Tape Keys',
+    score: [
+      'Eb4+G4+Bb4+D5 - - - - - . . Eb4+G4+Bb4+D5 - - . . . . .',
+      'C4+Eb4+G4+Bb4 - - - - - - - F3+A3+C4+Eb4 - - - - - . .'
+    ].join(' | '),
+    sound: 'Lo-fi Keys'
+  },
 
   // Pop
   {
@@ -976,6 +996,16 @@ export const LOOP_SPECS: LoopSpec[] = [
     name: 'Whistle Dub',
     score: 'D5 - - - B4 - A4 - G4 - - - . . . . | A4 - B4 - D5 - - - E5 - D5 - B4 - - -',
     sound: 'Breathy Lead'
+  },
+  {
+    genre: 'Reggae',
+    instrument: 'Chords',
+    name: 'Dub Echo Skank',
+    score: [
+      '. . D4+F4+A4 . . . D4+F4+A4 . . . D4+F4+A4 . . . D4+F4+A4 .',
+      '. . Bb3+D4+F4 . . . Bb3+D4+F4 . . . C4+E4+G4 . . . C4+E4+G4 .'
+    ].join(' | '),
+    sound: 'Dub Chord'
   },
 
   // Reggaeton

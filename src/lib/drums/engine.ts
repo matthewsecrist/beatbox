@@ -10,7 +10,7 @@ import type {
   VoiceTweak
 } from '../types.js'
 
-import { getContext, noiseBuffer } from '../audio.js'
+import { createCrusher, type Crusher, getContext, noiseBuffer } from '../audio.js'
 import { transport as sharedTransport } from '../transport.js'
 import { KIT_SOUNDS, TRACKS } from './kits.js'
 
@@ -37,6 +37,8 @@ const METAL = [205.3, 304.4, 369.6, 522.7, 540, 800]
 
 export interface Drums {
   close(): void
+  // The drums' own bitcrusher, 0-1 (0 = off).
+  setCrush(amount: number): void
   setHumanize(amount: number): void
   setKit(kit: KitId, voices: Partial<Record<TrackId, VoiceTweak>>): void
   setSwing(swing: number): void
@@ -66,6 +68,8 @@ interface Hit {
 }
 
 interface Output {
+  // After the master volume, on the way out.
+  crush: Crusher
   ctx: BaseAudioContext
   master: GainNode
   noise: AudioBuffer
@@ -107,6 +111,7 @@ export function createDrums({
   let timer: ReturnType<typeof setInterval> | undefined
   let raf = 0
   let volume = 0.8
+  let crush = 0
   let kit: KitId = 'classic'
   let voices: Partial<Record<TrackId, VoiceTweak>> = {}
   let swing = 50
@@ -127,8 +132,9 @@ export function createDrums({
       const ctx = getCtx()
       const master = ctx.createGain()
       master.gain.value = volume
-      master.connect(output?.() ?? ctx.destination)
-      out = { ctx, master, noise: noiseBuffer(ctx) }
+      const crusher = createCrusher(ctx, crush)
+      master.connect(crusher.node).connect(output?.() ?? ctx.destination)
+      out = { crush: crusher, ctx, master, noise: noiseBuffer(ctx) }
     }
     return out
   }
@@ -504,6 +510,11 @@ export function createDrums({
     voices = tweaks
   }
 
+  function setCrush(amount: number): void {
+    crush = amount
+    out?.crush.set(amount)
+  }
+
   function setHumanize(amount: number): void {
     humanize = amount
   }
@@ -521,10 +532,11 @@ export function createDrums({
   function close(): void {
     stop()
     out?.master.disconnect()
+    out?.crush.node.disconnect()
     out = null
   }
 
-  return { close, setHumanize, setKit, setSwing, setVolume, start, stop, stopAt, trigger }
+  return { close, setCrush, setHumanize, setKit, setSwing, setVolume, start, stop, stopAt, trigger }
 }
 
 // Whether a track (a drum, or a whole instrument) sounds: with any track soloed

@@ -42,6 +42,7 @@ function fakeAudio() {
         stop: (t: number) => tones.push([+hz.toFixed(2), +(t - from).toFixed(3)])
       }
     },
+    createWaveShaper: node,
     get currentTime() {
       return clock.currentTime
     },

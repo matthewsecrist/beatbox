@@ -1,6 +1,14 @@
 import type { DriveType, LfoNote, LfoTarget, Ramp, SynthParams, Wave } from '../types.js'
 
-import { getContext, noiseBuffer, rampThrough, settle } from '../audio.js'
+import {
+  createCrusher,
+  type Crusher,
+  getContext,
+  noiseBuffer,
+  rampThrough,
+  settle
+} from '../audio.js'
+import { DAMPING, DELAY_BEATS, impulse, MAX_DELAY } from '../effects.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
@@ -20,6 +28,13 @@ export const DEFAULT_PARAMS: SynthParams = {
   filter_type: 'lowpass',
   // How much a note's velocity scales its filter envelope, 0-1 (0: not at all).
   filter_velocity: 0,
+  // The sound's own effects, all off: bitcrusher, echo and reverb.
+  fx_crush: 0,
+  fx_delay_feedback: 0.35,
+  fx_delay_mix: 0,
+  fx_delay_time: '1/8d',
+  fx_reverb_mix: 0,
+  fx_reverb_size: 2,
   // Glide: seconds a new note takes to slide from the last one's pitch (0 = off);
   // 'legato' only slides into a note played while the last one is still held.
   glide: 0,
@@ -111,6 +126,24 @@ function tremLevel(p: SynthParams): number {
 const MAX_VOICES = 16 // live playing + up to 8 loops share this pool
 const HEADROOM = 0.3
 const CHORD = 0.005 // s: notes starting this close together are one chord
+
+// A sound's own effects (the `fx_*` params), shared by the voices playing it:
+// in -> crusher -> master, and from the crusher into an echo and a reverb at
+// their mixes. Each echo comes back a little darker, as the song's delay does.
+// The reverb's impulse is only made once its mix is up.
+interface SoundFx {
+  crush: Crusher
+  delay: DelayNode
+  delaySend: GainNode
+  feedback: GainNode
+  input: GainNode
+  // The params it was last set to (for the delay time when the tempo changes).
+  p: SynthParams
+  reverb: ConvolverNode
+  reverbSend: GainNode
+  // The size the reverb's impulse was made for; 0 before it's made.
+  size: number
+}
 
 // Drive: the oscillators are scaled so their loudest possible peak sits at 1, pushed
 // up by as much as DRIVE_MAX and bent by the character's curve, then scaled back.
@@ -255,6 +288,10 @@ function updateDrive(stage: DriveStage, p: SynthParams, t: number): void {
 const source = (key: VoiceKey): string =>
   typeof key === 'number' ? 'live' : (key.split(':')[0] ?? key)
 
+// Which sound's effects a voice plays through: a loop's own (by its source),
+// or the live controls' for every voice that follows them.
+const fxName = (key: VoiceKey, own: unknown): string => (own ? source(key) : 'live')
+
 export interface Synth {
   allNotesOff(): void
   // Arranger automation: shifts every note's cutoff (octaves) along `ramp` from
@@ -355,6 +392,8 @@ export function createSynth(
   const lastNotes = new Map<string, LastNote>()
   // The arranger's cutoff shift (cents) on every note's filter; made on first use.
   let shift: ConstantSourceNode | null = null
+  // Each sound's effects, by fxName; made on its first note.
+  const fxs = new Map<string, SoundFx>()
 
   function ensureContext(): { ctx: BaseAudioContext; master: GainNode } {
     ctx = getCtx()
@@ -364,6 +403,51 @@ export function createSynth(
       master.connect(output?.() ?? ctx.destination)
     }
     return { ctx, master }
+  }
+
+  // A sound's effects, made the first time one of its notes plays.
+  function soundFx(name: string, p: SynthParams): SoundFx {
+    const existing = fxs.get(name)
+    if (existing) return existing
+    const { ctx, master } = ensureContext()
+    const input = ctx.createGain()
+    const crush = createCrusher(ctx, p.fx_crush)
+    const delaySend = ctx.createGain()
+    const delay = ctx.createDelay(MAX_DELAY)
+    const damping = ctx.createBiquadFilter()
+    damping.type = 'lowpass'
+    damping.frequency.value = DAMPING
+    const feedback = ctx.createGain()
+    const reverbSend = ctx.createGain()
+    const reverb = ctx.createConvolver()
+    input.connect(crush.node).connect(master)
+    crush.node.connect(delaySend).connect(delay).connect(damping).connect(feedback).connect(delay)
+    damping.connect(master)
+    crush.node.connect(reverbSend).connect(reverb).connect(master)
+    const fx: SoundFx = { crush, delay, delaySend, feedback, input, p, reverb, reverbSend, size: 0 }
+    applyFx(fx, p, true)
+    fxs.set(name, fx)
+    return fx
+  }
+
+  // Brings a sound's effects in line with `p`; `now` sets them outright (just made).
+  function applyFx(fx: SoundFx, p: SynthParams, now = false) {
+    if (!ctx) return
+    const t = ctx.currentTime
+    const to = (param: AudioParam, value: number) => {
+      if (now) param.value = value
+      else param.setTargetAtTime(value, t, 0.02)
+    }
+    fx.p = p
+    fx.crush.set(p.fx_crush)
+    to(fx.delaySend.gain, p.fx_delay_mix)
+    to(fx.feedback.gain, p.fx_delay_feedback)
+    to(fx.delay.delayTime, Math.min(MAX_DELAY, (DELAY_BEATS[p.fx_delay_time] * 60) / bpm))
+    to(fx.reverbSend.gain, p.fx_reverb_mix)
+    if (p.fx_reverb_mix > 0 && fx.size !== p.fx_reverb_size) {
+      fx.size = p.fx_reverb_size
+      fx.reverb.buffer = impulse(ctx, fx.size)
+    }
   }
 
   // `from` (a MIDI note) slides the pitch from there over `glide` seconds.
@@ -479,7 +563,7 @@ export function createSynth(
     own: null | Partial<SynthParams> = null,
     velocity = 1
   ): void {
-    const { ctx, master } = ensureContext()
+    const { ctx } = ensureContext()
     const p = own ? { ...DEFAULT_PARAMS, ...own } : params
     const t = Math.max(at ?? 0, ctx.currentTime)
     if (voices.has(key)) release(key, undefined, t)
@@ -532,7 +616,9 @@ export function createSynth(
       hiss.loop = true
       hiss.connect(noise).connect(drive.level)
     }
-    filter.connect(amp).connect(trem).connect(master)
+    const fx = soundFx(fxName(key, own), p)
+    applyFx(fx, p)
+    filter.connect(amp).connect(trem).connect(fx.input)
     trem.gain.value = tremLevel(p)
 
     // Velocity scales the envelope's peak, so a softer note is quieter all through.
@@ -688,6 +774,8 @@ export function createSynth(
     if (!ctx || !master) return
     const t = ctx.currentTime
     master.gain.setTargetAtTime(params.volume, t, 0.01)
+    const live = fxs.get('live')
+    if (live) applyFx(live, params)
     for (const v of voices.values()) if (!v.own) follow(v, params, t)
   }
 
@@ -696,6 +784,8 @@ export function createSynth(
   function setOwnParams(prefix: string, own: Partial<SynthParams>): void {
     if (!ctx) return
     const p = { ...DEFAULT_PARAMS, ...own }
+    const fx = fxs.get(source(prefix))
+    if (fx) applyFx(fx, p)
     for (const v of voices.values()) {
       if (!v.own || typeof v.key !== 'string' || !v.key.startsWith(prefix)) continue
       v.release = p.release
@@ -708,6 +798,7 @@ export function createSynth(
   function setTempo(next: number): void {
     bpm = next
     if (!ctx) return
+    for (const fx of fxs.values()) applyFx(fx, fx.p)
     const t = ctx.currentTime
     for (const v of alive) {
       for (const lfo of v.lfos) {
@@ -720,6 +811,8 @@ export function createSynth(
   function close(): void {
     master?.disconnect()
     master = null
+    for (const fx of fxs.values()) fx.input.disconnect()
+    fxs.clear()
     shift?.stop()
     shift = null
     ctx = null

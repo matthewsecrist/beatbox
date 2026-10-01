@@ -58,12 +58,11 @@ removes a song for good, along with its link, views and likes.
 - Opening your own song's link shows it as others see it, with an **Edit it** link.
 
 **Layout**: the song bar (Play song, name, Save, **Tempo**, undo/redo, Loops, **Song
-settings**, New, Open) sits on top; **Song settings** opens the master delay,
-reverb, sidechain and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
+settings**, New, Open) sits on top; **Song settings** opens the song's effects:
+delay, reverb, sends, bitcrusher, sidechain and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
 next to the arrangement: a column per section. Pick
 a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
-Amp, Mod, Drive & Glide** and **Effects** tabs, the drums' **Steps, Kit** and
-**Effects** tabs. The keyboard bar (octave, Chord/Arp
+Amp, Mod, Drive & Glide** and **FX** tabs, the drums' **Steps** and **Kit** tabs. The keyboard bar (octave, Chord/Arp
 and the keys) stays at the bottom whichever track is open.
 
 - Each instrument track has a **level** (the synth's covers its loop pads), and **M**
@@ -126,7 +125,7 @@ them turned up. Play it
 with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
 save your own. The oscillator (with sub, noise and the pitch envelope), filter,
-envelope (**Amp**), LFO (**Mod**), drive and glide controls each have a tab in the
+envelope (**Amp**), LFO (**Mod**), drive and glide controls, and the sound's own effects (**FX**), each have a tab in the
 synth editor.
 
 **ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
@@ -212,6 +211,9 @@ run of taps is one undo step.
   under **Saved** in the Kit menu, to load into any song; saving under a name you
   already have overwrites that kit. A song keeps its own copy, so changing a saved
   kit later doesn't change songs that used it.
+- **Crush** (in the Kit tab) is the drums' own bitcrusher: off, or 12-bit down to
+  2-bit for lo-fi grit. It's saved with the song (not with saved kits), and comes
+  before the sends, so their echo and reverb are crushed too.
 
 **Loop pads** (the synth's **Pads** tab): eight pads. Tap an empty pad to record, then tap it again to
 finish.
@@ -248,15 +250,29 @@ it starts an empty one-bar loop to draw in).
   even while it plays; the keyboard keeps its own sound.
 
 **Effects**: a delay and a reverb shared by the synth (loop pads included) and
-the drums. Each instrument's **Effects** tab has its **Sends**: how much of it goes
-to each effect (all off in a new song). **Song settings** in the song bar has the effects
-themselves, with **Mix** for how loud each comes back. The delay's
+the drums, all in **Song settings** in the song bar. **Sends** sets how much of each
+instrument goes to each effect (all off in a new song), and each effect's **Mix**
+how loud it comes back. The delay's
 **Time** is a note value (1/16 to 1/2, with dotted and triplet ones) that follows
 the song tempo, with **Feedback** for how many repeats; each repeat comes back a
 little darker. **Bounce** keeps the repeats in the middle (**Straight**) or sends
 them from side to side (**Ping-pong**: the first from the left, the next from the
 right, and so on, each a delay time apart). The reverb's **Size** is how long its tail rings (0.3–6 s). Loop
 Browser previews play through the same effects.
+
+**FX** (the synth's own effects, part of its sound like Drive, so presets and loop
+pads keep their own): a **Bitcrusher** (off, or 12-bit down to 2-bit), a
+**Delay** (a note-value **Time** at the tempo playing, **Feedback**, **Mix**) and a
+**Reverb** (**Size**, **Mix**), all off by default. They play on top of the song's
+shared delay and reverb, so a dub stab can bring its echo and a lo-fi key its
+crunch wherever it goes: 8-Bit Lead, Lo-fi Keys and Dub Chord show them off, with
+loops built on them in the Loop Browser. Bit depth only for now: no sample-rate
+reduction.
+
+**Master bitcrusher** (also in Song settings) crunches the whole mix, after the
+master filter and before the limiter: **Bits** sets how crunchy (12-bit down to
+2-bit) and **Mix** how much of the crushed sound replaces the clean one (off in a
+new song). Mix is an arrangement lane, so a section can fade the crunch in or out.
 
 **Sidechain** (also in Song settings) ducks the synth, dry and sends, every time
 the kick plays, for the pumping house and trance sound. **Amount** is how far it
@@ -293,7 +309,8 @@ end, and then stops; ← and → move a section.
   or slow down with the section.
 - **Automate** (under the tracks) adds a lane for a setting to move while the song
   plays: **Synth filter** (shifts every synth sound's cutoff, keys and pads, by
-  up to ±4 octaves), **Master filter** (−100 low-pass to +100 high-pass), the
+  up to ±4 octaves), **Master filter** (−100 low-pass to +100 high-pass), **Master
+  crush** (the master bitcrusher's Mix, in %), the
   synth's and drums' sends to the delay and reverb, and the delay and reverb
   **Mix** (in %). **+** in a section gives it a start and an end value (both
   starting at the song's own setting), and the setting ramps in a straight line
@@ -438,7 +455,7 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/PianoRoll.svelte`                                                     | Note editor for a loop pad                                                                                                  |
 | `src/lib/DrumMachine.svelte`                                                   | Drums editor: step sequencer, kit, saved kits                                                                               |
 | `src/lib/Arranger.svelte`                                                      | Track list (level, mute, solo) and the arrangement grid                                                                     |
-| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Master effects and per-instrument sends, and the shared delay/reverb bus and master stage every instrument plays into       |
+| `src/lib/Effects.svelte`, `src/lib/effects.ts`                                 | Song settings' effects panel, and the shared delay/reverb bus, bitcrushers and master stage every instrument plays into     |
 | `src/lib/Tabs.svelte`                                                          | The editors' tab rows                                                                                                       |
 | `src/lib/audio.ts`                                                             | The single shared `AudioContext`                                                                                            |
 | `src/lib/transport.ts`, `src/lib/tap_tempo.ts`                                 | Tempo, beat grid and metronome shared by every instrument; tap tempo                                                        |

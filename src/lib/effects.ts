@@ -1,14 +1,15 @@
 import type { Automation, DelayTime, Effects, Ramp } from './types.js'
 
-import { getContext, rampThrough, settle } from './audio.js'
+import { createCrusher, type Crusher, getContext, rampThrough, settle } from './audio.js'
 import { EFFECT_TARGETS, type EffectTarget } from './automation.js'
 
 // Shared send effects on the page's AudioContext: every instrument plays into a
 // channel that goes to the master stage dry and, through a send level per effect,
 // into one tempo-synced delay (straight or ping-pong) and one reverb, whose
 // returns join it there. Each kick ducks the synth channel (dry and sends) for the
-// pumping sidechain sound. The master stage is a glue compressor (off by default)
-// and then a fixed limiter, so stacked sends and drive don't clip. Nothing is
+// pumping sidechain sound. The master stage is a glue compressor (off by default),
+// a DJ filter, a bitcrusher blended into the whole mix (off by default) and then a fixed
+// limiter, so stacked sends and drive don't clip. Nothing is
 // built until an instrument first asks for its channel (after a user gesture);
 // settings made before then are kept and applied when it is.
 
@@ -27,6 +28,8 @@ export const DEFAULT_EFFECTS: Effects = {
   drums_reverb: 0,
   duck_amount: 0,
   duck_release: '1/8',
+  master_crush: 0.6,
+  master_crush_mix: 0,
   master_filter: 0,
   reverb_mix: 0.6,
   reverb_size: 2,
@@ -45,8 +48,19 @@ export const DELAY_BEATS: Record<DelayTime, number> = {
   '1/16': 1 / 4
 }
 
-const MAX_DELAY = 4 // seconds: a half note down to 30 BPM
-const DAMPING = 4500 // Hz: each repeat comes back a little darker
+// The delay time menu, shortest first.
+export const DELAY_TIMES: [DelayTime, string][] = [
+  ['1/16', '1/16'],
+  ['1/8t', '1/8T'],
+  ['1/8', '1/8'],
+  ['1/8d', '1/8 dotted'],
+  ['1/4', '1/4'],
+  ['1/4d', '1/4 dotted'],
+  ['1/2', '1/2']
+]
+
+export const MAX_DELAY = 4 // seconds: a half note down to 30 BPM
+export const DAMPING = 4500 // Hz: each repeat comes back a little darker
 const SMOOTH = 0.02 // s: glide for level and time changes, so they don't click
 // Sidechain: a kick pulls the synth down within a few ms and holds it there
 // briefly, then it comes back (95% of the way over the release).
@@ -105,6 +119,11 @@ interface Bus {
   // Ping-pong feedback: each delay line into the other.
   crossLR: GainNode
   crossRL: GainNode
+  // The whole mix's bitcrusher, after the DJ filter, blended with the clean mix:
+  // `crushDry` and `crushWet` crossfade them at `master_crush_mix`.
+  crush: Crusher
+  crushDry: GainNode
+  crushWet: GainNode
   ctx: BaseAudioContext
   // The left delay line, which the sends feed, and the right one.
   delay: DelayNode
@@ -135,7 +154,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
 
   function build(): Bus {
     const ctx = getCtx()
-    // master -> compressor -> DJ filter -> limiter -> trim -> clipper -> speakers.
+    // master -> compressor -> DJ filter -> (clean + crushed) -> limiter -> trim -> clipper -> speakers.
     const master = ctx.createGain()
     const comp = ctx.createDynamicsCompressor()
     comp.knee.value = 6
@@ -160,14 +179,13 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
     lowpass.type = 'lowpass'
     highpass.type = 'highpass'
     lowpass.Q.value = highpass.Q.value = FILTER_Q
-    master
-      .connect(comp)
-      .connect(lowpass)
-      .connect(highpass)
-      .connect(limiter)
-      .connect(trim)
-      .connect(clip)
-      .connect(ctx.destination)
+    const crush = createCrusher(ctx, settings.master_crush)
+    const crushDry = ctx.createGain()
+    const crushWet = ctx.createGain()
+    master.connect(comp).connect(lowpass).connect(highpass)
+    highpass.connect(crushDry).connect(limiter)
+    highpass.connect(crush.node).connect(crushWet).connect(limiter)
+    limiter.connect(trim).connect(clip).connect(ctx.destination)
 
     // Two delay lines, each with a damping filter so every repeat comes back a
     // little darker. The sends feed the left one. Straight, it feeds itself back
@@ -205,6 +223,9 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       comp,
       crossLR,
       crossRL,
+      crush,
+      crushDry,
+      crushWet,
       ctx,
       delay,
       delayOut,
@@ -257,6 +278,7 @@ export function createEffects(getCtx: () => BaseAudioContext = getContext): Effe
       automated.delete(target)
       for (const [param, value] of drives(b, target)) to(param, value(settings[target]))
     }
+    b.crush.set(settings.master_crush)
     // A new impulse is only worth making when the size changes.
     if (b.size !== settings.reverb_size) {
       b.size = settings.reverb_size
@@ -369,6 +391,12 @@ function drives(b: Bus, target: EffectTarget): [AudioParam, (x: number) => numbe
       [b.highpass.frequency, (x) => (x > 0 ? masterFilterHz(x) : 0)]
     ]
   }
+  // A crossfade: crushed and clean are the same signal, so a straight one keeps the level.
+  if (target === 'master_crush_mix')
+    return [
+      [b.crushWet.gain, same],
+      [b.crushDry.gain, (x) => 1 - x]
+    ]
   if (target === 'delay_mix') return [[b.delayOut.gain, same]]
   if (target === 'reverb_mix') return [[b.reverbOut.gain, same]]
   const [instrument, effect] = target.split('_') as [Instrument, 'delay' | 'reverb']
