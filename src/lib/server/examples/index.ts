@@ -2,6 +2,7 @@ import type { Example, ExampleSummary } from '../../types.js'
 
 import { songSchema } from '../validation.js'
 import acidHouse from './acid_house.json' with { type: 'json' }
+import badGuy from './bad_guy.json' with { type: 'json' }
 import lofi from './lofi.json' with { type: 'json' }
 import midnightArcade from './midnight_arcade.json' with { type: 'json' }
 import trance from './trance.json' with { type: 'json' }
@@ -16,7 +17,8 @@ const SOURCES: [slug: string, song: unknown][] = [
   ['acid-house', acidHouse],
   ['trap', trap],
   ['lofi', lofi],
-  ['trance', trance]
+  ['trance', trance],
+  ['bad-guy', badGuy]
 ]
 
 // Checked like a song a client sends, so a bad edit to the JSON fails at startup.
