@@ -45,27 +45,31 @@ export type DriveType = 'fold' | 'hard' | 'soft' | 'tube'
 // Steps per bar: 16ths (16), 16th triplets (24) or 8th triplets (12).
 export type DrumGrid = 12 | 16 | 24
 
-// One drum pattern: a row of steps per track, as many as its grid has in a bar.
+// One drum pattern: a row of steps per track, as many as its grid has in a bar
+// for each of its bars.
 export type DrumPattern = Record<TrackId, DrumStep[]>
 
 export interface Drums {
+  // Each pattern's length in bars (1-4), A-H; absent (or a pattern left out) is one.
+  bars?: number[]
   bpm: number
   // 0-1: the drums' own bitcrusher (0 = off, 1 the crunchiest).
   crush?: number
-  // Each pattern's fill's track lengths, A-D, as for `lengths`.
+  // Each pattern's fill's track lengths, A-H, as for `lengths`.
   fillLengths?: TrackLengths[]
-  // Each pattern's fill bar, A-D, saved like a pattern and on its grid; null (or
-  // left out) for a fill never edited, which plays its pattern.
+  // Each pattern's fill bar, A-H, saved like a pattern and on its grid; null (or
+  // left out) for a fill never edited, which plays its pattern's last bar.
   fills?: (null | Partial<Record<TrackId, SavedStep[]>>)[]
-  // Each pattern's grid, A-D; absent (or a pattern left out) is 16ths.
+  // Each pattern's grid, A-H; absent (or a pattern left out) is 16ths.
   grids?: DrumGrid[]
   // 0-1: how far each hit drifts, at random, from its time and velocity (0 = exact).
   humanize?: number
   // Absent in songs saved before kits: 'classic'.
   kit?: KitId
-  // Each pattern's track lengths, A-D; absent (or a pattern left out) is whole bars.
+  // Each pattern's track lengths, A-H; absent (or a pattern left out) is the whole pattern.
   lengths?: TrackLengths[]
-  // Patterns A-D; saved songs may omit tracks, and store plain on/off steps.
+  // Patterns A-H (songs saved before E-H have four); saved songs may omit tracks,
+  // and store plain on/off steps.
   patterns: Partial<Record<TrackId, SavedStep[]>>[]
   // 50 (straight) to 75: how late every second 16th lands, as MPC-style swing
   // (on the 16th grid only).
@@ -258,7 +262,7 @@ export interface Section {
   fill?: boolean
   name?: null | string
   pads: number[]
-  // Drum pattern index (0-3 = A-D) when `drums` is on.
+  // Drum pattern index (0-7 = A-H) when `drums` is on.
   pattern: number
 }
 

@@ -31,7 +31,7 @@ test('a saved song loads into the mirrors and saves back the same', () => {
 
   expect(store.synth).toStrictEqual({ filter_cutoff: 300 })
   expect(store.drums.bpm).toBe(140)
-  expect(store.drums.patterns).toHaveLength(4)
+  expect(store.drums.patterns).toHaveLength(8) // saved with four: E-H start empty
   expect(store.drums.patterns[0]?.kick[0]?.on).toBe(true)
   expect(store.loops[2]).toStrictEqual(loop(2))
   expect(store.arrangement[0]).toMatchObject({ bars: 8, name: 'Drop', pattern: 1 })
@@ -122,7 +122,7 @@ test("only an empty pattern's grid changes; the grid saves and undoes", () => {
   store.setStep(1, 'kick', 3, { on: true })
 
   const saved = store.toSongDoc().drums
-  expect(saved?.grids).toStrictEqual([16, 12, 16, 16])
+  expect(saved?.grids).toStrictEqual([16, 12, ...Array<number>(6).fill(16)])
   const reopened = new SongStore({ ...song, drums: saved ?? null })
   expect(reopened.drums.patterns[1]?.kick).toHaveLength(12)
   expect(reopened.drums.patterns[1]?.kick[3]?.on).toBe(true)
@@ -139,11 +139,11 @@ test('a track length stays within its grid, saves only when set, and resets with
 
   store.setLength(1, 'chat', 12)
   store.setLength(1, 'kick', 0) // at least one step
-  store.setLength(1, 'snare', 99) // the whole bar: no length of its own
+  store.setLength(1, 'snare', 99) // the whole pattern: no length of its own
   expect(store.drums.lengths[1]).toStrictEqual({ chat: 12, kick: 1 })
 
   const saved = store.toSongDoc().drums
-  expect(saved?.lengths).toStrictEqual([{}, { chat: 12, kick: 1 }, {}, {}])
+  expect(saved?.lengths).toStrictEqual([{}, { chat: 12, kick: 1 }, ...Array<object>(6).fill({})])
   const reopened = new SongStore({ ...song, drums: saved ?? null })
   expect(reopened.drums.lengths[1]).toStrictEqual({ chat: 12, kick: 1 })
 
@@ -524,13 +524,13 @@ test("a pattern's fill is the pattern until it's edited, then its own, and Reset
 
   // The first edit copies the pattern, then changes only that step.
   store.setStep(fill, 'snare', 12, { on: true })
-  expect(store.drums.customFills).toStrictEqual([true, false, false, false])
+  expect(store.drums.customFills).toStrictEqual([true, ...Array<boolean>(7).fill(false)])
   expect(store.drumPattern(fill)?.kick).toStrictEqual(store.drums.patterns[0]?.kick)
   expect(store.drumPattern(fill)?.snare[12]?.on).toBe(true)
   expect(store.drums.patterns[0]?.snare[12]?.on).toBe(false) // the pattern is untouched
   const saved = store.toSongDoc().drums
   expect(saved?.fills?.[0]?.snare?.[12]).toBe(true)
-  expect(saved?.fills?.slice(1)).toStrictEqual([null, null, null])
+  expect(saved?.fills?.slice(1)).toStrictEqual(Array<null>(7).fill(null))
 
   // Edited on its own from now: a change to the pattern no longer reaches it.
   store.setStep(0, 'chat', 3, { on: true })
@@ -560,5 +560,38 @@ test("a saved fill loads on its pattern's grid, with its own track lengths", () 
   expect(store.drumLengths(fillOf(0))).toStrictEqual({ snare: 6 })
   expect(store.toSongDoc().drums?.fillLengths?.[0]).toStrictEqual({ snare: 6 })
   // The other patterns' fills follow them.
-  expect(store.drums.customFills).toStrictEqual([true, false, false, false])
+  expect(store.drums.customFills).toStrictEqual([true, ...Array<boolean>(7).fill(false)])
+})
+
+test('a longer pattern repeats its bars and a shorter one drops them; bars save and undo, and the fill follows the last bar', () => {
+  const store = new SongStore(song, vi.fn())
+  store.setLength(0, 'chat', 12)
+  store.setBars(0, 3)
+  const kick = store.drums.patterns[0]?.kick
+  expect(kick).toHaveLength(48)
+  expect(kick?.filter((s) => s.on).length).toBe(3) // the song's downbeat, in every bar
+  expect(kick?.[32]?.on).toBe(true)
+
+  store.setStep(0, 'snare', 44, { on: true }) // bar 3, beat 4
+  const fill = store.drumPattern(fillOf(0))
+  expect(fill?.snare).toHaveLength(16)
+  expect(fill?.snare[12]?.on).toBe(true) // the last bar's snare
+  expect(store.drumLengths(fillOf(0))).toStrictEqual({ chat: 12 })
+
+  const saved = store.toSongDoc().drums
+  expect(saved?.bars).toStrictEqual([3, ...Array<number>(7).fill(1)])
+  expect(saved?.grids).toBe(undefined) // still 16ths
+  const reopened = new SongStore({ ...song, drums: saved ?? null })
+  expect(reopened.drums.patterns[0]?.snare[44]?.on).toBe(true)
+  expect(reopened.drumBars(0)).toBe(3)
+
+  // Down to one bar: bar 3's snare goes, and a length past the end with it.
+  store.setLength(0, 'chat', 20)
+  store.setBars(0, 1)
+  expect(store.drums.patterns[0]?.snare.some((s) => s.on)).toBe(false)
+  expect(store.drums.lengths[0]).toStrictEqual({})
+  expect(store.toSongDoc().drums).not.toHaveProperty('bars')
+  store.undo()
+  expect(store.drumBars(0)).toBe(3)
+  expect(store.drums.lengths[0]).toStrictEqual({ chat: 20 })
 })

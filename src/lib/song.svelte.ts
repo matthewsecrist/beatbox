@@ -25,7 +25,7 @@ import type {
   VoiceTweak
 } from './types.js'
 
-import { gridOf, STEPS } from './drums/engine.js'
+import { gridOf, MAX_BARS, STEPS } from './drums/engine.js'
 import { KIT_SOUNDS, TRACKS } from './drums/kits.js'
 import { DEFAULT_EFFECTS } from './effects.js'
 import { DEFAULT_PERFORMANCE } from './synth/arp.js'
@@ -42,18 +42,21 @@ import { DEFAULT_PARAMS, LFO_DEPTH_MAX } from './synth/engine.js'
 //   effects      Y.Map      delay/reverb settings and send levels (missing = default)
 //   drums        Y.Map      bpm, volume, swing, humanize, crush, kit, voices (track -> VoiceTweak: tune,
 //                           decay and any library instrument in place of the kit's; plain JSON),
+//                           bars (per pattern: how many bars it is, 1-4),
 //                           lengths (per pattern: track -> steps it loops over; plain JSON),
 //                           fillLengths (the same for each pattern's own fill)
-//   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[])
+//   patterns     Y.Array    Y.Map per drum pattern (track -> DrumStep[], every bar's steps)
 //   fills        Y.Array    Y.Map per pattern: its fill bar (track -> DrumStep[]); empty
-//                           follows the pattern until the fill is first edited
+//                           follows the pattern's last bar until the fill is first edited
 //   loops        Y.Map      slot ("0"-"7") -> Loop (plain JSON; a loop changes as a whole)
 //   arrangement  Y.Array    Y.Map per section (id, name, bars, drums, pattern, pads)
 
 export const PAD_COUNT = 8
-const DRUM_PATTERNS = 4
+// The drum patterns' names; arrangement sections pick one by index.
+export const PATTERN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+const DRUM_PATTERNS = PATTERN_LETTERS.length
 
-// Drum patterns are edited by "ref": 0-3 are patterns A-D, and FILL + i is pattern
+// Drum patterns are edited by "ref": 0-7 are patterns A-H, and FILL + i is pattern
 // i's fill, the bar a section can play last (a drum fill into the next section).
 export const FILL = DRUM_PATTERNS
 export const fillOf = (pattern: number): number => FILL + pattern
@@ -89,9 +92,9 @@ const CAPTURE_MS = 400
 const LOAD = Symbol('load')
 
 // The drum machine as the instruments see it: every setting filled in (each
-// pattern's grid is how many steps its rows have).
+// pattern's grid is how many steps its rows have over its bars).
 // Each pattern's fill is filled in too: an untouched one (`customFills` false) is
-// its pattern, with its lengths.
+// its pattern's last bar, with its lengths.
 export type DrumState = Required<
   Omit<Drums, 'fillLengths' | 'fills' | 'grids' | 'patterns' | 'voices'>
 > & {
@@ -107,6 +110,7 @@ export class SongStore {
   canRedo = $state(false)
   canUndo = $state(false)
   drums: DrumState = $state.raw({
+    bars: [],
     bpm: 0,
     crush: 0,
     customFills: [],
@@ -229,6 +233,11 @@ export class SongStore {
     this.edit(() => this.loopsMap.delete(String(slot)), true)
   }
 
+  // How many bars a pattern is, by ref; a fill is always one.
+  drumBars(ref: number): number {
+    return ref < FILL ? (this.drums.bars[ref] ?? 1) : 1
+  }
+
   // A pattern or a fill's track lengths, by ref.
   drumLengths(ref: number): TrackLengths | undefined {
     return ref < FILL ? this.drums.lengths[ref] : this.drums.fillLengths[ref - FILL]
@@ -292,6 +301,26 @@ export class SongStore {
     this.edit(() => this.followFill(index), true)
   }
 
+  // Makes pattern `index` 1-4 bars long, as one undo step: added bars repeat the
+  // ones it has, and bars taken off go, with any track length past the new end.
+  setBars(index: number, bars: number): void {
+    const map = this.patternsArray.get(index)
+    const pattern = this.drums.patterns[index]
+    const from = this.drumBars(index)
+    if (!map || !pattern || bars === from || bars < 1 || bars > MAX_BARS) return
+    const was = pattern.kick.length
+    const steps = (was / from) * bars
+    this.edit(() => {
+      for (const { id } of TRACKS)
+        map.set(
+          id,
+          Array.from({ length: steps }, (_, i) => ({ ...STEP, ...pattern[id][i % was] }))
+        )
+      this.writeLengths(index, within(this.drums.lengths[index] ?? {}, steps))
+      this.writeBars(index, bars)
+    }, true)
+  }
+
   // Drum tempo (also the song tempo), swing, humanize, crush and level.
   setDrums(patch: Partial<Pick<Drums, 'bpm' | 'crush' | 'humanize' | 'swing' | 'volume'>>): void {
     this.edit(() => {
@@ -308,12 +337,13 @@ export class SongStore {
 
   // Puts an empty pattern on another grid, as one undo step. A pattern with hits
   // keeps its grid (Clear it first), so no hit is ever moved or lost. Its tracks
-  // go back to whole bars.
+  // go back to the whole pattern.
   setGrid(index: number, grid: DrumGrid): void {
     const map = this.patternsArray.get(index)
     const pattern = this.drums.patterns[index]
     const fill = this.drums.fills[index]
-    if (!map || !pattern || !fill || gridOf(pattern) === grid) return
+    const bars = this.drumBars(index)
+    if (!map || !pattern || !fill || gridOf(pattern, bars) === grid) return
     const hits = (p: DrumPattern) => Object.values(p).some((row) => row.some((s) => s.on))
     // Its fill moves with it, so it too must be empty.
     if (hits(pattern) || hits(fill)) return
@@ -321,7 +351,7 @@ export class SongStore {
       for (const { id } of TRACKS)
         map.set(
           id,
-          Array.from({ length: grid }, () => ({ ...STEP }))
+          Array.from({ length: grid * bars }, () => ({ ...STEP }))
         )
       this.writeLengths(index, {})
       this.followFill(index)
@@ -353,14 +383,14 @@ export class SongStore {
   }
 
   // How many steps `track` loops over in pattern `index` (polymeter), kept to
-  // 1 up to its grid; the whole grid (or null) plays the whole bar again.
+  // 1 up to the pattern's steps; all of them (or null) plays the whole pattern again.
   setLength(index: number, track: TrackId, length: null | number): void {
     const pattern = this.drumPattern(index)
     const lengths = this.drumLengths(index)
     if (!pattern || !lengths) return
-    const grid = gridOf(pattern)
+    const total = pattern.kick.length
     const next = { ...lengths }
-    if (length === null || length >= grid) delete next[track]
+    if (length === null || length >= total) delete next[track]
     else next[track] = Math.max(1, Math.round(length))
     this.edit(() => {
       this.patternMap(index)
@@ -441,13 +471,16 @@ export class SongStore {
     this.writeSound(slot, params, true)
   }
 
-  // Replaces pattern `index` and its track lengths (none: whole bars), as one undo step.
-  setPattern(index: number, pattern: DrumPattern, lengths: TrackLengths = {}): void {
+  // Replaces pattern `index`, its track lengths (none: the whole pattern) and its
+  // `bars`, as one undo step. A fill, always one bar, takes the pattern's last bar.
+  setPattern(index: number, pattern: DrumPattern, lengths: TrackLengths = {}, bars = 1): void {
     if (!this.drumPattern(index)) return
+    const steps = index < FILL ? pattern : lastBar(pattern, bars)
     this.edit(() => {
       const map = this.patternMap(index)
-      for (const { id } of TRACKS) map?.set(id, [...pattern[id]])
-      this.writeLengths(index, { ...lengths })
+      for (const { id } of TRACKS) map?.set(id, [...steps[id]])
+      this.writeLengths(index, within(lengths, steps.kick.length))
+      if (index < FILL) this.writeBars(index, bars)
     }, true)
   }
 
@@ -516,7 +549,7 @@ export class SongStore {
     const synth = this.synthMap.toJSON() as Partial<SynthParams>
     const performance = this.performanceMap.toJSON() as Partial<Performance>
     const effects = this.effectsMap.toJSON() as Partial<Effects>
-    const { customFills, fillLengths, fills, lengths, ...drumState } = this.drums
+    const { bars, customFills, fillLengths, fills, lengths, ...drumState } = this.drums
     // Only edited fills are saved; one following its pattern is null.
     const savedFills = fills.map((f, i) => (customFills[i] ? savedPattern(f) : null))
     const savedFillLengths = fillLengths.map((l, i) => (customFills[i] ? l : {}))
@@ -538,9 +571,11 @@ export class SongStore {
       ),
       drums: {
         ...drumState,
+        // Saved only when a pattern is longer than a bar.
+        ...(bars.some((b) => b > 1) ? { bars } : {}),
         // Saved only when a pattern isn't on 16ths.
-        ...(this.drums.patterns.some((p) => gridOf(p) !== STEPS)
-          ? { grids: this.drums.patterns.map(gridOf) }
+        ...(this.drums.patterns.some((p, i) => gridOf(p, bars[i]) !== STEPS)
+          ? { grids: this.drums.patterns.map((p, i) => gridOf(p, bars[i])) }
           : {}),
         // Saved only when a fill has been edited.
         ...(savedFills.some(Boolean) ? { fills: savedFills } : {}),
@@ -589,20 +624,20 @@ export class SongStore {
   }
 
   // The map holding a pattern or fill's steps, to edit inside a transaction. A fill
-  // still following its pattern starts as a copy of it (steps and lengths), so the
-  // first edit changes only what it touches.
+  // still following its pattern starts as a copy of its last bar (steps and
+  // lengths), so the first edit changes only what it touches.
   private patternMap(ref: number): undefined | Y.Map<DrumStep[]> {
     if (ref < FILL) return this.patternsArray.get(ref)
     const index = ref - FILL
     const map = this.fillsArray.get(index)
-    const pattern = this.drums.patterns[index]
-    if (map && pattern && map.size === 0) {
+    const fill = this.drums.fills[index]
+    if (map && fill && map.size === 0) {
       for (const { id } of TRACKS)
         map.set(
           id,
-          pattern[id].map((s) => ({ ...s }))
+          fill[id].map((s) => ({ ...s }))
         )
-      this.writeLengths(ref, { ...this.drums.lengths[index] })
+      this.writeLengths(ref, { ...this.drums.fillLengths[index] })
     }
     return map
   }
@@ -616,18 +651,24 @@ export class SongStore {
       (this.drumsMap.get(key) as T | undefined) ?? fallback
     const lengths = get<TrackLengths[]>('lengths', [])
     const fillLengths = get<TrackLengths[]>('fillLengths', [])
+    const saved = get<number[]>('bars', [])
     const patterns = this.patternsArray.map((p) => p.toJSON() as DrumPattern)
-    // An untouched fill is its pattern.
+    const bars = patterns.map((_, i) => saved[i] ?? 1)
+    // An untouched fill is its pattern's last bar.
     const customFills = this.fillsArray.map((f) => f.size > 0)
+    const followed = patterns.map((p, i) => lastBar(p, bars[i] ?? 1))
     this.drums = {
+      bars,
       bpm: get('bpm', 0),
       crush: get('crush', 0),
       customFills,
       fillLengths: customFills.map((custom, i) =>
-        custom ? (fillLengths[i] ?? {}) : (lengths[i] ?? {})
+        custom
+          ? (fillLengths[i] ?? {})
+          : within(lengths[i] ?? {}, followed[i]?.kick.length ?? STEPS)
       ),
       fills: this.fillsArray.map((f, i) =>
-        customFills[i] ? (f.toJSON() as DrumPattern) : (patterns[i] ?? ({} as DrumPattern))
+        customFills[i] ? (f.toJSON() as DrumPattern) : (followed[i] ?? ({} as DrumPattern))
       ),
       humanize: get('humanize', 0),
       kit: get<KitId>('kit', 'classic'),
@@ -680,6 +721,14 @@ export class SongStore {
     else map.delete('automation')
   }
 
+  // Pattern `index`'s length in bars.
+  private writeBars(index: number, bars: number) {
+    this.drumsMap.set(
+      'bars',
+      Array.from({ length: DRUM_PATTERNS }, (_, i) => (i === index ? bars : this.drumBars(i)))
+    )
+  }
+
   private writeDrums(drums: Drums | null) {
     this.drumsMap.set('bpm', drums?.bpm ?? 110)
     this.drumsMap.set('volume', drums?.volume ?? 0.8)
@@ -688,6 +737,11 @@ export class SongStore {
     this.drumsMap.set('crush', drums?.crush ?? 0)
     this.drumsMap.set('kit', drums?.kit ?? 'classic')
     this.drumsMap.set('voices', fillVoices(drums?.voices))
+    const bars = (i: number) => drums?.bars?.[i] ?? 1
+    this.drumsMap.set(
+      'bars',
+      Array.from({ length: DRUM_PATTERNS }, (_, i) => bars(i))
+    )
     this.drumsMap.set(
       'lengths',
       Array.from({ length: DRUM_PATTERNS }, (_, i) => drums?.lengths?.[i] ?? {})
@@ -699,7 +753,9 @@ export class SongStore {
     const source = drums ? drums.patterns : [DEFAULT_PATTERN]
     const grid = (i: number) => drums?.grids?.[i] ?? STEPS
     this.patternsArray.push(
-      Array.from({ length: DRUM_PATTERNS }, (_, i) => patternMap(source[i] ?? {}, grid(i)))
+      Array.from({ length: DRUM_PATTERNS }, (_, i) =>
+        patternMap(source[i] ?? {}, grid(i) * bars(i))
+      )
     )
     // A fill saved as null (or left out) follows its pattern: an empty map.
     this.fillsArray.push(
@@ -741,6 +797,16 @@ export class SongStore {
 
 // A plain copy: Svelte state proxies can't go into a Yjs document.
 const plain = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+// A pattern's last bar (its rows are `bars` bars long): what an untouched fill plays.
+const lastBar = (p: DrumPattern, bars: number): DrumPattern =>
+  Object.fromEntries(
+    Object.entries(p).map(([id, row]) => [id, row.slice(row.length - row.length / bars)])
+  ) as DrumPattern
+
+// The track lengths shorter than `steps`; the rest play the whole pattern.
+const within = (lengths: TrackLengths, steps: number): TrackLengths =>
+  Object.fromEntries(Object.entries(lengths).filter(([, n]) => n < steps))
 
 // A saved pattern (or fill) as a map of full rows on its grid: it may omit tracks
 // or steps (off), and stores plain on/off for steps with default settings.

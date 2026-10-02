@@ -162,11 +162,21 @@ test('songs keep their parts, drop unknown params, and reject invalid ones', asy
     { loops: [{ ...loop, events: [{ midi: 128, on: true, t: 0 }] }] },
     { loops: [{ ...loop, slot: 8 }] },
     { arrangement: [{ bars: 4, pads: [8] }] },
-    { arrangement: [{ bars: 4, drums: true, pattern: 4 }] },
+    { arrangement: [{ bars: 4, drums: true, pattern: 8 }] },
     { arrangement: [{ automation: { synth_filter: [0, 5] }, bars: 4, pads: [] }] },
     { arrangement: [{ automation: { delay_mix: [-0.1, 0.5] }, bars: 4, pads: [] }] },
     { arrangement: [{ automation: { master_filter: [0] }, bars: 4, pads: [] }] },
-    { drums: { ...drums(120), patterns: Array<object>(5).fill({}) } },
+    { drums: { ...drums(120), patterns: Array<object>(9).fill({}) } },
+    { drums: { ...drums(120), bars: [5], patterns: [{}] } },
+    { drums: { ...drums(120), bars: [2], patterns: [{ chat: Array<boolean>(33).fill(true) }] } },
+    {
+      drums: {
+        ...drums(120),
+        bars: [2],
+        fills: [{ chat: Array<boolean>(32).fill(true) }],
+        patterns: [{}]
+      }
+    },
     { drums: { ...drums(120), patterns: [{ kick: [{ on: true, ratchet: 5 }] }] } },
     { drums: { ...drums(120), patterns: [{ chat: Array<boolean>(24).fill(true) }] } },
     { drums: { ...drums(120), grids: [20], patterns: [{}] } },

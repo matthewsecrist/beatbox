@@ -43,6 +43,8 @@ export const HELP = {
     'How much of the crunched sound you hear, blended with the clean one. 100% is all crunch. Lower keeps the clean sound underneath, so a bass stays deep and solid while the grit sits on top.',
   drive_type:
     'The kind of crunch. Soft is smooth and warm. Tube is warm too, but thicker, like an old amplifier. Hard is sharp and aggressive. Fold is wild and metallic, and it keeps changing as you turn up the Amount.',
+  drums_bars:
+    "How long this pattern is: 1 to 4 bars. Use more for a groove that changes before it repeats, like a snare pickup at the end of every second bar. Longer, it repeats the bars it has, so you can change just the new ones; shorter, it drops the bars at the end. The Bar buttons above the grid pick which bar you're editing. A section always starts its pattern from bar 1.",
   drums_chorus:
     'How much of the drums goes into the chorus. Usually off; as a flanger, a little makes hi-hats and cymbals swoosh.',
   drums_crush:
@@ -56,13 +58,13 @@ export const HELP = {
   drums_eq_mid:
     'Turns the middle of the drums up or down: the crack of the snare and the knock of the toms and congas. Down sounds scooped and hollow; up pushes the drums forward.',
   drums_euclid:
-    'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill the bar, and Apply writes it into the track you picked.',
+    'Spreads a number of hits as evenly as it can over a number of steps, the way drummers around the world have for centuries: 3 hits over 8 steps is the "tresillo" of Latin music, 5 over 8 a Cuban "cinquillo". Rotate slides them later. The pattern repeats to fill every bar, and Apply writes it into the track you picked.',
   drums_fill:
-    "Every pattern has a fill: one more bar that a section can play last instead, for a drum fill into the next section (turn Fill on in the arrangement). Pattern shows the pattern, Fill its fill. A fill starts as the same as its pattern; change it (a snare roll, a tom run, a crash) and it becomes its own. Reset makes it the same as the pattern again. While the drums play on their own, they loop whichever one you're editing.",
+    "Every pattern has a fill: one more bar that a section can play last instead, for a drum fill into the next section (turn Fill on in the arrangement). Pattern shows the pattern, Fill its fill. A fill starts as the same as its pattern's last bar; change it (a snare roll, a tom run, a crash) and it becomes its own. Reset makes it the same again. While the drums play on their own, they loop whichever one you're editing.",
   drums_grid:
     'How many squares a bar has in this pattern. 1/16 is 16, four to a beat, for most beats. 1/16 triplets fits six in a beat, for rolling trap hi-hats and fast drum rolls; 1/8 triplets fits three, for a shuffle, a 12/8 blues or a swung, loping groove. Pick it before you start: it only changes while the pattern is empty, so no hit ever moves. To switch a pattern with hits, Clear it first.',
   drums_length:
-    'How many squares this track plays before it starts over. Every track plays the whole bar by default; a shorter one loops on its own and drifts against the others, like hi-hats over 12 squares against a kick over 16, so the beat changes from bar to bar before it lines up again. Squares past the end are dimmed and stay silent. Patterns still change on the bar line.',
+    'How many squares this track plays before it starts over. Every track plays the whole pattern by default; a shorter one loops on its own and drifts against the others, like hi-hats over 12 squares against a kick over 16, so the beat changes from bar to bar before it lines up again. Squares past the end are dimmed and stay silent. Everything starts over when a new pattern or section starts.',
   drums_level: 'How loud the drums are overall, compared with the synth and the loops.',
   drums_pan:
     'Where the whole drum kit sits between the left and right speakers. C is the middle; turning it one way fades the other side out. Each drum also has its own Pan in the Kit tab.',
