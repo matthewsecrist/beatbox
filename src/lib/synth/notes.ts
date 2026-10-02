@@ -1,4 +1,4 @@
-import type { Loop, LoopEvent } from '../types.js'
+import type { Loop, LoopEvent, NoteBend } from '../types.js'
 
 import { BEATS_PER_BAR } from '../transport.js'
 
@@ -7,6 +7,7 @@ import { BEATS_PER_BAR } from '../transport.js'
 // editor converts to notes when it opens a loop and back to events on each edit.
 
 export interface Note {
+  bend?: NoteBend
   id: number
   // Beats; a note may end at the loop end but never past it.
   length: number
@@ -27,6 +28,15 @@ export const MIN_LENGTH = 1 / 16
 
 let nextId = 1
 export const newNoteId = (): number => nextId++
+
+// Durations use the caller's units (beats in the editor, seconds in the engine).
+// Oversize ramps meet at zero instead of crossing; zero offsets cost no duration.
+export function bendDurations(bend: NoteBend | undefined, length: number): [number, number] {
+  const into = bend?.in?.semitones ? bend.in.duration : 0
+  const out = bend?.out?.semitones ? bend.out.duration : 0
+  const scale = into + out > length ? Math.max(0, length) / (into + out) : 1
+  return [into * scale, out * scale]
+}
 
 const EPSILON = 1e-6
 
@@ -55,7 +65,13 @@ export function clampNote(
 export function eventsFromNotes(notes: Note[], bpm: number): LoopEvent[] {
   const sec = (beat: number) => Math.round((beat * 60 * 1000) / bpm) / 1000
   const events = notes.flatMap((n): LoopEvent[] => [
-    { midi: n.midi, on: true, t: sec(n.start), ...(n.velocity < 1 && { velocity: n.velocity }) },
+    {
+      midi: n.midi,
+      on: true,
+      t: sec(n.start),
+      ...(n.velocity < 1 && { velocity: n.velocity }),
+      ...(n.bend && { bend: n.bend })
+    },
     { midi: n.midi, on: false, t: sec(n.start + n.length) }
   ])
   return events.sort((a, b) => a.t - b.t || Number(a.on) - Number(b.on))
@@ -93,7 +109,7 @@ export function notesFromLoop(loop: Pick<Loop, 'events' | 'length'>, bpm: number
   const beats =
     Math.max(1, Math.ceil((loop.length * toBeats) / BEATS_PER_BAR - BAR_TOLERANCE)) * BEATS_PER_BAR
   const notes: Note[] = []
-  const held = new Map<number, { start: number; velocity: number }>()
+  const held = new Map<number, { bend?: NoteBend; start: number; velocity: number }>()
   const close = (midi: number, end: number) => {
     const on = held.get(midi)
     if (on === undefined) return
@@ -103,7 +119,8 @@ export function notesFromLoop(loop: Pick<Loop, 'events' | 'length'>, bpm: number
       length: Math.max(MIN_LENGTH, end - on.start),
       midi,
       start: on.start,
-      velocity: on.velocity
+      velocity: on.velocity,
+      ...(on.bend && { bend: on.bend })
     })
   }
   const events = [...loop.events].sort((a, b) => a.t - b.t || Number(a.on) - Number(b.on))
@@ -111,7 +128,7 @@ export function notesFromLoop(loop: Pick<Loop, 'events' | 'length'>, bpm: number
     const beat = round(Math.round((e.t * toBeats) / TICK) * TICK)
     if (e.on) {
       close(e.midi, beat) // a repeated note-on ends the previous one
-      held.set(e.midi, { start: beat, velocity: e.velocity ?? 1 })
+      held.set(e.midi, { start: beat, velocity: e.velocity ?? 1, ...(e.bend && { bend: e.bend }) })
     } else {
       close(e.midi, beat)
     }

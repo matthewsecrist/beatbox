@@ -209,12 +209,21 @@ export interface Loop {
 }
 
 export interface LoopEvent {
+  // Note-on only; absent (or zero offsets) leaves the note's pitch unchanged.
+  bend?: NoteBend
   midi: number
   on: boolean
   // Seconds from the start of the loop.
   t: number
   // How hard a note-on is played, 0-1; absent means full (1).
   velocity?: number
+}
+
+// Offsets relative to a note's pitch; durations in beats in saved loops/editor notes.
+// Bend-in returns from its offset to pitch; bend-out reaches its offset at note-off.
+export interface NoteBend {
+  in?: { duration: number; semitones: number }
+  out?: { duration: number; semitones: number }
 }
 
 // How the synth keyboard turns keys into notes: a chord per key, and the

@@ -5,6 +5,7 @@ import type { LibraryBeat, LibraryItem } from './library.js'
 import { beatPattern, filterLibrary, LIBRARY, libraryLoop, parseScore } from './library.js'
 import { songSchema } from './server/validation.js'
 import { SongStore, STEP } from './song.svelte.js'
+import { notesFromLoop } from './synth/notes.js'
 import { BEATS_PER_BAR } from './transport.js'
 
 test('every library loop and beat can be saved in a song, under its own name', () => {
@@ -93,6 +94,31 @@ test('a library loop lasts its bars at the song tempo, with every note inside', 
   const loop = libraryLoop(item, 0, 120) // 0.5 s per beat
   expect(loop.length).toBe(4 * BEATS_PER_BAR * 0.5)
   expect(loop.events.every((e) => e.t <= loop.length)).toBe(true)
+})
+
+test.each([
+  ['Distorted 808 Slide', { out: { duration: 0.5, semitones: -12 } }],
+  ['Neon Fuzz Solo', { in: { duration: 0.5, semitones: -2 } }]
+])('%s keeps per-note bends through song validation and reload', (name, bend) => {
+  const item = LIBRARY.find((entry) => entry.name === name)
+  if (item?.type !== 'Loop') throw new Error(`Missing library loop ${name}`)
+  const store = new SongStore()
+  store.setLoop(libraryLoop(item, 0, 90))
+  const saved = songSchema.parse({ ...store.toSongDoc(), name: 'Bends' })
+  const loaded = new SongStore(saved)
+  const loop = loaded.loops[0]
+  if (loop?.bpm == null) throw new Error('Missing saved loop or tempo')
+  const notes = notesFromLoop(loop, loop.bpm).notes
+  expect(
+    notes.filter((note) => note.bend).map(({ bend, start }) => ({ bend, start }))
+  ).toStrictEqual([
+    { bend, start: 0 },
+    { bend, start: 4 }
+  ])
+  expect(
+    notes.filter((note) => note.start !== 0 && note.start !== 4).every((note) => !note.bend)
+  ).toBe(true)
+  expect(loop.events.filter((event) => !event.on).every((event) => !event.bend)).toBe(true)
 })
 
 test('beat marks become accented, soft, chance and ratchet steps; bad marks fail', () => {

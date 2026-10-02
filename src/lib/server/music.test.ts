@@ -274,3 +274,45 @@ test('deleting a user deletes their songs and presets', async () => {
   expect(await db.select().from(songs)).toStrictEqual([])
   expect(await db.select().from(presets)).toStrictEqual([])
 })
+
+test('songs preserve per-note bends and reject malformed ramps before storing', async () => {
+  const bend = { in: { duration: 128, semitones: -48 }, out: { duration: 0.125, semitones: 48 } }
+  const events = [
+    { bend, midi: 64, on: true, t: 0 },
+    { midi: 64, on: false, t: 1 }
+  ]
+  const song = await music.createSong(me, { loops: [{ ...loop, events }], name: 'Bends' })
+  expect((await savedSong(song.id)).loops[0]?.events).toStrictEqual(events)
+  const invalid: unknown[] = [
+    {},
+    null,
+    { into: bend.in },
+    { in: {} },
+    { in: { duration: 1 } },
+    { out: { ...bend.out, duration: 0 } },
+    { in: { ...bend.in, duration: -1 } },
+    { in: { ...bend.in, duration: 129 } },
+    { in: { ...bend.in, duration: Infinity } },
+    { in: { ...bend.in, duration: NaN } },
+    { in: { ...bend.in, semitones: -49 } },
+    { out: { ...bend.out, semitones: 49 } },
+    { out: { ...bend.out, semitones: Infinity } },
+    { out: { ...bend.out, semitones: NaN } },
+    { out: { ...bend.out, semitones: '12' } }
+  ]
+  for (const malformed of invalid) {
+    await expect(
+      music.updateSong(me, song.id, {
+        loops: [{ ...loop, events: [{ bend: malformed, midi: 64, on: true, t: 0 }] }],
+        name: 'Bends'
+      })
+    ).rejects.toThrow(InvalidError)
+  }
+  await expect(
+    music.updateSong(me, song.id, {
+      loops: [{ ...loop, events: [{ bend, midi: 64, on: false, t: 1 }] }],
+      name: 'Bends'
+    })
+  ).rejects.toThrow(InvalidError)
+  expect((await savedSong(song.id)).loops[0]?.events).toStrictEqual(events)
+})

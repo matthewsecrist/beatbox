@@ -17,8 +17,11 @@ interface FakeNode {
   kind: string
   loop?: boolean
   offset: FakeParam
+  onended?: () => void
   outputs: (FakeNode | FakeParam)[]
   Q: FakeParam
+  start?: Mock<AudioScheduledSourceNode['start']>
+  stop?: Mock<AudioScheduledSourceNode['stop']>
   type?: string
 }
 
@@ -609,4 +612,91 @@ test("a sound's chorus is only built once its mix is up, then follows the sound"
   expect(mix.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.2, 0, 0.02)
   expect(lines[0]?.delayTime?.setTargetAtTime).toHaveBeenLastCalledWith(0.015, 0, 0.02)
   expect(nodes.filter((n) => n.kind === 'merger')).toHaveLength(1) // built once
+})
+
+test('note bends add to pitch envelopes, detune, glide and vibrato, including the sub', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth(null, () => ctx)
+  synth.noteOn(57, 0, 'pad0:57', { glide: 0.1 })
+  clock.currentTime = 1
+  const own = { glide: 0.1, osc1_detune: 5, pitch_env_amount: 3, sub_level: 0.5 }
+  synth.noteOn(
+    69,
+    1,
+    'pad0:69',
+    own,
+    1,
+    { in: { duration: 0.25, semitones: -2 }, out: { duration: 0.5, semitones: 7 } },
+    2
+  )
+  const [envelope, bend] = nodes.filter((n) => n.kind === 'const')
+  const oscs = nodes.filter((n) => n.kind === 'osc').slice(4)
+  const [osc1, osc2, , , sub] = oscs
+  expect(bend?.outputs).toStrictEqual([osc1?.detune, osc2?.detune, sub?.detune])
+  expect(envelope?.offset.setValueAtTime).toHaveBeenCalledWith(300, 1)
+  expect(osc1?.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(440, 1.1)
+  expect(osc1?.detune.value).toBe(5)
+  expect(bend?.offset.setValueAtTime.mock.calls).toStrictEqual([
+    [-200, 1],
+    [0, 2.5]
+  ])
+  expect(bend?.offset.linearRampToValueAtTime.mock.calls).toStrictEqual([
+    [0, 1.25],
+    [700, 3]
+  ])
+  expect(bend?.start).toHaveBeenCalledWith(1)
+  synth.setOwnParams('pad0:', { ...own, lfo2_depth: 30, osc1_detune: 10 })
+  expect(osc1?.detune.setTargetAtTime).toHaveBeenCalledWith(10, 1, 0.01)
+  const depth = oscs[3]?.outputs[0]
+  expect(depth && 'gain' in depth ? depth.gain.setTargetAtTime : undefined).toHaveBeenCalledWith(
+    30,
+    1,
+    0.01
+  )
+  expect(bend?.offset.cancelScheduledValues).not.toHaveBeenCalled()
+  synth.noteOff('pad0:69', 3)
+  expect(bend?.stop).toHaveBeenCalledWith(3 + 0.5 + 0.05)
+  osc1?.onended?.()
+  expect(bend?.outputs).toStrictEqual([])
+})
+
+test('short-note bend ramps meet at zero without overwriting the incoming endpoint', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth(null, () => ctx)
+  synth.noteOn(
+    60,
+    1,
+    'pad0:60',
+    {},
+    1,
+    { in: { duration: 2, semitones: -12 }, out: { duration: 6, semitones: 7 } },
+    0.5
+  )
+  const bend = nodes.find((n) => n.kind === 'const')
+  expect(bend?.offset.setValueAtTime.mock.calls).toStrictEqual([[-1200, 1]])
+  expect(bend?.offset.linearRampToValueAtTime.mock.calls).toStrictEqual([
+    [0, 1.125],
+    [700, 1.5]
+  ])
+  synth.noteOff('pad0:60', 1.5)
+  synth.cancelPending((key) => key === 'pad0:60')
+  expect(bend?.stop).toHaveBeenLastCalledWith(1)
+})
+
+test('single-ended bends stay on pitch outside their ramp; keyboard and zero bends add no source', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth(null, () => ctx)
+  synth.noteOn(60)
+  synth.noteOn(62, 0, 'pad0:62', {}, 1, { in: { duration: 1, semitones: 0 } }, 2)
+  expect(nodes.filter((n) => n.kind === 'const')).toStrictEqual([])
+  synth.noteOn(64, 0, 'pad0:64', {}, 1, { in: { duration: 1, semitones: 2 } }, 2)
+  synth.noteOn(67, 0, 'pad0:67', {}, 1, { out: { duration: 0.5, semitones: -12 } }, 2)
+  const [into, out] = nodes.filter((n) => n.kind === 'const')
+  expect(into?.offset.setValueAtTime.mock.calls).toStrictEqual([[200, 0]])
+  expect(into?.offset.linearRampToValueAtTime.mock.calls).toStrictEqual([[0, 1]])
+  expect(out?.offset.setValueAtTime.mock.calls).toStrictEqual([
+    [0, 0],
+    [0, 1.5]
+  ])
+  expect(out?.offset.linearRampToValueAtTime.mock.calls).toStrictEqual([[-1200, 2]])
 })

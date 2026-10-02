@@ -872,6 +872,7 @@
       "bpm": 140,
       "events": [
         {
+          "bend": { "out": { "duration": 0.75, "semitones": -12 } },
           "midi": 53,
           "on": true,
           "t": 0
@@ -907,6 +908,7 @@
           "t": 1.554
         },
         {
+          "bend": { "out": { "duration": 0.75, "semitones": -12 } },
           "midi": 49,
           "on": true,
           "t": 1.714

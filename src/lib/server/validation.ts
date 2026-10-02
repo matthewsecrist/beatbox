@@ -198,6 +198,19 @@ const drums = z
     { message: 'a pattern or track has more steps than its grid and bars', path: ['patterns'] }
   )
 
+const bendRamp = z.strictObject({
+  duration: z.number().positive().max(128),
+  semitones: z.number().min(-48).max(48)
+})
+const bend = z
+  .strictObject({
+    in: bendRamp.exactOptional(),
+    out: bendRamp.exactOptional()
+  })
+  .refine((value) => value.in !== undefined || value.out !== undefined, {
+    message: 'a bend needs an in or out ramp'
+  })
+
 // One recorded loop pad.
 const loop = z.object({
   // Tempo the loop was recorded at; playback converts to beats so the loop follows
@@ -205,12 +218,18 @@ const loop = z.object({
   bpm: z.int().min(60).max(200).nullable().exactOptional(),
   events: z
     .array(
-      z.object({
-        midi: z.int().min(0).max(127),
-        on: z.boolean(),
-        t: z.number().min(0),
-        velocity: z.number().min(0).max(1).exactOptional()
-      })
+      z
+        .object({
+          bend: bend.exactOptional(),
+          midi: z.int().min(0).max(127),
+          on: z.boolean(),
+          t: z.number().min(0),
+          velocity: z.number().min(0).max(1).exactOptional()
+        })
+        .refine((event) => event.on || event.bend === undefined, {
+          message: 'only note-ons can bend',
+          path: ['bend']
+        })
     )
     .max(4000),
   // Seconds; one full cycle of the loop.
