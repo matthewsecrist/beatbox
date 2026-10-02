@@ -166,6 +166,45 @@ test('a pad started after the audio clock has run starts right away', () => {
   expect(synth.calls[0]).toStrictEqual(['on', 60, 10.05])
 })
 
+test('immediate previews start now on an idle, restarted or already-playing transport', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'preview:', oneBar, transport)
+  clock.now = 10
+  player.start('now')
+  expect(synth.calls[0]).toStrictEqual(['on', 60, 10])
+
+  player.stop()
+  synth.calls.length = 0
+  clock.now = 20
+  player.start('now')
+  expect(synth.calls[0]).toStrictEqual(['on', 60, 20])
+
+  player.stop()
+  synth.calls.length = 0
+  transport.acquire('drums')
+  clock.now = 20.8
+  player.start('now')
+  expect(synth.calls[0]).toStrictEqual(['on', 60, 20.8])
+  expect(transport.timeAt(0)).toBe(20.05)
+})
+
+test('an immediate one-shot preview stops after its single cycle', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'preview:', { ...oneBar, once: true }, transport)
+  clock.now = 10
+  player.start('now')
+  clock.now = 12
+  player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 60, 10],
+    ['off', 11]
+  ])
+  expect(player.playing).toBe(false)
+  expect(transport.running).toBe(false)
+})
+
 test('a pad started mid-bar waits for the next bar line', () => {
   const { clock, transport } = fakeAudio()
   const synth = spySynth()
