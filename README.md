@@ -124,7 +124,16 @@ sub and a pitch drop). Both are off at 0%, and a note only gets them if it start
 them turned up. Play it
 with the on-screen keyboard or your computer keyboard. It comes
 with factory presets (Acid Bass, Dubstep Wobble, Reese Bass, …), and you can
-save your own. The oscillator (with sub, noise and the pitch envelope), filter,
+save your own. **Browse presets…** opens a modal with search and **Source**,
+**Instrument** and **Genre** filters, like the Loop Browser. Factory tags come
+from the library; saved sounds and factory sounds without library tags are
+**Unclassified**. **Preview** starts immediately: while a pad's piano roll is
+open it plays that loop's notes with the original preset; otherwise it repeats
+an example note. The preset's own effects are included, without changing the
+song or applying song effects, mute, Chord or Arp. Previewing another sound,
+pressing Stop or closing the modal stops it.
+**Load** applies the sound to the keyboard, or to the pad whose piano roll is
+open, as one undo step. The oscillator (with sub, noise and the pitch envelope), filter,
 envelope (**Amp**), LFO (**Mod**), drive and glide controls, and the sound's own effects (**FX**), each have a tab in the
 synth editor.
 

@@ -33,10 +33,10 @@
   import { help } from './help.js'
   import Info from './Info.svelte'
   import PianoRoll from './PianoRoll.svelte'
+  import PresetBrowser from './PresetBrowser.svelte'
   import { PAD_COUNT } from './song.svelte.js'
   import { chordNotes, createArp } from './synth/arp.js'
   import { createSynth, DEFAULT_PARAMS, LFO_DEPTH_MAX, LFO_NOTES } from './synth/engine.js'
-  import { FACTORY_PRESETS } from './synth/factory_presets.js'
   import { createPlayer, createRecorder } from './synth/looper.js'
   import Tabs from './Tabs.svelte'
   import { BEATS_PER_BAR, transport } from './transport.js'
@@ -88,6 +88,7 @@
   const performance = $derived(store.performance)
   let presetName = $state('')
   let selectedId = $state('')
+  let presetOpen = $state(false)
   let status = $state('')
   let baseOctave = $state(4)
   // Keys down (keyboard midi -> the notes it plays, one per chord note), and how
@@ -439,6 +440,7 @@
 
   const ignored = (e: KeyboardEvent) =>
     e.ctrlKey ||
+    presetOpen ||
     e.metaKey ||
     e.altKey ||
     (e.target instanceof HTMLElement && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName))
@@ -544,21 +546,11 @@
     if (rollSlot !== null && !store.loops[rollSlot]) untrack(closeRoll)
   })
 
-  function loadPreset(e: Event & { currentTarget: HTMLSelectElement }) {
-    const id = e.currentTarget.value
-    if (!id) return
-    if (id.startsWith('factory:')) {
-      const preset = FACTORY_PRESETS[Number(id.slice(8))]
-      if (!preset) return
-      store.setParams({ ...DEFAULT_PARAMS, volume: params.volume, ...preset.params }, soundPad)
-      presetName = preset.name
-      return
-    }
-    void fetchPreset(id).then((reply) => {
-      if ('error' in reply) return showStatus(reply.error)
-      store.setParams({ ...DEFAULT_PARAMS, ...reply.params }, soundPad)
-      presetName = reply.name
-    })
+  function loadPreset(id: string, name: string, sound: Partial<SynthParams>) {
+    if (store.readOnly) return
+    store.setParams({ ...DEFAULT_PARAMS, volume: params.volume, ...sound }, soundPad)
+    selectedId = id
+    presetName = name
   }
 
   function savePreset() {
@@ -987,6 +979,18 @@
   {@render slider('fx_reverb_mix', 'Mix', 0, 1, 0.01, fmtPctOrOff)}
 {/snippet}
 
+{#if presetOpen}
+  <PresetBrowser
+    loadPreset={fetchPreset}
+    onclose={() => (presetOpen = false)}
+    onload={loadPreset}
+    {presets}
+    previewLoop={rollLoop}
+    {selectedId}
+    target={soundPad === null ? 'the keyboard' : `pad ${soundPad + 1}`}
+  />
+{/if}
+
 <div class="contents">
   <section
     id="synth"
@@ -1014,26 +1018,19 @@
     </div>
     {#if !store.readOnly}
       <div id="preset-bar" class="flex flex-wrap items-center gap-2">
-        <select
+        <button
           id="preset-select"
-          bind:value={selectedId}
-          onchange={loadPreset}
-          class="min-w-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 transition hover:border-amber-400/60 focus:border-amber-400 focus:outline-none"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="preset-browser"
+          onclick={() => {
+            onBlur()
+            presetOpen = true
+          }}
+          class={btn}
         >
-          <option value="">Load preset…</option>
-          <optgroup label="Factory">
-            {#each FACTORY_PRESETS as preset, i (preset.name)}
-              <option value={'factory:' + i}>{preset.name}</option>
-            {/each}
-          </optgroup>
-          {#if presets.length}
-            <optgroup label="Saved">
-              {#each presets as preset (preset.id)}
-                <option value={preset.id}>{preset.name}</option>
-              {/each}
-            </optgroup>
-          {/if}
-        </select>
+          Browse presets…
+        </button>
         <input
           id="preset-name"
           type="text"

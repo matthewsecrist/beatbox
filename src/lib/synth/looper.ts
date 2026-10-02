@@ -16,7 +16,7 @@ export interface Player {
   readonly playing: boolean
   // Swaps in edited notes/length; a playing loop keeps its place in the bar.
   setLoop(next: PlayerLoop): void
-  start(atBeat?: number): void
+  start(atBeat?: 'now' | number): void
   stop(): void
   stopAt(beat: number): void
   tick(): number
@@ -136,18 +136,18 @@ export function createPlayer(
       setEnd()
       tick()
     },
-    // Starts at `atBeat` (default: next bar line). Already playing: just cancels a
-    // pending stopAt(), so the loop keeps its phase (and a one-shot plays on to its end).
-    start(atBeat = transport.nextBar()): void {
+    // Default: next bar line; 'now': current beat after acquiring the grid.
+    // Already playing: cancel a pending stopAt() without changing phase or a one-shot's end.
+    start(atBeat: 'now' | number = transport.nextBar()): void {
       stopBeat = Infinity
       setEnd()
       if (playing) return
       load()
       transport.acquire(prefix)
       playing = true
-      startBeat = cycleStart = atBeat
+      startBeat = cycleStart = atBeat === 'now' ? transport.beatAt(transport.now()) : atBeat
       cursor = 0
-      shotEnd = loop.once ? atBeat + lengthBeats : Infinity
+      shotEnd = loop.once ? startBeat + lengthBeats : Infinity
       setEnd()
       tick()
     },
