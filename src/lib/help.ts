@@ -199,6 +199,14 @@ export const HELP = {
     'How loud the room sound is compared with the original. High sounds far away and dreamy; low sounds close and dry.',
   reverb_size:
     'How big the room sounds: small is a bedroom, big is a cathedral that rings for seconds.',
+  roll_bend:
+    "Bends one loop note without needing another note to slide to. Pick Bend, select a note, and set its bend in or out. The white line shows its pitch. Press Play to hear it; the live keyboard doesn't change.",
+  roll_bend_duration:
+    'How many beats the bend takes, following the tempo. In starts when the note starts; Out finishes when it ends. If the two times are longer than the note, both shrink together to fit.',
+  roll_bend_in:
+    'Where this note starts before sliding onto its written pitch, in semitones (12 is an octave). Negative starts below and scoops up; positive starts above and falls down. 0 turns the bend in off.',
+  roll_bend_out:
+    'Where this note ends after sliding away from its written pitch, in semitones (12 is an octave). Negative dives down; positive climbs up. 0 turns the bend out off.',
   section_bpm:
     "How fast this section goes, in beats per minute. Leave it empty to play it at the song tempo. Slow a bridge right down, or speed up a final chorus: when the song gets there, everything switches to this speed on the section's first beat, and back afterwards.",
   section_fill:

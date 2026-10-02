@@ -1,4 +1,4 @@
-import type { TrackId } from './types.js'
+import type { NoteBend, TrackId } from './types.js'
 
 // The Loop Browser's content; `library.ts` turns it into loops and patterns.
 //
@@ -9,6 +9,8 @@ import type { TrackId } from './types.js'
 // (Acid Bass, Deep Sub, …) glides between them. In brackets (`(C3)`, `(C3+E3)~`)
 // it's a ghost note, played at half velocity: the softer in-between notes of a
 // funk bass or an acid line. `sound` is a factory preset.
+// Optional `bends` are keyed by note start beat (including every note of a chord);
+// their signed pitch offsets are semitones and their ramp durations are beats.
 //
 // A beat is one 16-step drum pattern, one string per track (the ids in `TRACKS`,
 // `src/lib/drums/kits.ts`, percussion included): `x` hit, `X` accented hit, `o`
@@ -24,6 +26,7 @@ export interface BeatSpec {
 export type BeatTracks = Partial<Record<TrackId, string>>
 
 export interface LoopSpec {
+  bends?: Record<number, NoteBend>
   genre: string
   instrument: 'Arp' | 'Bass' | 'Chords' | 'Lead'
   name: string
@@ -1129,6 +1132,10 @@ export const LOOP_SPECS: LoopSpec[] = [
 
   // Synthwave
   {
+    bends: {
+      0: { in: { duration: 0.5, semitones: -2 } },
+      4: { in: { duration: 0.5, semitones: -2 } }
+    },
     genre: 'Synthwave',
     instrument: 'Lead',
     name: 'Neon Fuzz Solo',
@@ -1307,6 +1314,10 @@ export const LOOP_SPECS: LoopSpec[] = [
 
   // Trap
   {
+    bends: {
+      0: { out: { duration: 0.5, semitones: -12 } },
+      4: { out: { duration: 0.5, semitones: -12 } }
+    },
     genre: 'Trap',
     instrument: 'Bass',
     name: 'Distorted 808 Slide',

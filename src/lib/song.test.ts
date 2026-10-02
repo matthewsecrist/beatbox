@@ -595,3 +595,26 @@ test('a longer pattern repeats its bars and a shorter one drops them; bars save 
   expect(store.drumBars(0)).toBe(3)
   expect(store.drums.lengths[0]).toStrictEqual({ chat: 20 })
 })
+
+test('a loop bend saves, reloads and follows undo/redo; read-only songs refuse its edit', () => {
+  const bend = { in: { duration: 0.25, semitones: -2 }, out: { duration: 1, semitones: 12 } }
+  const bent: Loop = {
+    ...loop(2),
+    events: [
+      { bend, midi: 60, on: true, t: 0 },
+      { midi: 60, on: false, t: 1 }
+    ]
+  }
+  const store = new SongStore(song, vi.fn())
+  store.setLoop(bent)
+  expect(new SongStore(store.toSongDoc()).loops[2]).toStrictEqual(bent)
+  store.undo()
+  expect(store.loops[2]).toStrictEqual(loop(2))
+  store.redo()
+  expect(store.loops[2]).toStrictEqual(bent)
+  const readonly = new SongStore(store.toSongDoc(), vi.fn(), { readOnly: true })
+  readonly.setLoop(loop(2, 72))
+  readonly.undo()
+  expect(readonly.toSongDoc().loops).toStrictEqual([bent])
+  expect(readonly.canUndo).toBe(false)
+})

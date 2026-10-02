@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
 
+import { SongStore } from '../../song.svelte.js'
 import { EXAMPLES, getExample, listExamples } from './index.js'
 
 test('Midnight Arcade is an example with loops and an arrangement', () => {
@@ -39,4 +40,21 @@ test('examples keep their sections’ drum fills through validation', () => {
   const groove = example?.arrangement.find((s) => s.name === 'Groove')
   expect(groove?.fill).toBe(true)
   expect(example?.drums?.fills?.[groove?.pattern ?? -1]).toBeTruthy()
+})
+
+test.each([
+  ['trap', 0, 53, { out: { duration: 0.75, semitones: -12 } }],
+  ['midnight-arcade', 3, 76, { in: { duration: 0.5, semitones: -2 } }]
+])('%s preserves its expressive note bends when opened', (slug, slot, midi, bend) => {
+  const example = getExample(slug)
+  if (!example) throw new Error(`Missing example ${slug}`)
+  const store = new SongStore(example)
+  const loop = store.loops.find((loop) => loop?.slot === slot)
+  expect(loop?.events.find((event) => event.on && event.t === 0)).toStrictEqual({
+    bend,
+    midi,
+    on: true,
+    t: 0
+  })
+  expect(loop?.events.filter((event) => !event.on).every((event) => !event.bend)).toBe(true)
 })

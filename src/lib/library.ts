@@ -1,5 +1,5 @@
 import type { BeatTracks } from './library_items.js'
-import type { DrumPattern, DrumStep, Loop, SynthParams, TrackId } from './types.js'
+import type { DrumPattern, DrumStep, Loop, NoteBend, SynthParams, TrackId } from './types.js'
 
 import { STEPS } from './drums/engine.js'
 import { TRACKS } from './drums/kits.js'
@@ -21,6 +21,7 @@ export type LibraryBeat = LibraryCommon & {
 export type LibraryItem = LibraryBeat | LibraryLoop
 
 export type LibraryLoop = LibraryCommon & {
+  bends?: Record<number, NoteBend>
   // [midi, start, length, velocity?], start and length in beats; no velocity is full.
   notes: LibraryNote[]
   params: Partial<SynthParams>
@@ -169,12 +170,17 @@ export function filterLibrary(
 }
 
 // The loop for pad `slot`, at the song tempo `bpm`.
-export function libraryLoop({ bars, notes, params }: LibraryLoop, slot: number, bpm: number): Loop {
+export function libraryLoop(
+  { bars, bends, notes, params }: LibraryLoop,
+  slot: number,
+  bpm: number
+): Loop {
   return loopFromNotes(
     { bpm, events: [], length: 0, params, slot },
     {
       beats: bars * BEATS_PER_BAR,
       notes: notes.map(([midi, start, length, velocity = 1], id) => ({
+        ...(bends?.[start] ? { bend: bends[start] } : {}),
         id,
         length,
         midi,

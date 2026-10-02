@@ -1,4 +1,4 @@
-import type { DriveType, LfoNote, LfoTarget, Ramp, SynthParams, Wave } from '../types.js'
+import type { DriveType, LfoNote, LfoTarget, NoteBend, Ramp, SynthParams, Wave } from '../types.js'
 
 import {
   type Chorus,
@@ -11,6 +11,7 @@ import {
   settle
 } from '../audio.js'
 import { DAMPING, DELAY_BEATS, impulse, MAX_DELAY } from '../effects.js'
+import { bendDurations } from './notes.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
@@ -316,12 +317,15 @@ export interface Synth {
   close(): void
   noteOff(key: VoiceKey, at?: number): void
   // `velocity` (0-1) scales the note's level, and its filter envelope by `filter_velocity`.
+  // Optional per-note bend; here its durations and the note's length are SECONDS.
   noteOn(
     midi: number,
     at?: number,
     key?: VoiceKey,
     own?: null | Partial<SynthParams>,
-    velocity?: number
+    velocity?: number,
+    bend?: NoteBend,
+    duration?: number
   ): void
   now(): number
   // A loop's changed sound, for its voices already sounding (keys starting `prefix`).
@@ -597,7 +601,9 @@ export function createSynth(
     at?: number,
     key: VoiceKey = midi,
     own: null | Partial<SynthParams> = null,
-    velocity = 1
+    velocity = 1,
+    bend?: NoteBend,
+    duration?: number
   ): void {
     const { ctx } = ensureContext()
     const p = own ? { ...DEFAULT_PARAMS, ...own } : params
@@ -697,6 +703,23 @@ export function createSynth(
       penv.connect(osc2.detune)
       if (sub) penv.connect(sub.osc.detune)
       srcs.push(penv)
+    }
+    if (bend && duration !== undefined && duration > 0) {
+      const [into, out] = bendDurations(bend, duration)
+      if (into || out) {
+        const pitch = ctx.createConstantSource()
+        pitch.offset.setValueAtTime(into ? (bend.in?.semitones ?? 0) * 100 : 0, t)
+        if (into) pitch.offset.linearRampToValueAtTime(0, t + into)
+        if (out) {
+          // Do not replace the in-ramp's endpoint when the two ramps meet.
+          if (duration - out > into) pitch.offset.setValueAtTime(0, t + duration - out)
+          pitch.offset.linearRampToValueAtTime((bend.out?.semitones ?? 0) * 100, t + duration)
+        }
+        pitch.connect(osc1.detune)
+        pitch.connect(osc2.detune)
+        if (sub) pitch.connect(sub.osc.detune)
+        srcs.push(pitch)
+      }
     }
     const v: Voice = {
       amp,

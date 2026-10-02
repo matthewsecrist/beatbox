@@ -1,4 +1,4 @@
-import { expect, test, vi } from 'vitest'
+import { expect, type Mock, test, vi } from 'vitest'
 
 import type { Loop } from '../types.js'
 
@@ -14,6 +14,15 @@ interface FakeNode {
   stopAt?: number
 }
 
+interface FakeParam {
+  cancelScheduledValues: Mock<AudioParam['cancelScheduledValues']>
+  exponentialRampToValueAtTime: Mock<AudioParam['exponentialRampToValueAtTime']>
+  linearRampToValueAtTime: Mock<AudioParam['linearRampToValueAtTime']>
+  setTargetAtTime: Mock<AudioParam['setTargetAtTime']>
+  setValueAtTime: Mock<AudioParam['setValueAtTime']>
+  value: number
+}
+
 function defined<T>(value: T | undefined): T {
   if (value === undefined) throw new Error('expected a value')
   return value
@@ -24,7 +33,7 @@ function defined<T>(value: T | undefined): T {
 function fakeAudio() {
   const clock = { now: 0 }
   const oscs: FakeNode[] = []
-  const param = () => ({
+  const param = (): FakeParam => ({
     cancelScheduledValues: vi.fn(),
     exponentialRampToValueAtTime: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
@@ -32,6 +41,7 @@ function fakeAudio() {
     setValueAtTime: vi.fn(),
     value: 0
   })
+  const bends: (FakeNode & { offset: FakeParam })[] = []
   const node = () => {
     const n: FakeNode & Record<string, unknown> = {
       connect: <T>(next: T) => next,
@@ -47,6 +57,17 @@ function fakeAudio() {
   }
   const ctx = {
     createBiquadFilter: () => node(),
+    createConstantSource() {
+      const source = { ...node(), offset: param() }
+      const n: FakeNode & { offset: FakeParam } = source
+      const scheduled = {
+        ...source,
+        start: (t: number) => (n.startAt = t),
+        stop: (t: number) => (n.stopAt = t)
+      }
+      bends.push(n)
+      return scheduled
+    },
     createConvolver: () => node(),
     createDelay: () => ({ ...node(), delayTime: param() }),
     createGain: () => node(),
@@ -67,7 +88,7 @@ function fakeAudio() {
   const getCtx = () => ctx as unknown as BaseAudioContext
   const transport = createTransport(getCtx)
   transport.setBpm(120) // 0.5 s per beat, 2 s per bar
-  return { clock, oscs, synth: createSynth({}, getCtx), transport }
+  return { bends, clock, oscs, synth: createSynth({}, getCtx), transport }
 }
 
 // Synth stand-in that records scheduled notes as [kind, midi|key, time].
@@ -576,4 +597,95 @@ test('a looping pad switched to play once finishes the cycle it is in, then stop
     ['on', 60, 2.05]
   ])
   expect(pad.playing).toBe(false)
+})
+
+test('loop bend ramps use absolute beats across a tempo map, not the current bpm', () => {
+  const { bends, clock, oscs, synth, transport } = fakeAudio()
+  transport.acquire('drums')
+  transport.setTempo([{ beat: 1, bpm: 60 }])
+  const loop: Loop = {
+    ...oneBar,
+    events: [
+      {
+        bend: { in: { duration: 2, semitones: -2 }, out: { duration: 1, semitones: 7 } },
+        midi: 60,
+        on: true,
+        t: 0
+      },
+      { midi: 60, on: false, t: 2 }
+    ]
+  }
+  const player = createPlayer(synth, 'pad0:', loop, transport)
+  player.start(0)
+  const ramp = defined(bends[0]).offset
+  // Beat 2 = 1.55 s; beat 3 = 2.55 s; note-off on beat 4 = 3.55 s.
+  expect(ramp.setValueAtTime.mock.calls).toStrictEqual([
+    [-200, 0.05],
+    [0, 2.55]
+  ])
+  expect(ramp.linearRampToValueAtTime.mock.calls).toStrictEqual([
+    [0, 1.55],
+    [700, 3.55]
+  ])
+  clock.now = 3.5
+  player.tick()
+  expect(defined(oscs[0]).stopAt).toBe(3.55 + 0.5 + 0.05)
+  player.stop()
+  transport.release('drums')
+})
+
+test('repeated bent notes pair with the next on, and an unclosed bend ends at the loop edge', () => {
+  const { bends, clock, oscs, synth, transport } = fakeAudio()
+  const bend = { in: { duration: 2, semitones: -12 }, out: { duration: 6, semitones: 7 } }
+  const player = createPlayer(
+    synth,
+    'pad0:',
+    {
+      ...oneBar,
+      events: [
+        { bend, midi: 60, on: true, t: 0 },
+        { bend, midi: 60, on: true, t: 0.5 }
+      ]
+    },
+    transport
+  )
+  player.start(0)
+  expect(defined(bends[0]).offset.linearRampToValueAtTime.mock.calls).toStrictEqual([
+    [0, 0.175],
+    [700, 0.55]
+  ])
+  clock.now = 0.5
+  player.tick()
+  expect(defined(oscs[0]).stopAt).toBe(0.55 + 0.5 + 0.05)
+  expect(defined(bends[1]).offset.linearRampToValueAtTime.mock.calls).toStrictEqual([
+    [0, 0.925],
+    [700, 2.05]
+  ])
+  clock.now = 2
+  player.tick()
+  expect(defined(oscs[OSCS_PER_VOICE]).stopAt).toBe(2.05 + 0.5 + 0.05)
+  player.stop()
+})
+
+test('stopping a bent loop cancels its pending ramp source along with its oscillators', () => {
+  const { bends, synth, transport } = fakeAudio()
+  const bend = { out: { duration: 1, semitones: -12 } }
+  const player = createPlayer(
+    synth,
+    'pad0:',
+    {
+      ...oneBar,
+      events: [
+        { bend, midi: 60, on: true, t: 0 },
+        { midi: 60, on: false, t: 0.03 }
+      ]
+    },
+    transport
+  )
+  player.start(0)
+  const source = defined(bends[0])
+  expect(source.startAt).toBe(0.05)
+  player.stop()
+  expect(source.stopAt).toBe(source.startAt)
+  expect(player.playing).toBe(false)
 })

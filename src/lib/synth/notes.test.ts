@@ -3,6 +3,7 @@ import { expect, test } from 'vitest'
 import type { Loop } from '../types.js'
 
 import {
+  bendDurations,
   clampNote,
   eventsFromNotes,
   fitToLength,
@@ -171,4 +172,25 @@ test('a dragged note stays inside the loop and the pitch range', () => {
     midi: 36,
     start: 2
   })
+})
+
+test('bends stay in beats through dragging, resizing, quantizing, trimming and saving', () => {
+  const bend = { in: { duration: 0.5, semitones: -2 }, out: { duration: 1, semitones: 7 } }
+  const bent = { ...note(60, 0.1, 2), bend }
+  const moved = clampNote({ ...bent, midi: 64, start: 3.1 }, 8, [36, 96])
+  const resized = clampNote({ ...moved, length: 1 }, 8, [36, 96])
+  const notes = fitToLength(quantize([resized], 0.25, 8), 3.5)
+  const saved = loopFromNotes(loop, { beats: 4, notes }, 110)
+  const restored = notesFromLoop(saved, 110).notes[0]
+  expect(restored).toMatchObject({ bend, length: 0.5, midi: 64, start: 3 })
+  expect(saved.events[1]).not.toHaveProperty('bend')
+  expect(bent).toMatchObject({ bend, length: 2, midi: 60, start: 0.1 })
+})
+
+test('oversize bends meet at zero, preserving their ratio; zero offsets take no time', () => {
+  const bend = { in: { duration: 2, semitones: -12 }, out: { duration: 6, semitones: 7 } }
+  expect(bendDurations(bend, 1)).toStrictEqual([0.25, 0.75])
+  expect(bendDurations(bend, 8)).toStrictEqual([2, 6])
+  expect(bendDurations({ ...bend, in: { duration: 128, semitones: 0 } }, 1)).toStrictEqual([0, 1])
+  expect(bendDurations(undefined, 1)).toStrictEqual([0, 0])
 })

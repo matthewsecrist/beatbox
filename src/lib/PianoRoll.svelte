@@ -2,9 +2,12 @@
   import { Play, Square, X } from '@lucide/svelte'
   import { onMount, untrack } from 'svelte'
 
-  import type { Loop } from './types.js'
+  import type { Loop, NoteBend } from './types.js'
 
+  import { HELP } from './help.js'
+  import Info from './Info.svelte'
   import {
+    bendDurations,
     clampNote,
     fitToLength,
     loopFromNotes,
@@ -71,6 +74,8 @@
   let sent = untrack(() => JSON.stringify(loop))
   let grid = $state(0.25)
   let selected: null | number = $state(null)
+  let mode: 'bend' | 'notes' = $state('notes')
+  const selectedNote = $derived(view.notes.find((n) => n.id === selected))
   // Length of the next drawn note: the last one drawn or resized.
   let drawLength = $state(0.25)
 
@@ -84,6 +89,18 @@
   let gridEl: HTMLDivElement | undefined = $state()
   let laneEl: HTMLDivElement | undefined = $state()
   let scroller: HTMLDivElement | undefined = $state()
+
+  function bendPath(note: Note): string {
+    const [into, out] = bendDurations(note.bend, note.length)
+    const y = ROW / 2
+    return `M 0 ${y - (note.bend?.in?.semitones ?? 0) * ROW} L ${(into / note.length) * 100} ${y} L ${(1 - out / note.length) * 100} ${y} L 100 ${y - (note.bend?.out?.semitones ?? 0) * ROW}`
+  }
+
+  function clearBend() {
+    if (!selectedNote?.bend) return
+    delete selectedNote.bend
+    commit()
+  }
 
   function commit() {
     const next = loopFromNotes($state.snapshot(loop), $state.snapshot(view), tempo)
@@ -99,6 +116,26 @@
   function setBars(n: number) {
     const beats = Math.min(MAX_BARS, Math.max(1, n)) * BEATS_PER_BAR
     view = { beats, notes: fitToLength(view.notes, beats) }
+    commit()
+  }
+
+  function setBend(side: 'in' | 'out', key: 'duration' | 'semitones', value: number) {
+    const note = selectedNote
+    if (!note || !Number.isFinite(value)) return
+    const bend: NoteBend = { ...note.bend }
+    const ramp = {
+      duration: Math.min(0.25, note.length / 2),
+      semitones: 0,
+      ...bend[side],
+      [key]:
+        key === 'semitones'
+          ? Math.min(48, Math.max(-48, value))
+          : Math.min(128, Math.max(1 / 192, value))
+    }
+    if (ramp.semitones === 0) delete bend[side]
+    else bend[side] = ramp
+    if (bend.in || bend.out) note.bend = bend
+    else delete note.bend
     commit()
   }
 
@@ -137,7 +174,7 @@
   }
 
   function onGridDown(e: PointerEvent) {
-    if (e.button !== 0 || e.target !== gridEl) return
+    if (mode === 'bend' || e.button !== 0 || e.target !== gridEl) return
     const { beat, midi } = pointAt(e)
     const note = clampNote(
       { id: newNoteId(), length: drawLength, midi, start: snapDown(beat, grid), velocity: 1 },
@@ -152,6 +189,8 @@
   function onNoteDown(e: PointerEvent, note: Note) {
     e.stopPropagation()
     if (e.button === 2) return
+    selected = note.id
+    if (mode === 'bend') return
     const edge = e.target instanceof HTMLElement && e.target.dataset.edge !== undefined
     onpreview(note.midi, note.velocity)
     beginDrag(e, note, edge ? 'resize' : 'move', false)
@@ -164,6 +203,7 @@
     const note = view.notes[index]
     if (!note) return
     selected = id
+    if (mode === 'bend' && e.key.startsWith('Arrow')) return
     const moves: Record<string, Partial<Note>> = {
       ArrowDown: { midi: note.midi - (e.shiftKey ? 12 : 1) },
       ArrowLeft: { start: note.start - grid },
@@ -356,6 +396,18 @@
         {/each}
       </select>
     </label>
+    <label class="flex items-center gap-2 text-xs text-zinc-400">
+      Edit
+      <select
+        id="roll-mode"
+        bind:value={mode}
+        class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-sm text-zinc-200"
+      >
+        <option value="notes">Notes</option>
+        <option value="bend">Bend</option>
+      </select>
+      <Info label="Bend" text={HELP.roll_bend} />
+    </label>
     <button
       id="roll-quantize"
       type="button"
@@ -388,6 +440,63 @@
     </button>
   </div>
 
+  {#if mode === 'bend'}
+    <div id="roll-bend" class="flex flex-wrap items-center gap-3 rounded-lg bg-zinc-950/60 p-3">
+      {#if selectedNote}
+        <span class="font-mono text-xs text-amber-300">{noteName(selectedNote.midi)}</span>
+        {#each ['in', 'out'] as side (side)}
+          {@const direction = side as 'in' | 'out'}
+          <label class="flex items-center gap-1.5 text-xs text-zinc-400">
+            Bend {side} (semitones)
+            <Info
+              label={`Bend ${side}`}
+              text={direction === 'in' ? HELP.roll_bend_in : HELP.roll_bend_out}
+            />
+            <input
+              id={`roll-bend-${side}`}
+              aria-label={`Bend ${side} (semitones)`}
+              type="number"
+              min="-48"
+              max="48"
+              step="1"
+              value={selectedNote.bend?.[direction]?.semitones ?? 0}
+              onchange={(e) => setBend(direction, 'semitones', e.currentTarget.valueAsNumber)}
+              class="w-16 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-200"
+            />
+          </label>
+          <label class="flex items-center gap-1.5 text-xs text-zinc-400">
+            {side === 'in' ? 'In' : 'Out'} time (beats)
+            <Info label={`Bend ${side} time`} text={HELP.roll_bend_duration} />
+            <input
+              id={`roll-bend-${side}-duration`}
+              aria-label={`Bend ${side} time (beats)`}
+              type="number"
+              min={1 / 192}
+              max="128"
+              step="any"
+              disabled={!selectedNote.bend?.[direction]}
+              value={selectedNote.bend?.[direction]?.duration ??
+                Math.min(0.25, selectedNote.length / 2)}
+              onchange={(e) => setBend(direction, 'duration', e.currentTarget.valueAsNumber)}
+              class="w-20 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-200 disabled:opacity-40"
+            />
+          </label>
+        {/each}
+        <button
+          id="roll-bend-clear"
+          type="button"
+          class={btn}
+          disabled={!selectedNote.bend}
+          onclick={clearBend}
+        >
+          Clear bend
+        </button>
+      {:else}
+        <p class="text-xs text-zinc-400">Select a note to bend it into or out of its pitch.</p>
+      {/if}
+    </div>
+  {/if}
+
   <div
     bind:this={scroller}
     class="relative max-h-80 overflow-auto rounded-lg border border-zinc-800 bg-zinc-950"
@@ -413,7 +522,9 @@
         bind:this={gridEl}
         id="roll-grid-area"
         role="application"
-        aria-label="Notes: click to add, drag to move, drag the right edge to resize, right-click to delete; a focused note moves with the arrow keys"
+        aria-label={mode === 'bend'
+          ? 'Bends: select a note, then set its bend in and out above'
+          : 'Notes: click to add, drag to move, drag the right edge to resize, right-click to delete; a focused note moves with the arrow keys'}
         class="relative flex-1 cursor-crosshair touch-none outline-none select-none focus-visible:ring-1 focus-visible:ring-amber-400/60"
         style="width: max(100%, {bars * BAR_PX}px); min-width: {bars *
           BAR_PX}px; background-image: linear-gradient(to right, rgb(113 113 122 / 0.55) 1px, transparent 1px), linear-gradient(to right, rgb(63 63 70 / 0.8) 1px, transparent 1px), linear-gradient(to right, rgb(39 39 42 / 0.9) 1px, transparent 1px); background-size: {100 /
@@ -437,7 +548,7 @@
           <button
             type="button"
             data-note={note.id}
-            aria-label={`${noteName(note.midi)} at beat ${note.start + 1}, ${note.length} beats, velocity ${Math.round(note.velocity * 100)}%`}
+            aria-label={`${noteName(note.midi)} at beat ${note.start + 1}, ${note.length} beats, velocity ${Math.round(note.velocity * 100)}%${note.bend ? `, bend in ${note.bend.in?.semitones ?? 0}, bend out ${note.bend.out?.semitones ?? 0} semitones` : ''}`}
             aria-pressed={selected === note.id}
             onpointerdown={(e) => onNoteDown(e, note)}
             oncontextmenu={(e) => {
@@ -448,7 +559,7 @@
             onkeydown={(e) => onNoteKey(e, note.id)}
             onfocus={() => (selected = note.id)}
             class={[
-              'absolute cursor-grab overflow-hidden rounded-sm border text-left font-mono text-[9px] leading-none text-zinc-900 active:cursor-grabbing',
+              'absolute cursor-grab rounded-sm border text-left font-mono text-[9px] leading-none text-zinc-900 active:cursor-grabbing',
               selected === note.id
                 ? 'z-10 border-white bg-amber-300 shadow shadow-amber-400/40'
                 : 'border-amber-600 bg-amber-400 hover:bg-amber-300'
@@ -456,8 +567,27 @@
             style="left: {pct(note.start)}; width: {pct(note.length)}; top: {(HIGHEST - note.midi) *
               ROW}px; height: {ROW - 1}px; opacity: {0.4 + 0.6 * note.velocity}"
           >
-            <span class="pointer-events-none pl-0.5">{noteName(note.midi)}</span>
-            <span data-edge class="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize"></span>
+            <span class="pointer-events-none block truncate pl-0.5">{noteName(note.midi)}</span>
+            {#if note.bend}
+              <svg
+                data-bend={note.id}
+                aria-hidden="true"
+                viewBox={`0 0 100 ${ROW}`}
+                preserveAspectRatio="none"
+                class="pointer-events-none absolute inset-0 size-full overflow-visible"
+              >
+                <path
+                  d={bendPath(note)}
+                  fill="none"
+                  stroke="white"
+                  stroke-width="1.5"
+                  vector-effect="non-scaling-stroke"
+                />
+              </svg>
+            {/if}
+            {#if mode === 'notes'}
+              <span data-edge class="absolute inset-y-0 right-0 w-1.5 cursor-ew-resize"></span>
+            {/if}
           </button>
         {/each}
 
@@ -521,8 +651,13 @@
   </div>
 
   <p class="text-xs text-zinc-500">
-    Click to add a note and drag to set its length · drag a note to move it, its right edge to
-    resize · right-click or double-click to delete · arrow keys nudge the selected note · drag up or
-    down in the Vel lane to set how hard notes play
+    {#if mode === 'bend'}
+      Select a note · negative Bend in scoops up, negative Bend out dives down · times follow the
+      tempo; if both bends are too long, they shrink together to fit · Play to hear the bends
+    {:else}
+      Click to add a note and drag to set its length · drag a note to move it, its right edge to
+      resize · right-click or double-click to delete · arrow keys nudge the selected note · drag up
+      or down in the Vel lane to set how hard notes play
+    {/if}
   </p>
 </section>

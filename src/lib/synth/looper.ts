@@ -1,8 +1,9 @@
 import type { Transport } from '../transport.js'
-import type { Loop, LoopEvent } from '../types.js'
+import type { Loop, LoopEvent, NoteBend } from '../types.js'
 import type { Synth } from './engine.js'
 
 import { BEATS_PER_BAR } from '../transport.js'
+import { bendDurations } from './notes.js'
 
 // Loop recording/playback on the shared transport's beat grid. Notes are
 // scheduled LOOKAHEAD seconds ahead from a ~25 ms timer, so playback stays tight
@@ -59,7 +60,7 @@ export function createPlayer(
 ): Player {
   let loop = initial
   let lengthBeats = 0
-  let events: (LoopEvent & { beat: number })[] = []
+  let events: (LoopEvent & { beat: number; end: number })[] = []
   let playing = false
   let startBeat = 0
   let cycleStart = 0
@@ -79,7 +80,30 @@ export function createPlayer(
     // Lengths are stored to the millisecond; snap to 1/192 beat so a loop doesn't
     // drift against the grid a little more on every cycle.
     lengthBeats = Math.max(1 / 192, Math.round(loop.length * toBeats * 192) / 192)
-    events = loop.events.map((e) => ({ ...e, beat: e.t * toBeats }))
+    events = loop.events
+      .map((e) => ({ ...e, beat: e.t * toBeats, end: lengthBeats }))
+      .sort((a, b) => a.beat - b.beat || Number(a.on) - Number(b.on))
+    const held = new Map<number, (typeof events)[number]>()
+    for (const event of events) {
+      const previous = held.get(event.midi)
+      if (previous) previous.end = Math.min(event.beat, lengthBeats)
+      if (event.on) held.set(event.midi, event)
+      else held.delete(event.midi)
+    }
+    // Old takes may leave notes held across cycles. Only bent notes need a real
+    // note-off at their implied loop-end, where their outgoing ramp lands.
+    for (const event of held.values()) {
+      if (event.bend) {
+        events.push({
+          beat: lengthBeats,
+          end: lengthBeats,
+          midi: event.midi,
+          on: false,
+          t: loop.length
+        })
+      }
+    }
+    events.sort((a, b) => a.beat - b.beat || Number(a.on) - Number(b.on))
   }
 
   // Stops notes already scheduled or sounding, so the loop can be rescheduled.
@@ -187,7 +211,27 @@ export function createPlayer(
       if (at >= now + LOOKAHEAD) break
       const key = prefix + e.midi
       if (e.on) {
-        synth.noteOn(e.midi, at, key, loop.params, e.velocity)
+        const end = Math.min(cycleStart + e.end, endBeat)
+        const duration = Math.max(0, transport.timeAt(end) - at)
+        let bend: NoteBend | undefined
+        if (e.bend) {
+          const [into, out] = bendDurations(e.bend, end - beat)
+          bend = {
+            ...(e.bend.in && {
+              in: {
+                duration: transport.timeAt(beat + into) - at,
+                semitones: e.bend.in.semitones
+              }
+            }),
+            ...(e.bend.out && {
+              out: {
+                duration: transport.timeAt(end) - transport.timeAt(end - out),
+                semitones: e.bend.out.semitones
+              }
+            })
+          }
+        }
+        synth.noteOn(e.midi, at, key, loop.params, e.velocity, bend, duration)
         sounding.add(key)
       } else {
         synth.noteOff(key, at)
