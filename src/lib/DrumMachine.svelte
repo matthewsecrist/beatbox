@@ -28,6 +28,7 @@
     type Drums,
     gridOf,
     isAudible,
+    MAX_BARS,
     type PatternFn,
     STEPS
   } from './drums/engine.js'
@@ -36,21 +37,22 @@
   import { effects, panLabel } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
-  import { DEFAULT_PATTERN, fillOf, STEP } from './song.svelte.js'
+  import { DEFAULT_PATTERN, fillOf, PATTERN_LETTERS, STEP } from './song.svelte.js'
   import Tabs from './Tabs.svelte'
 
+  // A pattern `steps` long, every track's steps from `step`.
   const build = (
     step: (id: keyof DrumPattern, i: number) => boolean,
-    grid: DrumGrid = STEPS
+    steps: number = STEPS
   ): DrumPattern => {
     const pattern = { ...DEFAULT_PATTERN }
     for (const { id } of TRACKS) {
-      pattern[id] = Array.from({ length: grid }, (_, i) => ({ ...STEP, on: step(id, i) }))
+      pattern[id] = Array.from({ length: steps }, (_, i) => ({ ...STEP, on: step(id, i) }))
     }
     return pattern
   }
-  const empty = (grid: DrumGrid = STEPS): DrumPattern => build(() => false, grid)
-  const LETTERS = ['A', 'B', 'C', 'D']
+  const empty = (steps: number = STEPS): DrumPattern => build(() => false, steps)
+  const BAR_COUNTS = Array.from({ length: MAX_BARS }, (_, i) => i + 1)
   const GRID_LABELS: [DrumGrid, string][] = [
     [16, '1/16'],
     [24, '1/16 triplets'],
@@ -66,8 +68,11 @@
     snare: 0.2,
     tom: 0.1
   }
-  const randomPattern = (grid: DrumGrid): DrumPattern =>
-    build((id, i) => (id === 'kick' && i === 0) || Math.random() < (DENSITY[id] ?? 0), grid)
+  const randomPattern = (grid: DrumGrid, bars: number): DrumPattern =>
+    build(
+      (id, i) => (id === 'kick' && i % grid === 0) || Math.random() < (DENSITY[id] ?? 0),
+      grid * bars
+    )
 
   // The instrument library by part, for the Kit tab's sound pickers.
   const LIBRARY = TRACKS.map((part) => ({
@@ -161,24 +166,30 @@
   ]
   let tab: Tab = $state('steps')
 
-  // Patterns A-D; arrangement sections pick one by index.
+  // Patterns A-H; arrangement sections pick one by index.
   const patterns = $derived(store.drums.patterns)
   const volume = $derived(store.drums.volume)
   const swing = $derived(store.drums.swing)
   const humanize = $derived(store.drums.humanize)
   const crush = $derived(store.drums.crush)
-  let picked = $state(0) // pattern tab picked (A-D)
+  let picked = $state(0) // pattern tab picked (A-H)
   let fillShown = $state(false) // showing that pattern's fill bar instead
   // What the grid edits, as a pattern ref: the pattern, or its fill.
   const editing = $derived(fillShown ? fillOf(picked) : picked)
   const customFill = $derived(store.drums.customFills[picked] ?? false)
   let mode: Mode = $state('hits')
   const shown = $derived(store.drumPattern(editing) ?? empty())
-  // Steps per bar in the pattern being edited (16ths, or 16th or 8th triplets).
-  const grid = $derived(gridOf(shown))
-  // Steps each track of that pattern loops over (polymeter): its own, or the bar.
+  // How many bars that is (a fill is one), and steps per bar (16ths, or 16th or
+  // 8th triplets).
+  const bars = $derived(store.drumBars(editing))
+  const grid = $derived(gridOf(shown, bars))
+  const total = $derived(grid * bars)
+  // The bar the grid shows (UI-only); kept inside a pattern made shorter.
+  let page = $state(0)
+  const bar = $derived(Math.min(page, bars - 1))
+  // Steps each track of that pattern loops over (polymeter): its own, or all of them.
   const lengths = $derived(store.drumLengths(editing) ?? {})
-  const lengthOf = (id: TrackId) => Math.min(lengths[id] ?? grid, grid)
+  const lengthOf = (id: TrackId) => Math.min(lengths[id] ?? total, total)
   // The step the lock sliders edit (UI-only), with its settings and its voice.
   let lockStep: null | { step: number; track: TrackId } = $state(null)
   const locking = $derived.by(() => {
@@ -194,10 +205,15 @@
     locking && store.setLocks(editing, locking.track, locking.step, patch)
   let playingPattern = $state(-1) // pattern currently sounding, -1 when stopped
   // Raw: its steps go back into the song document, which can't take state proxies.
-  let clipboard: null | { lengths: TrackLengths; pattern: DrumPattern } = $state.raw(null)
+  let clipboard: null | { bars: number; lengths: TrackLengths; pattern: DrumPattern } =
+    $state.raw(null)
   let songPlaying = false // while the arrangement plays, it picks the pattern
   let playing = $state(false)
-  let current = $state(-1) // steps played since the start; -1 when stopped
+  let current = $state(-1) // steps played since its pattern started; -1 when stopped
+  // The bar of the pattern being edited that's sounding, -1 when it isn't.
+  const playingBar = $derived(
+    current >= 0 && editing === playingPattern ? Math.floor((current % total) / grid) : -1
+  )
   let drums: Drums | null = null
   // The saved kit last loaded or saved, with the song's kit as it was then. The Kit
   // menu shows it only while the song's kit still matches (not after an edit or undo).
@@ -239,9 +255,14 @@
     euclid(euclidCycle.hits, euclidCycle.steps, euclidCycle.rotation, grid)
   )
 
-  // Writes the rhythm into the track, as one undo step; its row stays in the grid.
+  // Writes the rhythm into the track, repeated over every bar, as one undo step;
+  // its row stays in the grid.
   function applyEuclid() {
-    store.setHits(editing, euclidTrack, euclidPreview)
+    store.setHits(
+      editing,
+      euclidTrack,
+      euclid(euclidCycle.hits, euclidCycle.steps, euclidCycle.rotation, total)
+    )
     added.add(euclidTrack)
   }
 
@@ -256,7 +277,11 @@
   // the engine's `audible`, so the pattern (and its grid) stays whole.
   const patternFn =
     (ref: number): PatternFn =>
-    () => ({ lengths: store.drumLengths(ref) ?? {}, steps: store.drumPattern(ref) ?? {} })
+    () => ({
+      bars: store.drumBars(ref),
+      lengths: store.drumLengths(ref) ?? {},
+      steps: store.drumPattern(ref) ?? {}
+    })
   const isEmpty = (p: DrumPattern | undefined) =>
     !p || Object.values(p).every((steps) => !steps.some((s) => s.on))
 
@@ -335,6 +360,7 @@
   function selectPattern(i: number, fill = fillShown) {
     picked = i
     fillShown = fill
+    page = 0
     if (playing && !songPlaying) drums?.start(patternFn(editing), undefined, editing)
   }
 
@@ -345,7 +371,8 @@
     playing = true
   }
 
-  const setEditing = (p: DrumPattern, l?: TrackLengths) => store.setPattern(editing, p, l)
+  const setEditing = (p: DrumPattern, l?: TrackLengths, b?: number) =>
+    store.setPattern(editing, p, l, b)
 
   // The Kit menu: a factory kit, or one of the user's saved kits ("saved:<id>").
   function pickKit(value: string) {
@@ -471,7 +498,7 @@
           role="group"
           aria-label="Pattern"
         >
-          {#each LETTERS as letter, i (letter)}
+          {#each PATTERN_LETTERS as letter, i (letter)}
             <button
               id={'drums-pattern-' + letter.toLowerCase()}
               type="button"
@@ -522,13 +549,13 @@
         </div>
         <span id="drums-editing" class="text-xs text-zinc-500"
           >{store.readOnly ? 'Showing' : 'Editing'}
-          {LETTERS[picked]}{fillShown
+          {PATTERN_LETTERS[picked]}{fillShown
             ? customFill
               ? ' fill'
-              : ` fill (the same as ${LETTERS[picked]} until you change it)`
+              : ` fill (the same as ${PATTERN_LETTERS[picked]}'s last bar until you change it)`
             : ''}</span
         >
-        <label class="mr-auto flex items-center gap-1 text-xs text-zinc-500" for="drums-grid">
+        <label class="flex items-center gap-1 text-xs text-zinc-500" for="drums-grid">
           <span class="flex items-center gap-1"
             >Grid<Info label="Grid" text={help('drums_grid') ?? ''} /></span
           >
@@ -549,12 +576,29 @@
             {/each}
           </select>
         </label>
+        <label class="mr-auto flex items-center gap-1 text-xs text-zinc-500" for="drums-bars">
+          <span class="flex items-center gap-1"
+            >Bars<Info label="Bars" text={help('drums_bars') ?? ''} /></span
+          >
+          <select
+            id="drums-bars"
+            value={bars}
+            disabled={store.readOnly || fillShown}
+            title={fillShown ? 'A fill is one bar' : undefined}
+            onchange={(e) => store.setBars(picked, Number(e.currentTarget.value))}
+            class="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 disabled:opacity-60"
+          >
+            {#each BAR_COUNTS as n (n)}
+              <option value={n}>{n}</option>
+            {/each}
+          </select>
+        </label>
         {#if !store.readOnly}
           <button
             id="drums-copy"
             type="button"
             class={btn}
-            onclick={() => (clipboard = { lengths, pattern: shown })}
+            onclick={() => (clipboard = { bars, lengths, pattern: shown })}
           >
             Copy
           </button>
@@ -563,7 +607,8 @@
             type="button"
             class={[btn, 'disabled:pointer-events-none disabled:opacity-40']}
             disabled={!clipboard}
-            onclick={() => clipboard && setEditing(clipboard.pattern, clipboard.lengths)}
+            onclick={() =>
+              clipboard && setEditing(clipboard.pattern, clipboard.lengths, clipboard.bars)}
           >
             Paste
           </button>
@@ -571,7 +616,7 @@
             id="drums-clear"
             type="button"
             class={btn}
-            onclick={() => setEditing(empty(grid))}
+            onclick={() => setEditing(empty(total), {}, bars)}
           >
             Clear
           </button>
@@ -579,7 +624,7 @@
             id="drums-randomize"
             type="button"
             class={btn}
-            onclick={() => setEditing(randomPattern(grid))}
+            onclick={() => setEditing(randomPattern(grid, bars), {}, bars)}
           >
             Randomize
           </button>
@@ -778,6 +823,37 @@
 
       <div id="drum-grid" class="space-y-1.5 overflow-x-auto">
         <div class="flex min-w-[40rem] items-center justify-end gap-2">
+          {#if bars > 1}
+            <div
+              id="drum-bars-pager"
+              class="mr-auto flex gap-1 rounded-lg bg-zinc-900 p-1"
+              role="group"
+              aria-label="Bar shown"
+            >
+              {#each BAR_COUNTS.slice(0, bars) as n (n)}
+                <button
+                  id={'drums-bar-' + n}
+                  type="button"
+                  aria-pressed={bar === n - 1}
+                  aria-label={`Bar ${n}${playingBar === n - 1 ? ' (playing)' : ''}`}
+                  onclick={() => (page = n - 1)}
+                  class={[
+                    'relative rounded-md px-3 py-1 text-xs font-semibold transition active:scale-95',
+                    bar === n - 1
+                      ? 'bg-zinc-100 text-zinc-900'
+                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                  ]}
+                >
+                  Bar {n}
+                  {#if playingBar === n - 1}
+                    <span
+                      class="absolute right-0.5 top-0.5 size-1.5 animate-pulse rounded-full bg-emerald-400"
+                    ></span>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
           <span
             class="flex w-16 shrink-0 items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
             >Length<Info label="Length" text={help('drums_length') ?? ''} /></span
@@ -829,7 +905,8 @@
               class={['grid flex-1 gap-1 transition-opacity', !heard && 'opacity-40']}
               style:grid-template-columns={`repeat(${grid}, minmax(0, 1fr))`}
             >
-              {#each shown[track.id] as step, i (i)}
+              {#each shown[track.id].slice(bar * grid, (bar + 1) * grid) as step, j (j)}
+                {@const i = bar * grid + j}
                 {@const detail = describeStep(step)}
                 <button
                   type="button"
@@ -842,7 +919,7 @@
                     'relative h-8 rounded text-[10px] font-bold text-zinc-900 transition-colors duration-75 disabled:pointer-events-none',
                     step.on
                       ? 'bg-amber-400 shadow shadow-amber-400/30 hover:bg-amber-300'
-                      : i % (grid / 4) === 0
+                      : j % (grid / 4) === 0
                         ? 'bg-zinc-700 hover:bg-zinc-600'
                         : 'bg-zinc-800 hover:bg-zinc-700',
                     step.on &&
@@ -878,7 +955,7 @@
               id={'drums-length-' + track.id}
               type="number"
               min="1"
-              max={grid}
+              max={total}
               value={len}
               disabled={store.readOnly}
               aria-label={`${track.label} length`}

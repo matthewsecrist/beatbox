@@ -100,6 +100,29 @@ test('a queued pattern switch takes over exactly on its bar', () => {
   expect(playing).toStrictEqual([0, 1])
 })
 
+test('a longer pattern plays its bars in turn and loops; a switch starts the next one from its first bar', () => {
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+  vi.stubGlobal('requestAnimationFrame', () => 0)
+  vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  const { clock, getCtx, kicks } = fakeAudio()
+  const transport = createTransport(getCtx)
+  transport.setBpm(120) // 16th = 0.125 s, bar = 2 s; grid starts at 0.05 s
+  const drums = createDrums({ getCtx, onStep: vi.fn(), transport })
+  // Two bars of 16ths: a kick on bar 1's downbeat and on bar 2's beat 3.
+  const twoBars = Array.from({ length: 32 }, (_, i) => ({ ...STEP, on: i === 0 || i === 24 }))
+
+  drums.start(() => ({ bars: 2, steps: { kick: twoBars } }), 0)
+  // Bar 4 switches to the same pattern again: it starts over from bar 1, not bar 2.
+  drums.start(() => ({ bars: 2, steps: { kick: twoBars } }), 12)
+  clock.currentTime = 8.2
+  vi.advanceTimersByTime(25)
+  drums.stop()
+
+  // Bar 1's downbeat, bar 2's beat 3, bar 3's downbeat (bar 1 again), then bar 4
+  // starts over on bar 1's downbeat, not bar 2's beat 3 (7.05 s).
+  expect(kicks).toStrictEqual([0.05, 3.05, 4.05, 6.05])
+})
+
 test('swing delays odd steps, ratchets split the step, probability skips hits', () => {
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
   vi.stubGlobal('requestAnimationFrame', () => 0)

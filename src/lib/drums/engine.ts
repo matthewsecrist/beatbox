@@ -22,14 +22,16 @@ import { transport as sharedTransport } from '../transport.js'
 import { KIT_SOUNDS, TRACKS } from './kits.js'
 
 // The straight 16th grid. A pattern can also be on 16th triplets (24 steps a
-// bar) or 8th triplets (12): its rows then have that many steps.
+// bar) or 8th triplets (12): its rows then have that many steps a bar, for each
+// of its 1-4 bars.
 export const STEPS = 16
 export const GRIDS: DrumGrid[] = [16, 24, 12]
+export const MAX_BARS = 4
 
-// A pattern's grid, from how many steps its rows have (none: 16ths).
-export function gridOf(pattern: Partial<Record<TrackId, DrumStep[]>>): DrumGrid {
+// A pattern's grid, from how many steps its rows have over its `bars` (none: 16ths).
+export function gridOf(pattern: Partial<Record<TrackId, DrumStep[]>>, bars = 1): DrumGrid {
   const steps = Object.values(pattern).find((row) => row.length)?.length
-  return GRIDS.find((grid) => grid === steps) ?? STEPS
+  return GRIDS.find((grid) => grid * bars === steps) ?? STEPS
 }
 
 const LOOKAHEAD_MS = 25
@@ -59,9 +61,11 @@ export interface Drums {
 
 const noop = (): void => undefined
 
-// Returns the pattern to play and its track lengths (none: every track plays the
-// whole bar); read on every step so edits are heard at once.
+// Returns the pattern to play, how many bars it is (none: one) and its track
+// lengths (none: every track plays the whole pattern); read on every step so
+// edits are heard at once.
 export type PatternFn = () => {
+  bars?: number
   lengths?: TrackLengths
   steps: Partial<Record<TrackId, DrumStep[]>>
 }
@@ -129,7 +133,7 @@ export function createDrums({
   let humanize = 0
   let running = false
   let nextBeat = 0 // step times come from the shared transport grid, 4 beats a bar
-  let origin = 0 // the beat it started on: bars (and each grid's steps) count from it
+  let origin = 0 // the beat its pattern started on: bars (and each grid's steps) count from it
   let endBeat = Infinity // set by stopAt(): no steps from this beat on
   let getPattern: PatternFn = () => ({ steps: {} })
   // Pattern switch waiting for its beat.
@@ -435,14 +439,16 @@ export function createDrums({
       if (t >= ctx.currentTime + SCHEDULE_AHEAD) break
       if (queued && nextBeat >= queued.beat - 1e-9) {
         getPattern = queued.fn
+        // The new pattern starts from its first bar.
+        origin = queued.beat
         onPattern(queued.tag)
         queued = null
       }
-      const { lengths = {}, steps: pattern } = getPattern()
+      const { bars = 1, lengths = {}, steps: pattern } = getPattern()
       // Which step of the pattern's grid this is, counted from its bar line. After
       // the grid changes mid-bar, the next beat may sit between the new grid's
       // lines: it moves on to the next one.
-      const steps = gridOf(pattern)
+      const steps = gridOf(pattern, bars)
       const bar = origin + Math.floor((nextBeat - origin) / 4 + 1e-9) * 4
       const exact = ((nextBeat - bar) * steps) / 4
       const step = Math.round(exact)
@@ -450,14 +456,15 @@ export function createDrums({
         nextBeat = bar + (Math.ceil(exact) * 4) / steps
         continue
       }
-      // Steps of this grid since the start: each track loops over its own length
-      // from there (polymeter), while patterns still change on the bar line.
+      // Steps of this grid since the pattern started: it loops over all its bars,
+      // and each track over its own length from there (polymeter).
       const count = Math.round((bar - origin) / 4) * steps + step
+      const total = steps * bars
       // A ratcheted step spreads its hits up to where the next step lands.
       const from = nextBeat + late(step, steps)
       const span = nextBeat + 4 / steps + late(step + 1, steps) - from
       for (const { id } of TRACKS) {
-        const hitStep = pattern[id]?.[count % Math.min(lengths[id] ?? steps, steps)]
+        const hitStep = pattern[id]?.[count % Math.min(lengths[id] ?? total, total)]
         if (!hitStep?.on || !audible(id) || hitStep.velocity <= 0) continue
         if (random() >= hitStep.probability) continue
         const gain = hitStep.velocity * (hitStep.accent ? ACCENT : 1)

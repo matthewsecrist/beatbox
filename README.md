@@ -146,15 +146,21 @@ song (not with presets, which leave them alone).
 
 **Drum machine**: kick, snare, clap, closed and open hat, and tom on a step
 grid, plus eight percussion tracks (rim shot, snap, shaker, conga, cowbell, wood
-block, ride and crash), with four patterns (**A–D**). Copy/Paste lets you build
-variations, and Randomize, Clear and Reset act on the pattern you're editing.
-Switching patterns while the drums play changes over on the next bar.
+block, ride and crash), with eight patterns (**A–H**). Copy/Paste lets you build
+variations, and Randomize, Clear and Reset act on the whole pattern you're editing.
+Switching patterns while the drums play changes over on the next bar, starting the
+new pattern from its first bar.
 
+- **Bars** makes a pattern 1 to 4 bars long (one undo step): longer, it repeats
+  the bars it has; shorter, it drops the ones at the end. The **Bar** buttons
+  above the grid page through its bars. A section starts its pattern from the
+  first bar and loops it. Reset goes back to the one-bar default groove, and
+  songs saved before Bars have one-bar patterns.
 - Every pattern also has a **Fill**: one more bar that a section can play last
   (its **Fill** in the arrangement) to roll into the next section. **Pattern /
-  Fill** next to A–D switches the grid between the two. A fill starts as the same
-  as its pattern; the first change makes it its own (a snare roll, a tom run, a
-  crash), and **Reset** makes it the same as its pattern again. Every edit, Copy,
+  Fill** next to A–H switches the grid between the two. A fill starts as the same
+  as its pattern's last bar; the first change makes it its own (a snare roll, a
+  tom run, a crash), and **Reset** makes it the same again. Every edit, Copy,
   Paste, Clear, Randomize, Euclid and the step locks work on a fill as on a
   pattern; it's on its pattern's grid. While the drums play on their own they
   loop whichever one you're editing, so you can hear a fill as you write it.
@@ -176,15 +182,16 @@ Switching patterns while the drums play changes over on the next bar.
   the grid's steps, and Loop Browser beats, Reset and songs saved before grids
   are 1/16.
 - **Length** (the box at the end of each row) sets how many steps that track
-  loops over, from 1 up to the grid: hats on 12 against a kick on 16 drift apart
-  and line up again every three bars (polymeter). Each track keeps counting across
-  bar lines from when the drums started, while patterns still change on the bar.
-  Steps past the end are dimmed and silent. Lengths are saved per pattern; Copy and
-  Paste carry them, and Clear, Randomize, Reset and changing the grid go back to
-  whole bars. Each change is one undo step.
+  loops over, from 1 up to the whole pattern: hats on 12 against a kick on 16
+  drift apart and line up again every three bars (polymeter). Each track keeps
+  counting across bar lines from when its pattern started; a new pattern, or a
+  new section, starts them all over. Steps past the end are dimmed and silent.
+  Lengths are saved per pattern; Copy and Paste carry them, and Clear, Randomize,
+  Reset and changing the grid go back to the whole pattern. Each change is one
+  undo step.
 - **Euclid** spreads a number of hits as evenly as possible over a cycle of steps
   (Bjorklund's algorithm: 3 over 8 is the tresillo, 5 over 8 the cinquillo),
-  turned **Rotate** steps later and repeated to fill the bar. Pick a track, and
+  turned **Rotate** steps later and repeated to fill every bar. Pick a track, and
   **Apply** writes the rhythm into it in the pattern you're editing, as one undo
   step; each step keeps its velocity, accent and other settings.
 - **Swing** (50–75%) pushes every second 16th late; 66% is a triplet shuffle.

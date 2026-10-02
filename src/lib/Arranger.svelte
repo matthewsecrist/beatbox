@@ -19,6 +19,7 @@
   import { effects, type Instrument } from './effects.js'
   import { help } from './help.js'
   import Info from './Info.svelte'
+  import { PATTERN_LETTERS } from './song.svelte.js'
   import { DEFAULT_PARAMS } from './synth/engine.js'
   import { transport } from './transport.js'
 
@@ -38,7 +39,6 @@
   // The song's own Tempo slider's range.
   const MIN_BPM = 60
   const MAX_BPM = 200
-  const DRUM_PATTERNS = ['A', 'B', 'C', 'D']
   const INSTRUMENTS: Instrument[] = ['synth', 'drums']
   const muted = new SvelteSet<Instrument>()
   const soloed = new SvelteSet<Instrument>()
@@ -493,7 +493,7 @@
             ]}
           >
             <option value={-1}>No drums</option>
-            {#each DRUM_PATTERNS as letter, p (letter)}
+            {#each PATTERN_LETTERS as letter, p (letter)}
               <option value={p}>Pattern {letter}</option>
             {/each}
           </select>
@@ -509,9 +509,9 @@
                 type="button"
                 aria-pressed={!!section.fill}
                 disabled={store.readOnly}
-                aria-label={`Section ${i + 1}: play pattern ${DRUM_PATTERNS[section.pattern] ?? ''}'s fill on the last bar`}
+                aria-label={`Section ${i + 1}: play pattern ${PATTERN_LETTERS[section.pattern] ?? ''}'s fill on the last bar`}
                 title={section.fill
-                  ? `Its last bar plays pattern ${DRUM_PATTERNS[section.pattern] ?? ''}'s fill`
+                  ? `Its last bar plays pattern ${PATTERN_LETTERS[section.pattern] ?? ''}'s fill`
                   : 'No fill'}
                 onclick={() => store.updateSection(i, { fill: !section.fill })}
                 class={[

@@ -85,7 +85,7 @@ const steps = z
       })
     ])
   )
-  .max(24)
+  .max(96)
 
 const pan = z.number().min(-1).max(1).exactOptional()
 
@@ -114,8 +114,8 @@ const voices = z.object({
   woodblock: voice.exactOptional()
 })
 
-// Steps a track loops over (polymeter), no more than its pattern's grid.
-const length = z.int().min(1).max(24).exactOptional()
+// Steps a track loops over (polymeter), no more than its pattern's steps.
+const length = z.int().min(1).max(96).exactOptional()
 const lengths = z.object({
   chat: length,
   clap: length,
@@ -153,45 +153,49 @@ const pattern = z.object({
   woodblock: steps.exactOptional()
 })
 
-// Drum machine state: tempo, feel, kit, level and patterns A-D, each on its own
-// grid (16ths, 16th or 8th triplets) with no more steps a bar than it has.
+// Drum machine state: tempo, feel, kit, level and patterns A-H, each on its own
+// grid (16ths, 16th or 8th triplets) and 1-4 bars long, with no more steps than
+// that; a fill is one bar.
 const drums = z
   .object({
+    // Each pattern's length in bars, A-H.
+    bars: z.array(z.int().min(1).max(4)).max(8).exactOptional(),
     bpm: z.int().min(60).max(200),
     crush: z.number().min(0).max(1).exactOptional(),
-    // Each pattern's fill's track lengths, A-D.
-    fillLengths: z.array(lengths).max(4).exactOptional(),
-    // Each pattern's fill bar, A-D, on its pattern's grid; null follows the pattern.
-    fills: z.array(pattern.nullable()).max(4).exactOptional(),
+    // Each pattern's fill's track lengths, A-H.
+    fillLengths: z.array(lengths).max(8).exactOptional(),
+    // Each pattern's fill bar, A-H, on its pattern's grid; null follows the pattern.
+    fills: z.array(pattern.nullable()).max(8).exactOptional(),
     grids: z
       .array(z.union([z.literal(12), z.literal(16), z.literal(24)]))
-      .max(4)
+      .max(8)
       .exactOptional(),
     humanize: z.number().min(0).max(1).exactOptional(),
     kit: kit.exactOptional(),
-    // Each pattern's track lengths, A-D.
-    lengths: z.array(lengths).max(4).exactOptional(),
-    // Patterns A-D (index 0-3); arrangement sections pick one by index.
-    patterns: z.array(pattern).min(1).max(4),
+    // Each pattern's track lengths, A-H.
+    lengths: z.array(lengths).max(8).exactOptional(),
+    // Patterns A-H (index 0-7); arrangement sections pick one by index.
+    patterns: z.array(pattern).min(1).max(8),
     swing: z.number().min(50).max(75).exactOptional(),
     voices: voices.exactOptional(),
     volume: z.number().min(0).max(1)
   })
   .refine(
-    ({ fills, grids, patterns }) => {
-      // A fill is on its pattern's grid.
-      const fits = (p: null | Partial<Record<string, unknown[]>>, i: number) =>
-        !p || Object.values(p).every((row) => (row?.length ?? 0) <= (grids?.[i] ?? 16))
-      return patterns.every(fits) && (fills ?? []).every(fits)
+    ({ bars, fillLengths, fills, grids, lengths, patterns }) => {
+      const grid = (i: number) => grids?.[i] ?? 16
+      const steps = (i: number) => grid(i) * (bars?.[i] ?? 1)
+      const fits = (p: null | Partial<Record<string, unknown[]>>, max: number) =>
+        !p || Object.values(p).every((row) => (row?.length ?? 0) <= max)
+      const short = (l: Record<string, number | undefined>, max: number) =>
+        Object.values(l).every((n) => (n ?? 0) <= max)
+      return (
+        patterns.every((p, i) => fits(p, steps(i))) &&
+        (fills ?? []).every((p, i) => fits(p, grid(i))) &&
+        (lengths ?? []).every((l, i) => short(l, steps(i))) &&
+        (fillLengths ?? []).every((l, i) => short(l, grid(i)))
+      )
     },
-    { message: 'a pattern has more steps than its grid', path: ['patterns'] }
-  )
-  .refine(
-    ({ fillLengths, grids, lengths }) =>
-      [lengths ?? [], fillLengths ?? []].every((all) =>
-        all.every((l, i) => Object.values(l).every((n) => n <= (grids?.[i] ?? 16)))
-      ),
-    { message: 'a track is longer than its grid', path: ['lengths'] }
+    { message: 'a pattern or track has more steps than its grid and bars', path: ['patterns'] }
   )
 
 // One recorded loop pad.
@@ -298,8 +302,8 @@ const section = z.object({
   name: z.string().trim().max(30).nullable().exactOptional(),
   // Loop pad slots (0-7) playing in this section.
   pads: z.array(z.int().min(0).max(7)).max(8).default([]),
-  // Which drum pattern (0-3 = A-D) plays when `drums` is on.
-  pattern: z.int().min(0).max(3).default(0)
+  // Which drum pattern (0-7 = A-H) plays when `drums` is on.
+  pattern: z.int().min(0).max(7).default(0)
 })
 
 // A saved drum kit: the factory kit it starts from, and its tracks' tweaks.
