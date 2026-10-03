@@ -8,10 +8,10 @@
   const id = $props.id()
   let hovered = $state(false)
   let open = $state(false)
-  // Placed against the window (fixed), so a scrolling or clipped container (a
-  // section card) can't cut it off. Near the right edge it opens to the left.
+  // The popover top layer escapes sticky rows' stacking contexts and clipping.
+  // Fixed to the window; near the right edge it opens to the left.
   let pos = $state({ left: 0, top: 0 })
-  let wrapper: HTMLSpanElement | undefined = $state()
+  let wrapper: HTMLSpanElement | undefined
 
   const WIDTH = 240 // px: the bubble's width (w-60)
   const GAP = 6 // px below the ⓘ (like mt-1.5)
@@ -31,7 +31,12 @@
 />
 
 <span
-  bind:this={wrapper}
+  {@attach (node: HTMLSpanElement) => {
+    wrapper = node
+    return () => {
+      wrapper = undefined
+    }
+  }}
   class="relative inline-flex align-middle normal-case tracking-normal"
   role="presentation"
   onpointerenter={(e) => {
@@ -61,16 +66,17 @@
   >
     <Info class="size-3.5" />
   </button>
-  <!-- Hidden (not just invisible) when closed, so it never widens the page. -->
+  <!-- A closed popover is hidden; an open one sits above every page stacking context. -->
   <span
     {id}
+    popover="manual"
+    {@attach (node: HTMLSpanElement) => {
+      node.togglePopover(open || hovered)
+    }}
     role="tooltip"
     style:left="{pos.left}px"
     style:top="{pos.top}px"
-    class={[
-      'pointer-events-none fixed z-50 w-60 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-left text-xs leading-relaxed font-normal text-zinc-200 shadow-xl shadow-black/60',
-      open || hovered ? 'block' : 'hidden'
-    ]}
+    class="pointer-events-none fixed inset-auto m-0 w-60 rounded-lg border border-zinc-700 bg-zinc-900 p-2.5 text-left text-xs leading-relaxed font-normal text-zinc-200 shadow-xl shadow-black/60"
   >
     {text}
   </span>

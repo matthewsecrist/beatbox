@@ -266,7 +266,7 @@
 
 <div
   id="song-bar"
-  class="flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-lg shadow-black/40"
+  class="sticky top-0 z-30 flex flex-wrap items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-lg shadow-black/40"
 >
   <button
     id="transport"

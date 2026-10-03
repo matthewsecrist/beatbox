@@ -58,7 +58,8 @@ removes a song for good, along with its link, views and likes.
 - Opening your own song's link shows it as others see it, with an **Edit it** link.
 
 **Layout**: the song bar (Play song, name, Save, **Tempo**, undo/redo, Loops, **Song
-settings**, New, Open) sits on top; **Song settings** opens the song's effects:
+settings**, New, Open) stays visible at the top of the screen while you scroll;
+**Song settings** opens the song's effects:
 delay, reverb, sends, bitcrusher, sidechain and compressor. Under it, **Tracks** lists the synth (with a row per loop pad) and the drums,
 next to the arrangement: a column per section. Pick
 a track's name to open it in the editor below it: the synth's **Pads, Osc, Filter,
@@ -140,8 +141,9 @@ synth editor.
 **ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
 drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet), the
 effects and the track levels have an ⓘ. Hover over it (or tap it, or tab to it) for a plain-English
-explanation of what it does, written for beginners. The explanations live in
-`src/lib/help.ts`, and a new setting without one fails the tests.
+explanation of what it does, written for beginners. The bubbles use the browser's
+popover top layer, so sticky tracks and other controls cannot cover or clip them.
+The explanations live in `src/lib/help.ts`, and a new setting without one fails the tests.
 
 **Chord and Arp** (the keyboard bar, next to the octave controls): **Chord** makes one key
 play a chord built up from it (major, minor, 7th, major/minor 7th, sus2, sus4,
