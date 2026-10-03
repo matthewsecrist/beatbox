@@ -587,6 +587,16 @@ export const LOOP_SPECS: LoopSpec[] = [
   {
     genre: 'Funk',
     instrument: 'Chords',
+    name: 'Muted Guitar Chanks',
+    score: [
+      '. . E4+G4+B4 . (E4+G4+B4) . . E4+G4+B4 . . E4+G4+B4 . . (E4+G4+B4) . .',
+      '. . D4+F#4+A4 . (D4+F#4+A4) . . D4+F#4+A4 . . D4+F#4+A4 . D4+F#4+A4 . . .'
+    ].join(' | '),
+    sound: 'Muted Guitar'
+  },
+  {
+    genre: 'Funk',
+    instrument: 'Chords',
     name: 'Gritty Organ Comp',
     score: [
       '. . D4+F4+A4+C5 . . D4+F4+A4+C5 . . . . D4+F4+A4+C5 . D4+F4+A4+C5 . . .',
@@ -878,6 +888,18 @@ export const LOOP_SPECS: LoopSpec[] = [
   // Pop
   {
     genre: 'Pop',
+    instrument: 'Arp',
+    name: 'Clean Guitar Picking',
+    score: [
+      'C3 - G3 - E4 - G3 - C4 - G3 - E4 - G3 -',
+      'A2 - E3 - C4 - E3 - A3 - E3 - C4 - E3 -',
+      'F2 - C3 - A3 - C3 - F3 - C3 - A3 - C3 -',
+      'G2 - D3 - B3 - D3 - G3 - D3 - B3 - D3 -'
+    ].join(' | '),
+    sound: 'Clean Guitar'
+  },
+  {
+    genre: 'Pop',
     instrument: 'Bass',
     name: 'Whisper Pop Bass',
     score: ['G2 - - . . . G2 . Bb2 - . . C3 - . .', 'D3 - . . C3 . Bb2 . G2 - - . . . F2 .'].join(
@@ -1059,6 +1081,17 @@ export const LOOP_SPECS: LoopSpec[] = [
   },
 
   // Rock
+  {
+    bends: { 6: { out: { duration: 0.5, semitones: 2 } } },
+    genre: 'Rock',
+    instrument: 'Lead',
+    name: 'Driven Guitar Riff',
+    score: [
+      'E3 - . E3 G3 - A3 - B3 - - . A3 - G3 -',
+      'E3 - . G3 A3 - B3 - D4 - - - B3 - E3 -'
+    ].join(' | '),
+    sound: 'Driven Guitar'
+  },
   {
     genre: 'Rock',
     instrument: 'Lead',

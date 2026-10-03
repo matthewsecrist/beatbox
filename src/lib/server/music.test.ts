@@ -81,6 +81,45 @@ test('presets keep both LFOs', async () => {
   expect((await music.getPreset(me, saved.id))?.params).toStrictEqual(params)
 })
 
+test('plucked source settings roundtrip independently through presets, keyboard and pads', async () => {
+  const params = { pluck_brightness: 1, pluck_decay: 10, sound_mode: 'pluck' }
+  const preset = await music.savePreset(me, { name: 'String', params })
+  expect((await music.getPreset(me, preset.id))?.params).toStrictEqual(params)
+  const keyboard = { pluck_brightness: 0, pluck_decay: 0.1, sound_mode: 'synth' }
+  const created = await music.createSong(me, {
+    loops: [{ ...loop, params }],
+    name: 'Strings',
+    synth: keyboard
+  })
+  const saved = await savedSong(created.id)
+  expect(saved.synth).toStrictEqual(keyboard)
+  expect(saved.loops[0]?.params).toStrictEqual(params)
+})
+
+test('invalid string source settings are rejected for presets, keyboard and pads', async () => {
+  const created = await music.createSong(me, { name: 'Strings' })
+  for (const params of [
+    { sound_mode: 'guitar' },
+    { sound_mode: 1 },
+    { pluck_brightness: -0.01 },
+    { pluck_brightness: 1.01 },
+    { pluck_brightness: '0.5' },
+    { pluck_brightness: NaN },
+    { pluck_decay: 0.09 },
+    { pluck_decay: 10.01 },
+    { pluck_decay: Infinity }
+  ]) {
+    await expect(music.savePreset(me, { name: 'Bad string', params })).rejects.toThrow(InvalidError)
+    await expect(
+      music.updateSong(me, created.id, { name: 'Strings', synth: params })
+    ).rejects.toThrow(InvalidError)
+    await expect(
+      music.updateSong(me, created.id, { loops: [{ ...loop, params }], name: 'Strings' })
+    ).rejects.toThrow(InvalidError)
+  }
+  expect((await savedSong(created.id)).synth).toBe(null)
+})
+
 test('a kit saves its factory kit and track tweaks; saving under its name again overwrites it', async () => {
   await music.saveKit(me, { kit: '808', name: 'Boom', voices: { kick: { tune: -3 } } })
   const voices = { conga: { sound: 'bongo' }, snare: { decay: 0.5, sound: '909-snare' } }

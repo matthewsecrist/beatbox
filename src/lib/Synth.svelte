@@ -52,6 +52,7 @@
     bpm,
     canSave = true,
     loadPreset: fetchPreset,
+    onAudioReady,
     presets = [],
     savePreset: storePreset,
     selected,
@@ -60,6 +61,7 @@
     bpm: number
     canSave?: boolean
     loadPreset: (id: string) => Promise<LoadPresetReply>
+    onAudioReady: (ready: boolean) => void
     presets?: PresetSummary[]
     savePreset: (name: string, params: SynthParams) => Promise<SavePresetReply>
     selected: boolean
@@ -96,7 +98,8 @@
   const pressed = new SvelteMap<number, number[]>()
   const held = new SvelteMap<number, number>()
   const heldKeys = new SvelteMap<string, number>()
-  let synth: null | Synth = null
+  let synth: null | Synth = $state.raw(null)
+  let audioStatus = $state('Loading sound…')
   // With the arpeggiator on (`arpOn`), held notes go to it instead of the synth.
   let arp: Arp | null = null
   let arpOn = false
@@ -245,6 +248,7 @@
   // playing ones keep their phase); the rest stop exactly on it. A section's
   // synth filter lane shifts every note's cutoff over it (none: back to no shift).
   function onScene({ detail }: CustomEvent<Scene>) {
+    if (!synth) return showStatus(audioStatus)
     players.forEach((p, slot) => {
       if (!p) return
       if (detail.pads.includes(slot)) {
@@ -264,6 +268,7 @@
   // Song-bar Play (with no arrangement: every filled pad) / Stop (them all, and
   // any cutoff shift the song was making).
   function onTransport(e: CustomEvent<TransportDetail>) {
+    if (e.detail.play && !synth) return showStatus(audioStatus)
     players.forEach((p, slot) => {
       if (!p) return
       if (e.detail.play && !p.playing) startPad(slot)
@@ -454,7 +459,7 @@
   }
 
   function onKeyDown(e: KeyboardEvent) {
-    if (e.repeat || ignored(e)) return
+    if (!synth || e.repeat || ignored(e)) return
     const k = e.key.toLowerCase()
     if (k === 'z') return shiftOctave(-1)
     if (k === 'x') return shiftOctave(1)
@@ -477,24 +482,43 @@
   onMount(() => {
     // Live notes and loop pads share this synth, and its effects channel.
     const created = createSynth($state.snapshot(params), undefined, () => effects.channel('synth'))
-    synth = created
+    let disposed = false
     const createdArp = createArp(created, transport, (midi, on, at) => {
       if (recording >= 0) recorder.note(midi, on, at)
     })
-    arp = createdArp
-    // The song may open with the arp on; the effect below keeps it in step after this.
-    if (performance.arp !== 'off') createdArp.set(performance.arp, performance.arp_rate)
-    syncPlayers()
-    loopTimer = setInterval(() => {
-      createdArp.tick()
-      // The UI follows the players: a pad stopped by a section boundary plays on until it.
-      players.forEach((p, slot) => {
-        if (!p?.playing) return
-        const pos = p.tick()
-        setPlayback(slot, p.playing, p.playing ? pos : 0)
+    void created
+      .ready()
+      .then(() => {
+        if (disposed) return
+        created.setParams($state.snapshot(params))
+        created.setTempo(bpm)
+        synth = created
+        arp = createdArp
+        audioStatus = ''
+        // The store may change while audio loads.
+        if (performance.arp !== 'off') createdArp.set(performance.arp, performance.arp_rate)
+        syncPlayers()
+        onAudioReady(true)
+        loopTimer = setInterval(() => {
+          createdArp.tick()
+          // The UI follows the players: a pad stopped by a section boundary plays on until it.
+          players.forEach((p, slot) => {
+            if (!p?.playing) return
+            const pos = p.tick()
+            setPlayback(slot, p.playing, p.playing ? pos : 0)
+          })
+          if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
+        }, 25)
       })
-      if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
-    }, 25)
+      .catch((error: unknown) => {
+        if (disposed) return
+        synth = null
+        arp = null
+        created.close()
+        onAudioReady(false)
+        audioStatus =
+          error instanceof Error ? `Sound unavailable: ${error.message}` : 'Could not load sound'
+      })
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
     window.addEventListener('blur', onBlur)
@@ -502,6 +526,10 @@
     window.addEventListener('beatbox:report', onReport)
     window.addEventListener('beatbox:scene', onScene)
     return () => {
+      disposed = true
+      onAudioReady(false)
+      synth = null
+      arp = null
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('blur', onBlur)
@@ -704,6 +732,11 @@
 {#snippet subNoise()}
   {@render slider('sub_level', 'Sub', 0, 1, 0.01, fmtPctOrOff)}
   {@render slider('noise_level', 'Noise', 0, 1, 0.01, fmtPctOrOff)}
+{/snippet}
+
+{#snippet pluck()}
+  {@render slider('pluck_brightness', 'Brightness', 0, 1, 0.01, fmtPct)}
+  {@render slider('pluck_decay', 'Ring time', 0.1, 10, 0.1, fmtSec)}
 {/snippet}
 
 {#snippet drive()}
@@ -1081,7 +1114,7 @@
                   type="button"
                   aria-label={`Loop pad ${slot + 1}`}
                   aria-pressed={pad.playing || recording === slot}
-                  disabled={store.readOnly && !pad.filled}
+                  disabled={!synth || (store.readOnly && !pad.filled)}
                   onclick={() => tapPad(slot)}
                   class={[
                     'relative flex aspect-square max-h-24 w-full flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border text-sm font-semibold transition active:scale-95 disabled:pointer-events-none',
@@ -1132,6 +1165,7 @@
                       ? `Edit loop pad ${slot + 1} in the piano roll`
                       : `Draw a loop on pad ${slot + 1} in the piano roll`}
                     aria-pressed={rollSlot === slot}
+                    disabled={!synth}
                     title={pad.filled ? 'Edit notes' : 'Draw notes'}
                     onclick={() => editPad(slot)}
                     class={[
@@ -1186,11 +1220,35 @@
           {/key}
         {/if}
       {:else if tab === 'osc'}
-        <div class="grid gap-4 sm:grid-cols-2">
-          {@render panel('Osc 1', osc1, 'osc')}
-          {@render panel('Osc 2', osc2, 'osc')}
-          {@render panel('Sub & Noise', subNoise, 'sub_noise')}
-          {@render panel('Pitch Envelope', pitchEnv, 'pitch_env')}
+        <div class="space-y-4">
+          <label class="block space-y-1" for="synth-sound_mode">
+            {@render caption('sound_mode', 'Sound')}
+            <select
+              id="synth-sound_mode"
+              value={edited.sound_mode}
+              disabled={store.readOnly}
+              onchange={(e) =>
+                store.setParam(
+                  'sound_mode',
+                  e.currentTarget.value as SynthParams['sound_mode'],
+                  soundPad
+                )}
+              class={select}
+            >
+              <option value="synth">Synth</option>
+              <option value="pluck">Plucked string</option>
+            </select>
+          </label>
+          <div class="grid gap-4 sm:grid-cols-2">
+            {#if edited.sound_mode === 'pluck'}
+              {@render panel('Plucked string', pluck, 'pluck')}
+            {:else}
+              {@render panel('Osc 1', osc1, 'osc')}
+              {@render panel('Osc 2', osc2, 'osc')}
+              {@render panel('Sub & Noise', subNoise, 'sub_noise')}
+            {/if}
+            {@render panel('Pitch Envelope', pitchEnv, 'pitch_env')}
+          </div>
         </div>
       {:else if tab === 'filter'}
         {@render panel('Filter', filter, 'filter', 'sm:grid-cols-2 lg:grid-cols-4')}
@@ -1225,6 +1283,9 @@
     aria-label="Keyboard"
     class="order-last space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
   >
+    {#if audioStatus}
+      <p id="synth-audio-status" role="status" class="text-sm text-amber-300">{audioStatus}</p>
+    {/if}
     <div id="synth-play" class="flex flex-wrap items-end gap-4">
       <div class="space-y-1">
         <span class="block text-xs uppercase tracking-wider text-zinc-400">Octave</span>
@@ -1312,6 +1373,7 @@
         <button
           type="button"
           aria-label={key.label}
+          disabled={!synth}
           onpointerdown={(e) => {
             e.currentTarget.releasePointerCapture(e.pointerId)
             press(key.midi)

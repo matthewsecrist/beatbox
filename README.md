@@ -138,6 +138,17 @@ open, as one undo step. The oscillator (with sub, noise and the pitch envelope),
 envelope (**Amp**), LFO (**Mod**), drive and glide controls, and the sound's own effects (**FX**), each have a tab in the
 synth editor.
 
+**Plucked string** (**Sound** on the **Osc** tab): a sample-free vibrating-string
+source instead of the oscillators, sub and noise. **Brightness** goes from soft
+and rounded to crisp and twangy; **Ring time** (0.1–10 s) sets its natural decay
+while a note is held. Use a short **Amp Attack** and high **Sustain** for a clear
+pluck; letting go damps it with **Release**. The filter, drive, pitch envelope,
+bends, glide, LFOs and effects still work, and presets and pads keep their own
+source choice. Existing songs remain in **Synth** mode. Clean Guitar, Muted Guitar
+and Driven Guitar show it off, with picking, funk chanks and a bent rock riff in
+the Loop Browser. This models a plucked string, not a guitar body or automatic
+strumming.
+
 **ⓘ explanations**: every synth sound control and panel, the Chord/Arp bar, the
 drum machine's step edit buttons (Hits, Velocity, Accent, Chance, Ratchet), the
 effects and the track levels have an ⓘ. Hover over it (or tap it, or tab to it) for a plain-English
@@ -395,7 +406,7 @@ end, and then stops; ← and → move a section.
   slider waits until the ramp lets go. ✕ on a cell or on a lane removes it
   (the lane from every section, as one undo step); ramps are saved with the song.
 
-**Loop Browser** (**Loops** in the song bar): 143 premade loops (bass, chords,
+**Loop Browser** (**Loops** in the song bar): 149 premade loops (bass, chords,
 leads, arps, each with a factory synth sound) and 72 beats across 24 genres, from
 house and techno to drill, amapiano and bossa nova (at least 5 loops and 3 beats
 each), in one list. The sidebar searches (name, genre, instrument, synth sound) and
@@ -537,6 +548,12 @@ secret put RESEND_API_KEY` for Previews). Without it, links are only logged
 | `src/lib/drums/engine.ts`, `src/lib/drums/kits.ts`                             | Drum sounds and sequencer; the tracks, kits and instrument library                                                          |
 | `src/lib/arranger.ts`                                                          | Plays the arrangement section by section                                                                                    |
 
+The plucked-string DSP and AudioWorklet live in `src/lib/synth/pluck_dsp.ts` and
+`pluck_worklet.ts`; `pluck.ts` loads the bundled worklet once per audio context.
+After `createSynth()`, await `synth.ready()` before enabling notes or starting a
+player. Live playback and both browsers surface loading failures instead of
+dropping the first notes. Audio initialization stays browser-only.
+
 How the pieces talk:
 
 - The unsaved working copy of the song is a Yjs document wrapped by `SongStore`
@@ -554,13 +571,13 @@ How the pieces talk:
 Each example shows off a different corner of the app, and each sets up the
 keyboard (**Chord** and **Arp**) to play along:
 
-| Example                   | Style                         | Shows off                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato and two-semitone scoops, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, which winds down to 116 BPM, dotted-8th delay, a chorus on the synths, bitcrushed arp and chip lead, a one-shot zap arpeggio shooting into each drop, an intro that boots up out of a crushed mix |
-| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills (one a section's Fill into the stabs), congas on the peak, a shaker and a flanger swept into the drums in the breakdown, a second peak pushed to 128 BPM, the outro's acid loop entering from bar 3                                                     |
-| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s with octave dives (driven in the second drop), ratcheted and chance hi-hats, snare rolls into each drop and, as the first drop's Fill, into the hook, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a one-shot laser stinger at the top of each drop, a last outro slowed to 120 BPM                                                                             |
-| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords (lightly crushed, in their own small room, through a slow, deep chorus), heavy swing on the crushed Lo-fi kit, ghost snares, fills closing out the flute and lead themes, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) and wears out into crunch at the end, the final pad entering from bar 3 of its loop           |
-| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem (chorused wide), Hoover riff (always-glide), Strings swell, a snare-roll Fill into the build, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                                                                                                                                          |
+| Example                   | Style                         | Shows off                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Midnight Arcade**       | Synthwave / chiptune, 125 BPM | Filter-envelope bass and arp, a gliding lead with vibrato and two-semitone scoops, an LFO wobble, 909 kit with ghost notes and ratchet rolls (and 808 toms swapped in), a soft shaker, a ride in the outro, which winds down to 116 BPM, dotted-8th delay, a chorus on the synths, bitcrushed arp and chip lead, a one-shot zap arpeggio shooting into each drop, an intro that boots up out of a crushed mix                                             |
+| **Acid Sunrise**          | Acid house, 126 BPM           | Acid Bass slides and squelch opening up across the song, tube drive on the peak's acid line, a gated Pulse Pad, 909 with swing, chance and roll fills (one a section's Fill into the stabs), congas on the peak, a shaker and a flanger swept into the drums in the breakdown, a second peak pushed to 128 BPM, the outro's acid loop entering from bar 3                                                                                                 |
+| **Glass Casket**          | Trap, 140 BPM                 | Sliding 808s with octave dives (driven in the second drop), ratcheted and chance hi-hats, snare rolls into each drop and, as the first drop's Fill, into the hook, a tuned trap kit with rim shots and snaps, Bell and Flute melodies in reverb, a one-shot laser stinger at the top of each drop, a last outro slowed to 120 BPM                                                                                                                         |
+| **Rain on the Tape Deck** | Lo-fi hip-hop, 82 BPM         | Electric Piano tremolo chords (lightly crushed, in their own small room, through a slow, deep chorus), clean plucked-guitar fills with natural string decay, heavy swing on the crushed Lo-fi kit, ghost snares, fills closing out the flute and lead themes, rim clicks and a dusty shaker, gliding flute and vibrato lead, a tape that slows down (76, then 70 BPM) and wears out into crunch at the end, the final pad entering from bar 3 of its loop |
+| **Afterglow Over Ibiza**  | Trance, 138 BPM               | Supersaw anthem (chorused wide), Hoover riff (always-glide), Strings swell, a snare-roll Fill into the build, builds with snare rolls, a ride in the drops, breakdowns with a shaker, a final drop lifted to 140 BPM                                                                                                                                                                                                                                      |
 
 Every example also spreads its hats, toms and hand percussion across the speakers
 (each drum's **Pan**), with the kick, snare and clap in the middle, and shapes its
