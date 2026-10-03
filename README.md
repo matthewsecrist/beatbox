@@ -554,6 +554,10 @@ After `createSynth()`, await `synth.ready()` before enabling notes or starting a
 player. Live playback and both browsers surface loading failures instead of
 dropping the first notes. Audio initialization stays browser-only.
 
+Clean synth notes (Drive amount or mix at zero) omit the distortion branch to
+reduce audio-node creation and processing. The clean path keeps its 4× oversampling
+and DC filter; enabling Drive on a held note adds the branch and fades it in.
+
 How the pieces talk:
 
 - The unsaved working copy of the song is a Yjs document wrapped by `SongStore`

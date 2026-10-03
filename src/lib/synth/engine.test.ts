@@ -255,15 +255,18 @@ function driven(nodes: FakeNode[], x: number): number {
   const push = feeding(bent)
   const level = feeding(straight)
   const [wet, dry] = [bent?.outputs[0], straight?.outputs[0]]
-  if (!bent?.curve || !straight?.curve || !push || !level || !wet || !dry) {
+  if (!straight?.curve || !level || !dry || !('gain' in dry)) {
     throw new Error('drive stage is not connected')
   }
-  if (!('gain' in wet) || !('gain' in dry)) throw new Error('drive stage has no output gains')
-  const x1 = x * level.gain.value
-  return (
-    wet.gain.value * shape(bent.curve, x1 * push.gain.value) +
-    dry.gain.value * shape(straight.curve, x1)
-  )
+  // The settled signal after any smoothly applied parameter changes.
+  const gain = (p: FakeParam) => p.setTargetAtTime.mock.calls.at(-1)?.[0] ?? p.value
+  const x1 = x * gain(level.gain)
+  const clean = gain(dry.gain) * shape(straight.curve, x1)
+  if (!bent) return clean
+  if (!bent.curve || !push || !wet || !('gain' in wet)) {
+    throw new Error('distortion branch is not connected')
+  }
+  return clean + gain(wet.gain) * shape(bent.curve, x1 * gain(push.gain))
 }
 
 function driveNodes(params: Partial<SynthParams>): FakeNode[] {
@@ -300,6 +303,20 @@ test('full drive squashes the wave flat, and mix 0 brings back the clean sound',
 
   const clean = driveNodes({ drive: 1, drive_mix: 0, drive_type: 'soft' })
   for (const x of LEVELS) expect(driven(clean, x)).toBeCloseTo(x, 5)
+})
+
+test('a held clean note can enable drive, change character, and return to clean', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ drive: 1, drive_mix: 0 }, () => ctx)
+  synth.noteOn(60)
+  for (const x of LEVELS) expect(driven(nodes, x)).toBeCloseTo(x, 5)
+
+  synth.setParams({ drive_mix: 1 })
+  expect(driven(nodes, 0.25) / driven(nodes, 1)).toBeGreaterThan(0.95)
+  synth.setParams({ drive: 0.5, drive_type: 'tube' })
+  expect(driven(nodes, 1)).toBeGreaterThan(-driven(nodes, -1) * 1.1)
+  synth.setParams({ drive: 0 })
+  for (const x of LEVELS) expect(driven(nodes, x)).toBeCloseTo(x, 5)
 })
 
 test('tube bends the bottom of the wave harder than the top', () => {

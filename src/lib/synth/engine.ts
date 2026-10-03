@@ -257,17 +257,38 @@ function driveGains(
 // they stay lined up with each other.
 const DC_BLOCK = 5 // Hz
 
-// A voice's drive stage: level -> push -> shaper -> wet, and level -> straight ->
-// dry alongside it, both through dc into the filter.
+// The clean copy stays oversampled to keep its timing and tone unchanged.
+// A clean note needs no distortion branch; a held note adds it when Drive is enabled.
+interface DriveShape {
+  push: GainNode
+  shaper: WaveShaperNode
+  type: DriveType
+  wet: GainNode
+}
+
 interface DriveStage {
   dc: BiquadFilterNode
   dry: GainNode
   level: GainNode
-  push: GainNode
-  shaper: WaveShaperNode
+  shape: DriveShape | null
   straight: WaveShaperNode
-  type: DriveType
-  wet: GainNode
+}
+
+function addDriveShape(ctx: BaseAudioContext, stage: DriveStage, p: SynthParams): DriveShape {
+  const shape: DriveShape = {
+    push: ctx.createGain(),
+    shaper: ctx.createWaveShaper(),
+    type: p.drive_type,
+    wet: ctx.createGain()
+  }
+  shape.shaper.curve = curve(p.drive_type)
+  // Keeps the added harmonics from folding back as hiss.
+  shape.shaper.oversample = '4x'
+  shape.push.gain.value = DRIVE_MAX ** p.drive / DRIVE_MAX
+  shape.wet.gain.value = 0
+  stage.level.connect(shape.push).connect(shape.shaper).connect(shape.wet).connect(stage.dc)
+  stage.shape = shape
+  return shape
 }
 
 function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): DriveStage {
@@ -275,42 +296,48 @@ function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): Dr
     dc: ctx.createBiquadFilter(),
     dry: ctx.createGain(),
     level: ctx.createGain(),
-    push: ctx.createGain(),
-    shaper: ctx.createWaveShaper(),
-    straight: ctx.createWaveShaper(),
-    type: p.drive_type,
-    wet: ctx.createGain()
+    shape: null,
+    straight: ctx.createWaveShaper()
   }
-  stage.shaper.curve = curve(p.drive_type)
   stage.straight.curve = STRAIGHT
-  // Keeps the added harmonics from folding back as hiss.
-  stage.shaper.oversample = stage.straight.oversample = '4x'
+  stage.straight.oversample = '4x'
   stage.dc.type = 'highpass'
   stage.dc.frequency.value = DC_BLOCK
   stage.dc.Q.value = 0 // no bump at the corner
-  stage.level.connect(stage.push).connect(stage.shaper).connect(stage.wet).connect(stage.dc)
   stage.level.connect(stage.straight).connect(stage.dry).connect(stage.dc)
   stage.dc.connect(into)
   const g = driveGains(p, p.sound_mode)
-  for (const k of ['dry', 'level', 'push', 'wet'] as const) stage[k].gain.value = g[k]
+  stage.level.gain.value = g.level
+  stage.dry.gain.value = 1 / g.level
+  if (p.drive > 0 && p.drive_mix > 0) {
+    const shape = addDriveShape(ctx, stage, p)
+    shape.push.gain.value = g.push
+    shape.wet.gain.value = g.wet
+    stage.dry.gain.value = g.dry
+  }
   return stage
 }
 
 // Follows changed params on a sounding voice, gliding the gains so it doesn't click.
 function updateDrive(
+  ctx: BaseAudioContext,
   stage: DriveStage,
   p: SynthParams,
   t: number,
   soundMode: SynthParams['sound_mode']
 ): void {
-  if (stage.type !== p.drive_type) {
-    stage.type = p.drive_type
-    stage.shaper.curve = curve(p.drive_type)
-  }
+  const shape =
+    stage.shape ?? (p.drive > 0 && p.drive_mix > 0 ? addDriveShape(ctx, stage, p) : null)
   const g = driveGains(p, soundMode)
-  for (const k of ['dry', 'level', 'push', 'wet'] as const) {
-    stage[k].gain.setTargetAtTime(g[k], t, 0.01)
+  stage.level.gain.setTargetAtTime(g.level, t, 0.01)
+  stage.dry.gain.setTargetAtTime(shape ? g.dry : 1 / g.level, t, 0.01)
+  if (!shape) return
+  if (shape.type !== p.drive_type) {
+    shape.type = p.drive_type
+    shape.shaper.curve = curve(p.drive_type)
   }
+  shape.push.gain.setTargetAtTime(g.push, t, 0.01)
+  shape.wet.gain.setTargetAtTime(g.wet, t, 0.01)
 }
 
 // Notes glide only from the same source's last note: the keyboard (numeric
@@ -803,9 +830,7 @@ export function createSynth(
         ...(sub ? [sub.gain] : []),
         ...(noise ? [noise] : []),
         drive.level,
-        drive.push,
-        drive.shaper,
-        drive.wet,
+        ...(drive.shape ? [drive.shape.push, drive.shape.shaper, drive.shape.wet] : []),
         drive.dc,
         drive.straight,
         drive.dry,
@@ -857,7 +882,7 @@ export function createSynth(
   }
 
   // Sounding voices take on changed settings, gliding so nothing clicks.
-  function follow(v: Voice, p: SynthParams, t: number): void {
+  function follow(ctx: BaseAudioContext, v: Voice, p: SynthParams, t: number): void {
     v.filter.frequency.setTargetAtTime(p.filter_cutoff, t, 0.01)
     v.filter.type = p.filter_type
     v.filter.Q.setTargetAtTime(filterQ(p), t, 0.01)
@@ -869,7 +894,7 @@ export function createSynth(
       lfo.depth.gain.setTargetAtTime(lfoSwing(p, lfo.n), t, 0.01)
     }
     v.trem.gain.setTargetAtTime(tremLevel(p), t, 0.01)
-    updateDrive(v.drive, p, t, v.pluck ? 'pluck' : 'synth')
+    updateDrive(ctx, v.drive, p, t, v.pluck ? 'pluck' : 'synth')
     if (v.osc1 && v.g1) applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
     if (v.osc2 && v.g2) applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
     if (v.pluck) {
@@ -887,7 +912,7 @@ export function createSynth(
     master.gain.setTargetAtTime(params.volume, t, 0.01)
     const live = fxs.get('live')
     if (live) applyFx(live, params)
-    for (const v of voices.values()) if (!v.own) follow(v, params, t)
+    for (const v of voices.values()) if (!v.own) follow(ctx, v, params, t)
   }
 
   // A loop's new sound (`own`, as given to noteOn) for its voices already sounding:
@@ -900,7 +925,7 @@ export function createSynth(
     for (const v of voices.values()) {
       if (!v.own || typeof v.key !== 'string' || !v.key.startsWith(prefix)) continue
       v.release = p.release
-      follow(v, p, ctx.currentTime)
+      follow(ctx, v, p, ctx.currentTime)
     }
   }
 
