@@ -211,6 +211,8 @@ export const HELP = {
     "How fast this section goes, in beats per minute. Leave it empty to play it at the song tempo. Slow a bridge right down, or speed up a final chorus: when the song gets there, everything switches to this speed on the section's first beat, and back afterwards.",
   section_fill:
     "Plays this section's drum pattern with its fill on the last bar: a drum fill that leads into the next section, like a drummer's roll before the chorus. Off keeps the pattern all the way through. Write the fill on the drums' Steps tab: pick the pattern, then Fill.",
+  section_pad_start:
+    "Which bar of this pad's loop to start from when it begins in this section. 1 plays from the beginning; 5 skips straight to the second half of an eight-bar loop. It wraps back to bar 1 at the end, or stops there if the pad plays once. A pad carried over from the previous section keeps its place instead: this setting doesn't restart it.",
   step_accent:
     'Click a lit square to make that hit extra loud and punchy (it gets a red dot). Accents on the big beats help the rhythm stand out.',
   step_hits:

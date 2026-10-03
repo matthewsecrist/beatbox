@@ -21,7 +21,7 @@
   import Info from './Info.svelte'
   import { PATTERN_LETTERS } from './song.svelte.js'
   import { DEFAULT_PARAMS } from './synth/engine.js'
-  import { transport } from './transport.js'
+  import { BEATS_PER_BAR, transport } from './transport.js'
 
   // The track list and the arrangement: a row per track (the synth's pads, the
   // drums), a column per section. Picking a track (`track`)
@@ -449,19 +449,47 @@
         </div>
         {#each sections as section, i (section.id)}
           {@const on = section.pads.includes(slot)}
-          <button
-            type="button"
-            aria-pressed={on}
-            disabled={store.readOnly}
-            aria-label={`Section ${i + 1}: pad ${slot + 1}`}
-            onclick={() => togglePad(i, section, slot)}
-            class={[
-              'my-0.5 h-6 rounded transition active:scale-95 disabled:pointer-events-none',
-              on
-                ? 'bg-amber-400 shadow shadow-amber-400/20 hover:bg-amber-300'
-                : 'bg-zinc-900 hover:bg-zinc-800'
-            ]}
-          ></button>
+          {@const loop = store.loops[slot]}
+          <div class="my-0.5">
+            <button
+              id={`section-${i + 1}-pad-${slot + 1}`}
+              type="button"
+              aria-pressed={on}
+              disabled={store.readOnly}
+              aria-label={`Section ${i + 1}: pad ${slot + 1}`}
+              onclick={() => togglePad(i, section, slot)}
+              class={[
+                'h-6 w-full rounded transition active:scale-95 disabled:pointer-events-none',
+                on
+                  ? 'bg-amber-400 shadow shadow-amber-400/20 hover:bg-amber-300'
+                  : 'bg-zinc-900 hover:bg-zinc-800'
+              ]}
+            ></button>
+            {#if on && loop}
+              <div class="mt-1 flex items-center justify-between gap-1 text-[10px] text-zinc-400">
+                <label for={`section-${i + 1}-pad-${slot + 1}-start`}>Start bar</label>
+                <input
+                  id={`section-${i + 1}-pad-${slot + 1}-start`}
+                  type="number"
+                  min="1"
+                  max={Math.max(
+                    1,
+                    Math.ceil((loop.length * (loop.bpm ?? store.drums.bpm)) / 60 / BEATS_PER_BAR)
+                  )}
+                  step="1"
+                  value={section.padStarts?.[slot] ?? 1}
+                  disabled={store.readOnly}
+                  aria-label={`Section ${i + 1}: pad ${slot + 1} start bar`}
+                  onchange={(e) => {
+                    store.setPadStart(i, slot, Number(e.currentTarget.value))
+                    e.currentTarget.value = String(store.arrangement[i]?.padStarts?.[slot] ?? 1)
+                  }}
+                  class="w-12 rounded border border-zinc-700 bg-zinc-900 px-1 py-0.5 text-zinc-200 disabled:pointer-events-none"
+                />
+                <Info label="Start bar" text={help('section_pad_start') ?? ''} />
+              </div>
+            {/if}
+          </div>
         {/each}
         <div></div>
       {/each}

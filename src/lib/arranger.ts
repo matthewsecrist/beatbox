@@ -13,7 +13,7 @@ export interface Arranger {
 }
 
 export type ArrangerSection = Partial<
-  Pick<Section, 'automation' | 'bpm' | 'drums' | 'fill' | 'pattern'>
+  Pick<Section, 'automation' | 'bpm' | 'drums' | 'fill' | 'padStarts' | 'pattern'>
 > &
   Pick<Section, 'bars' | 'pads'>
 
@@ -107,6 +107,7 @@ export function createArranger({
         drums: s?.drums ?? false,
         end: at(boundaries, s ? next + 1 : next),
         index: s ? next : -1,
+        ...(s?.padStarts && { padStarts: s.padStarts }),
         pads: s?.pads ?? [],
         pattern: s?.pattern ?? 0
       })

@@ -101,6 +101,7 @@
       "bpm": 70,
       "drums": false,
       "name": "Fade to tape",
+      "padStarts": { "4": 3 },
       "pads": [4],
       "pattern": 2
     }

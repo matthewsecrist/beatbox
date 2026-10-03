@@ -437,6 +437,7 @@ test('a read-only store refuses every edit and reports no change', () => {
   store.setLoop(loop(5))
   store.addSection()
   store.setEffects({ synth_reverb: 0.5 })
+  store.setPadStart(0, 2, 2)
 
   expect(store.toSongDoc()).toStrictEqual(new SongStore(song).toSongDoc())
   expect(store.canUndo).toBe(false)
@@ -617,4 +618,68 @@ test('a loop bend saves, reloads and follows undo/redo; read-only songs refuse i
   readonly.undo()
   expect(readonly.toSongDoc().loops).toStrictEqual([bent])
   expect(readonly.canUndo).toBe(false)
+})
+
+test('pad starts persist, undo independently, and copy with sections without sharing edits', () => {
+  const store = new SongStore({ ...song, loops: [{ ...loop(2), length: 8 }] })
+  store.setPadStart(0, 2, 3)
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 2: 3 })
+  const saved = store.toSongDoc()
+  expect(new SongStore(saved).toSongDoc().arrangement).toStrictEqual(saved.arrangement)
+  store.setPadStart(0, 2, 1)
+  expect(store.toSongDoc().arrangement[0]).not.toHaveProperty('padStarts')
+  store.undo()
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 2: 3 })
+  store.undo()
+  expect(store.arrangement[0]).not.toHaveProperty('padStarts')
+  store.redo()
+  store.addSection()
+  store.duplicateSection(0)
+  store.moveSection(2, -2)
+  expect(store.arrangement.map((s) => s.padStarts)).toStrictEqual([{ 2: 3 }, { 2: 3 }, { 2: 3 }])
+  store.setPadStart(0, 2, 2)
+  expect(store.arrangement.map((s) => s.padStarts)).toStrictEqual([{ 2: 2 }, { 2: 3 }, { 2: 3 }])
+})
+
+test('pad starts clamp to actual loop bars and reject invalid slots and nonfinite bars', () => {
+  const store = new SongStore({
+    ...song,
+    loops: [
+      { ...loop(2), length: 8 },
+      { ...loop(3), bpm: null, length: 7 }
+    ]
+  })
+  store.setPadStart(0, 2, 99)
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 2: 4 })
+  store.setPadStart(0, 3, 99)
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 2: 4, 3: 5 })
+  store.setPadStart(0, 2, 2.9)
+  expect(store.arrangement[0]?.padStarts?.[2]).toBe(2)
+  for (const slot of [-1, 8, 2.5, NaN]) store.setPadStart(0, slot, 3)
+  for (const bar of [NaN, Infinity, -Infinity]) store.setPadStart(0, 2, bar)
+  store.setPadStart(0, 1, 3)
+  store.setPadStart(-1, 2, 3)
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 2: 2, 3: 5 })
+  store.setPadStart(0, 2, -2)
+  expect(store.arrangement[0]?.padStarts).toStrictEqual({ 3: 5 })
+  store.setPadStart(0, 3, 0)
+  expect(store.toSongDoc().arrangement[0]).not.toHaveProperty('padStarts')
+})
+
+test('read-only songs refuse pad start changes and clearing overrides', () => {
+  const onchange = vi.fn()
+  const store = new SongStore(
+    {
+      ...song,
+      arrangement: [{ bars: 8, drums: true, pads: [2], padStarts: { 2: 3 }, pattern: 1 }],
+      loops: [{ ...loop(2), length: 8 }]
+    },
+    onchange,
+    { readOnly: true }
+  )
+  store.setPadStart(0, 2, 2)
+  store.setPadStart(0, 2, 1)
+  expect(store.toSongDoc().arrangement[0]?.padStarts).toStrictEqual({ 2: 3 })
+  expect(store.canUndo).toBe(false)
+  expect(onchange).not.toHaveBeenCalled()
 })
