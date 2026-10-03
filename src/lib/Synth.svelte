@@ -248,7 +248,7 @@
     players.forEach((p, slot) => {
       if (!p) return
       if (detail.pads.includes(slot)) {
-        p.start(detail.beat)
+        p.start(detail.beat, ((detail.padStarts?.[slot] ?? 1) - 1) * BEATS_PER_BAR)
         setPlayback(slot, true)
       } else {
         p.stopAt(detail.beat)

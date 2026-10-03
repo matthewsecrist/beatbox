@@ -17,7 +17,7 @@ export interface Player {
   readonly playing: boolean
   // Swaps in edited notes/length; a playing loop keeps its place in the bar.
   setLoop(next: PlayerLoop): void
-  start(atBeat?: 'now' | number): void
+  start(atBeat?: 'now' | number, offsetBeats?: number): void
   stop(): void
   stopAt(beat: number): void
   tick(): number
@@ -25,8 +25,8 @@ export interface Player {
 
 // Plays one loop ({ events, length, params, bpm }) on voices keyed `${prefix}${midi}`,
 // from a bar line. Loops saved before tempo sync have no `bpm`; they're taken to be
-// at the tempo in effect when they start. A one-shot (`once`) plays a single cycle
-// from where it starts, then stops by itself.
+// at the tempo in effect when they start. A one-shot (`once`) plays to the end of
+// its initial cycle, including only the remainder when started with an offset.
 export type PlayerLoop = Pick<Loop, 'bpm' | 'events' | 'length' | 'once' | 'params'>
 
 export interface Recorder {
@@ -63,6 +63,7 @@ export function createPlayer(
   let events: (LoopEvent & { beat: number; end: number })[] = []
   let playing = false
   let startBeat = 0
+  let launchBeat = 0
   let cycleStart = 0
   let cursor = 0
   // Playback ends exactly on endBeat: the earlier of a stopAt() beat and, for a
@@ -122,7 +123,7 @@ export function createPlayer(
 
   // Where the cycle playing now ends (a one-shot switched on mid-loop finishes it).
   function cycleEnd(): number {
-    const into = Math.max(0, transport.beatAt(transport.now()) - startBeat)
+    const into = Math.max(launchBeat, transport.beatAt(transport.now())) - startBeat
     return startBeat + (Math.floor(into / lengthBeats) + 1) * lengthBeats
   }
 
@@ -148,10 +149,10 @@ export function createPlayer(
       load()
       // Pick up at the same point of the (possibly shorter) cycle.
       const now = transport.beatAt(transport.now())
-      const into = Math.max(0, now - startBeat)
+      const into = Math.max(launchBeat, now) - startBeat
       const phase = lengthBeats > 0 ? into % lengthBeats : 0
       cycleStart = startBeat + into - phase
-      cursor = events.findIndex((e) => cycleStart + e.beat >= Math.max(now, startBeat))
+      cursor = events.findIndex((e) => cycleStart + e.beat >= Math.max(now, launchBeat))
       if (cursor < 0) {
         cursor = 0
         cycleStart += lengthBeats
@@ -161,16 +162,23 @@ export function createPlayer(
       tick()
     },
     // Default: next bar line; 'now': current beat after acquiring the grid.
+    // Offset seeks within the loop (modulo its length), without replaying earlier notes.
     // Already playing: cancel a pending stopAt() without changing phase or a one-shot's end.
-    start(atBeat: 'now' | number = transport.nextBar()): void {
+    start(atBeat: 'now' | number = transport.nextBar(), offsetBeats = 0): void {
       stopBeat = Infinity
       setEnd()
       if (playing) return
       load()
       transport.acquire(prefix)
       playing = true
-      startBeat = cycleStart = atBeat === 'now' ? transport.beatAt(transport.now()) : atBeat
-      cursor = 0
+      launchBeat = atBeat === 'now' ? transport.beatAt(transport.now()) : atBeat
+      const phase = ((offsetBeats % lengthBeats) + lengthBeats) % lengthBeats
+      startBeat = cycleStart = launchBeat - phase
+      cursor = events.findIndex((e) => e.beat >= phase)
+      if (cursor < 0) {
+        cursor = 0
+        cycleStart += lengthBeats
+      }
       shotEnd = loop.once ? startBeat + lengthBeats : Infinity
       setEnd()
       tick()
@@ -242,8 +250,9 @@ export function createPlayer(
         cycleStart += lengthBeats
       }
     }
-    const into = transport.beatAt(now) - startBeat
-    return !playing || into <= 0 ? 0 : (into % lengthBeats) / lengthBeats
+    const beat = transport.beatAt(now)
+    const into = beat - startBeat
+    return !playing || beat < launchBeat || into <= 0 ? 0 : (into % lengthBeats) / lengthBeats
   }
 }
 

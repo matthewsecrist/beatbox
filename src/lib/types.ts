@@ -257,6 +257,7 @@ export interface Scene {
   end: number
   index: number
   pads: number[]
+  padStarts?: Partial<Record<number, number>>
   pattern: number
 }
 // One section of the arrangement.
@@ -271,6 +272,8 @@ export interface Section {
   fill?: boolean
   name?: null | string
   pads: number[]
+  // One-based loop start bars by pad slot; absent starts at bar 1.
+  padStarts?: Partial<Record<number, number>>
   // Drum pattern index (0-7 = A-H) when `drums` is on.
   pattern: number
 }

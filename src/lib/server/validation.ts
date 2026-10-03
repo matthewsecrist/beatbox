@@ -321,6 +321,8 @@ const section = z.object({
   name: z.string().trim().max(30).nullable().exactOptional(),
   // Loop pad slots (0-7) playing in this section.
   pads: z.array(z.int().min(0).max(7)).max(8).default([]),
+  // 300 seconds at the highest supported tempo is at most 250 bars.
+  padStarts: z.record(z.string().regex(/^[0-7]$/), z.int().min(1).max(250)).exactOptional(),
   // Which drum pattern (0-7 = A-H) plays when `drums` is on.
   pattern: z.int().min(0).max(7).default(0)
 })

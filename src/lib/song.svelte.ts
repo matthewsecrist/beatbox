@@ -456,6 +456,25 @@ export class SongStore {
     this.setLoop(next)
   }
 
+  // A pad's entry point; bar 1 leaves old songs unchanged.
+  setPadStart(index: number, slot: number, bar: number): void {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= PAD_COUNT || !Number.isFinite(bar)) return
+    if (!Number.isInteger(index) || index < 0 || index >= this.arrangement.length) return
+    const section = this.arrangement[index]
+    const map = this.arrangementArray.get(index)
+    const loop = this.loops[slot]
+    if (!section || !map || !loop) return
+    const bars = Math.max(1, Math.ceil((loop.length * (loop.bpm ?? this.drums.bpm)) / 60 / 4))
+    const start = Math.max(1, Math.min(bars, Math.trunc(bar)))
+    const padStarts = { ...section.padStarts }
+    if (start === 1) delete padStarts[slot]
+    else padStarts[slot] = start
+    this.edit(() => {
+      if (Object.keys(padStarts).length) map.set('padStarts', padStarts)
+      else map.delete('padStarts')
+    }, true)
+  }
+
   // One synth setting: of the keyboard's sound, or (`slot`) of that loop pad's own.
   setParam<K extends keyof SynthParams>(
     key: K,
@@ -555,7 +574,7 @@ export class SongStore {
     const savedFillLengths = fillLengths.map((l, i) => (customFills[i] ? l : {}))
     return {
       arrangement: this.arrangement.map(
-        ({ automation, bars, bpm, drums, fill, name, pads, pattern }) => ({
+        ({ automation, bars, bpm, drums, fill, name, pads, padStarts, pattern }) => ({
           // Saved only when the section automates something.
           ...(automation && Object.keys(automation).length ? { automation } : {}),
           bars,
@@ -566,6 +585,7 @@ export class SongStore {
           ...(fill ? { fill } : {}),
           name,
           pads,
+          ...(padStarts && Object.keys(padStarts).length ? { padStarts } : {}),
           pattern
         })
       ),
@@ -853,6 +873,9 @@ function sectionMap(section: Section): Y.Map<unknown> {
   map.set('pattern', section.pattern)
   if (section.fill) map.set('fill', true)
   map.set('pads', [...section.pads])
+  if (section.padStarts && Object.keys(section.padStarts).length) {
+    map.set('padStarts', { ...section.padStarts })
+  }
   if (section.automation && Object.keys(section.automation).length) {
     map.set('automation', plain(section.automation))
   }

@@ -75,6 +75,7 @@
       "bars": 8,
       "drums": true,
       "name": "Outro",
+      "padStarts": { "0": 3 },
       "pads": [0],
       "pattern": 0
     },

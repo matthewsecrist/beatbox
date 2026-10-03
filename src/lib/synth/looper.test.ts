@@ -115,6 +115,125 @@ const oneBar: Loop = {
   slot: 0
 }
 
+const offsetLoop: Loop = {
+  ...oneBar,
+  events: [
+    { midi: 60, on: true, t: 0 },
+    { midi: 60, on: false, t: 0.5 },
+    { midi: 62, on: true, t: 2 },
+    { midi: 62, on: false, t: 2.5 }
+  ],
+  length: 4
+}
+
+test.each([4, 12, -4])(
+  'a start offset of %s beats seeks notes and wraps on the loop grid',
+  (offset) => {
+    const { clock, transport } = fakeAudio()
+    const synth = spySynth()
+    const player = createPlayer(synth, 'pad0:', offsetLoop, transport)
+    player.start(8, offset)
+    expect(synth.calls).toStrictEqual([])
+    expect(player.tick()).toBe(0)
+
+    clock.now = transport.timeAt(8)
+    expect(player.tick()).toBeCloseTo(0.5)
+    expect(synth.calls).toStrictEqual([['on', 62, 4.05]])
+    clock.now = transport.timeAt(9)
+    expect(player.tick()).toBeCloseTo(0.625)
+    clock.now = transport.timeAt(12)
+    expect(player.tick()).toBeCloseTo(0)
+    expect(synth.calls).toStrictEqual([
+      ['on', 62, 4.05],
+      ['off', 4.55],
+      ['on', 60, 6.05]
+    ])
+  }
+)
+
+test('an offset after the last event waits for the wrap without replaying earlier notes', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', offsetLoop, transport)
+  player.start(0, 6)
+  expect(synth.calls).toStrictEqual([])
+  clock.now = transport.timeAt(2)
+  expect(player.tick()).toBeCloseTo(0)
+  expect(synth.calls).toStrictEqual([['on', 60, 1.05]])
+})
+
+test('a carried pad ignores the next section offset and cancels its pending stop', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', offsetLoop, transport)
+  player.start(0, 4)
+  player.stopAt(4)
+  player.start(4, 4)
+  clock.now = transport.timeAt(4)
+  expect(player.tick()).toBeCloseTo(0)
+  expect(player.playing).toBe(true)
+  expect(synth.calls).toStrictEqual([
+    ['on', 62, 0.05],
+    ['off', 0.55],
+    ['on', 60, 2.05]
+  ])
+})
+
+test('an offset one-shot plays only the remaining cycle and releases held notes at its end', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(
+    synth,
+    'pad0:',
+    {
+      ...offsetLoop,
+      events: offsetLoop.events.filter((event) => event.on),
+      once: true
+    },
+    transport
+  )
+  player.start(0, 4)
+  player.stopAt(1)
+  player.start(1, 0) // carrying cannot restart or extend the one-shot
+  clock.now = transport.timeAt(4) - 0.05
+  player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 62, 0.05],
+    ['off', 2.05]
+  ])
+  expect(player.playing).toBe(false)
+  expect(transport.running).toBe(false)
+})
+
+test('an offset one-shot with no remaining events still stops at the original loop end', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', { ...offsetLoop, once: true }, transport)
+  player.start(0, 6)
+  clock.now = transport.timeAt(2) - 0.05
+  player.tick()
+  expect(synth.calls).toStrictEqual([])
+  expect(player.playing).toBe(false)
+})
+
+test('editing an offset loop preserves its phase modulo the edited length', () => {
+  const { clock, transport } = fakeAudio()
+  const synth = spySynth()
+  const player = createPlayer(synth, 'pad0:', offsetLoop, transport)
+  player.start(0, 4)
+  clock.now = transport.timeAt(0.5)
+  player.setLoop(oneBar)
+  expect(player.tick()).toBeCloseTo(0.125)
+  clock.now = transport.timeAt(4)
+  player.tick()
+  expect(synth.calls).toStrictEqual([
+    ['on', 62, 0.05],
+    ['off', NaN],
+    ['off', 1.05],
+    ['on', 60, 2.05]
+  ])
+})
+
 test('tempo changes keep the current beat position', () => {
   const { clock, transport } = fakeAudio()
   transport.acquire('x') // grid starts at 0.05 s

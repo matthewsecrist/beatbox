@@ -316,3 +316,35 @@ test('songs preserve per-note bends and reject malformed ramps before storing', 
   ).rejects.toThrow(InvalidError)
   expect((await savedSong(song.id)).loops[0]?.events).toStrictEqual(events)
 })
+
+test('songs preserve pad start bars and reject invalid pad keys and bar values before storing', async () => {
+  const arrangement = [{ bars: 4, drums: false, pads: [3], padStarts: { 3: 2 }, pattern: 0 }]
+  const song = await music.createSong(me, { arrangement, loops: [loop], name: 'Pad starts' })
+  expect((await savedSong(song.id)).arrangement).toStrictEqual(arrangement)
+  const invalid: unknown[] = [
+    { '-1': 2 },
+    { 8: 2 },
+    { '3.5': 2 },
+    { '03': 2 },
+    { pad: 2 },
+    { 3: 0 },
+    { 3: -1 },
+    { 3: 1.5 },
+    { 3: 251 },
+    { 3: Infinity },
+    { 3: NaN },
+    { 3: '2' },
+    null
+  ]
+  for (const padStarts of invalid) {
+    await expect(
+      music.updateSong(me, song.id, {
+        arrangement: [{ ...arrangement[0], padStarts }],
+        name: 'Pad starts'
+      })
+    ).rejects.toThrow(InvalidError)
+  }
+  expect((await savedSong(song.id)).arrangement).toStrictEqual(arrangement)
+  const legacy = await music.createSong(me, { arrangement: [{ bars: 4 }], name: 'Legacy' })
+  expect((await savedSong(legacy.id)).arrangement[0]).not.toHaveProperty('padStarts')
+})
