@@ -68,6 +68,7 @@ function fakeAudio() {
     return n
   }
   const ctx = {
+    audioWorklet: { addModule: vi.fn().mockResolvedValue(undefined) },
     createBiquadFilter: () => node('filter'),
     createBuffer: (_channels: number, length: number, rate: number) => ({
       duration: length / rate,
@@ -87,17 +88,172 @@ function fakeAudio() {
     sampleRate: 100
   }
   // `clock` is the same context, to move its time.
-  return { clock: ctx, ctx: ctx as unknown as BaseAudioContext, nodes }
+  class Worklet {
+    constructor() {
+      const pluck = node('pluck')
+      Object.assign(this, pluck, {
+        parameters: new Map([
+          ['brightness', param('pluck.brightness')],
+          ['decay', param('pluck.decay')],
+          ['detune', pluck.detune],
+          ['frequency', pluck.frequency]
+        ]),
+        port: { close: vi.fn(), onmessage: null, postMessage: vi.fn() }
+      })
+    }
+  }
+  return { clock: ctx, ctx: ctx as unknown as BaseAudioContext, nodes, Worklet }
 }
 
-// The gain LFO `n` of the first voice feeds (its depth), and the params that gain drives.
+// Modulation oscillators feed a depth gain that drives AudioParams, not the audio path.
+const modulationOscs = (nodes: FakeNode[]): FakeNode[] =>
+  nodes.filter((node) => {
+    const depth = node.outputs[0]
+    return (
+      node.kind === 'osc' &&
+      depth &&
+      'outputs' in depth &&
+      depth.outputs.some((output) => 'name' in output)
+    )
+  })
+const toneOscs = (nodes: FakeNode[]): FakeNode[] =>
+  nodes.filter((node) => node.kind === 'osc' && !modulationOscs(nodes).includes(node))
+
 function lfoDepth(nodes: FakeNode[], n: 1 | 2 = 1): FakeNode {
-  const depth = nodes.filter((node) => node.kind === 'osc')[n + 1]?.outputs[0]
+  const depth = modulationOscs(nodes)[n - 1]?.outputs[0]
   if (!depth || !('outputs' in depth)) throw new Error('LFO is not connected')
   return depth
 }
 const lfoTargets = (nodes: FakeNode[], n: 1 | 2 = 1): string[] =>
   lfoDepth(nodes, n).outputs.map((o) => ('name' in o ? o.name : o.kind))
+
+function modulationAt(nodes: FakeNode[], target: FakeParam, t: number): number {
+  return modulationOscs(nodes).reduce((sum, osc) => {
+    const depth = osc.outputs[0]
+    const start = osc.start?.mock.calls[0]?.[0]
+    const stop = osc.stop?.mock.calls.at(-1)?.[0]
+    if (
+      !depth ||
+      !('gain' in depth) ||
+      !depth.outputs.includes(target) ||
+      start === undefined ||
+      t < start ||
+      (stop !== undefined && t >= stop)
+    )
+      return sum
+    return sum + Math.sin(2 * Math.PI * osc.frequency.value * (t - start)) * targetAt(depth.gain, t)
+  }, 0)
+}
+
+// Model Web Audio's exponential target smoothing, then add a sine LFO's signal.
+function targetAt(param: FakeParam, t: number): number {
+  let value = param.value
+  const calls = [
+    ...param.setValueAtTime.mock.calls.map(([target, start]) => [target, start, 0] as const),
+    ...param.setTargetAtTime.mock.calls
+  ].sort((a, b) => a[1] - b[1])
+  for (let i = 0; i < calls.length; i++) {
+    const call = calls[i]
+    if (!call) continue
+    const [target, start, smoothing] = call
+    if (start > t) break
+    const end = Math.min(t, calls[i + 1]?.[1] ?? t)
+    value =
+      smoothing === 0 ? target : target + (value - target) * Math.exp(-(end - start) / smoothing)
+  }
+  return value
+}
+
+test.each([false, true])('held %s own sound enables LFO 2, retargets it and releases it', (own) => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ sub_level: 0.5 }, () => ctx)
+  const key = own ? 'pad0:60' : 60
+  synth.noteOn(60, undefined, key, own ? { sub_level: 0.5 } : null)
+  const tones = toneOscs(nodes)
+  const filter = voiceFilters(nodes)[0]
+  if (!tones[0] || !tones[2] || !filter) throw new Error('missing voice')
+  expect(modulationOscs(nodes)).toStrictEqual([]) // clean notes allocate no modulation nodes
+  const edit = (p: Partial<SynthParams>) =>
+    own ? synth.setOwnParams('pad0:', { sub_level: 0.5, ...p }) : synth.setParams(p)
+  clock.currentTime = 1
+  edit({ lfo2_depth: 30, lfo2_rate: 1 })
+  const lfo = modulationOscs(nodes)[0]
+  expect(modulationAt(nodes, tones[0].detune, 1)).toBe(0) // phase zero and faded from zero
+  expect(modulationAt(nodes, tones[0].detune, 1.25)).toBeCloseTo(30)
+  expect(modulationAt(nodes, tones[2].detune, 1.25)).toBeCloseTo(30) // sub follows pitch
+  clock.currentTime = 1.5
+  edit({ lfo2_depth: 1, lfo2_rate: 1, lfo2_target: 'filter' })
+  expect(modulationAt(nodes, tones[0].detune, 1.75)).toBe(0)
+  expect(modulationAt(nodes, filter.detune, 1.75)).toBeCloseTo(-1200)
+  clock.currentTime = 2
+  edit({ lfo2_depth: 0, lfo2_rate: 1, lfo2_target: 'filter' })
+  expect(modulationAt(nodes, filter.detune, 2.25)).toBeCloseTo(0)
+  expect(modulationOscs(nodes)).toStrictEqual([lfo]) // disabled LFO keeps its phase
+  clock.currentTime = 2.5
+  edit({ lfo2_depth: 1, lfo2_rate: 1, lfo2_target: 'amp' })
+  const trem = nodes.find((node) => lfoDepth(nodes).outputs.includes(node.gain))
+  if (!trem) throw new Error('missing tremolo')
+  expect(targetAt(trem.gain, 2.75) + modulationAt(nodes, trem.gain, 2.75)).toBeCloseTo(0)
+  synth.noteOff(key, 3)
+  expect(modulationAt(nodes, trem.gain, 4.25)).toBe(0)
+  tones[0].onended?.()
+  expect(lfo?.outputs).toStrictEqual([])
+})
+
+test('retargeting filter modulation to amplitude never carries cents into the output gain', () => {
+  const { clock, ctx, nodes } = fakeAudio()
+  const synth = createSynth({ lfo1_depth: 2, lfo1_rate: 1 }, () => ctx)
+  synth.noteOn(60)
+  clock.currentTime = 0.25 // the filter LFO is at its positive peak
+  synth.setParams({ lfo1_depth: 0.5, lfo1_target: 'amp' })
+  const trem = nodes.find((node) => lfoDepth(nodes).outputs.includes(node.gain))
+  if (!trem) throw new Error('missing tremolo')
+  for (const dt of [0, 0.001, 0.005, 0.01, 0.02, 0.03]) {
+    const t = clock.currentTime + dt
+    const gain = targetAt(trem.gain, t) + modulationAt(nodes, trem.gain, t)
+    expect(gain).toBeGreaterThanOrEqual(0.5)
+    expect(gain).toBeLessThanOrEqual(1)
+  }
+})
+
+test.each(['cancel', 'close'] as const)(
+  'a future note fades in its new LFO at note start, then %s silences it',
+  (end) => {
+    const { ctx, nodes } = fakeAudio()
+    const synth = createSynth(null, () => ctx)
+    synth.noteOn(60, 2, 'pad0:60', {})
+    synth.setOwnParams('pad0:', { lfo1_depth: 1, lfo1_rate: 1 })
+    const filter = voiceFilters(nodes)[0]
+    if (!filter) throw new Error('missing filter')
+    expect(modulationAt(nodes, filter.detune, 1.25)).toBe(0)
+    expect(modulationAt(nodes, filter.detune, 2)).toBe(0)
+    expect(modulationAt(nodes, filter.detune, 2.25)).toBeCloseTo(1200)
+    if (end === 'cancel') synth.cancelPending((key) => key === 'pad0:60')
+    else synth.close()
+    expect(modulationAt(nodes, filter.detune, 2.25)).toBe(0)
+  }
+)
+
+test('a held plucked note can enable vibrato, then closing silences its modulation', async () => {
+  const { clock, ctx, nodes, Worklet } = fakeAudio()
+  vi.stubGlobal('AudioWorkletNode', Worklet)
+  const synth = createSynth({ sound_mode: 'pluck' }, () => ctx)
+  try {
+    await synth.ready()
+    synth.noteOn(60)
+    const pluck = nodes.find((node) => node.kind === 'pluck')
+    if (!pluck) throw new Error('missing plucked voice')
+    expect(modulationOscs(nodes)).toStrictEqual([])
+    clock.currentTime = 1
+    synth.setParams({ lfo2_depth: 30, lfo2_rate: 1 })
+    expect(modulationAt(nodes, pluck.detune, 1.25)).toBeCloseTo(30)
+    synth.close()
+    expect(modulationAt(nodes, pluck.detune, 1.25)).toBe(0)
+  } finally {
+    synth.close()
+    vi.unstubAllGlobals()
+  }
+})
 
 test('LFO 1 sweeps the filter by default, in octaves; LFO 2 is vibrato', () => {
   const { ctx, nodes } = fakeAudio()
@@ -112,26 +268,31 @@ test('LFO 1 sweeps the filter by default, in octaves; LFO 2 is vibrato', () => {
 
 test('each LFO runs at its own rate', () => {
   const { ctx, nodes } = fakeAudio()
-  createSynth({ lfo1_rate: 0.5, lfo2_rate: 6 }, () => ctx).noteOn(60)
+  createSynth({ lfo1_depth: 1, lfo1_rate: 0.5, lfo2_depth: 1, lfo2_rate: 6 }, () => ctx).noteOn(60)
 
-  const [, , lfo1, lfo2] = nodes.filter((n) => n.kind === 'osc')
+  const [lfo1, lfo2] = modulationOscs(nodes)
   expect([lfo1?.frequency.value, lfo2?.frequency.value]).toStrictEqual([0.5, 6])
 })
 
 test('a synced LFO lasts its note value at the tempo, and follows tempo changes', () => {
   const { ctx, nodes } = fakeAudio()
   const synth = createSynth(
-    { lfo1_note: '1/8', lfo1_sync: true, lfo2_note: '1/1d', lfo2_rate: 6 },
+    {
+      lfo1_depth: 1,
+      lfo1_note: '1/8',
+      lfo1_sync: true,
+      lfo2_depth: 1,
+      lfo2_note: '1/1d',
+      lfo2_rate: 6
+    },
     () => ctx
   )
   synth.setTempo(120) // 2 beats a second
   synth.noteOn(60)
   // A loop pad's own sound, synced to triplet sixteenths.
-  synth.noteOn(64, 0, 'pad0:64', { lfo1_note: '1/16t', lfo1_sync: true })
+  synth.noteOn(64, 0, 'pad0:64', { lfo1_depth: 1, lfo1_note: '1/16t', lfo1_sync: true })
 
-  const oscs = nodes.filter((n) => n.kind === 'osc')
-  const [, , lfo1, lfo2] = oscs
-  const padLfo1 = oscs[6]
+  const [lfo1, lfo2, padLfo1] = modulationOscs(nodes)
   expect(lfo1?.frequency.value).toBe(4) // 1/8 notes: 4 a second
   expect(lfo2?.frequency.value).toBe(6) // free: its own Hz, whatever its note
   expect(padLfo1?.frequency.value).toBeCloseTo(12) // 1/16 triplets: 12 a second
@@ -202,16 +363,14 @@ test('the sub is a sine an octave below osc 1 that glides, bends and wobbles wit
   clock.currentTime = 1
   synth.noteOn(69, undefined, 2) // A4 a beat later, gliding while A3 is held
 
-  const oscs = nodes.filter((n) => n.kind === 'osc')
-  // Second voice: osc1, osc2, two LFOs, then the sub.
-  const sub = oscs[9]
+  const sub = toneOscs(nodes)[5]
   expect(sub?.type).toBe('sine')
   expect(sub?.detune.value).toBe(5)
   expect(sub?.frequency.setValueAtTime).toHaveBeenCalledWith(220, 1)
   expect(sub?.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(440, 1.1)
   const [penv] = nodes.filter((n) => n.kind === 'const').slice(1)
   expect(penv?.outputs).toContain(sub?.detune)
-  expect(lfoDepth(nodes, 2).outputs).toHaveLength(3) // first voice: both oscillators and its sub
+  expect(lfoDepth(nodes).outputs).toContain(toneOscs(nodes)[2]?.detune)
   const subGain = sub?.outputs[0]
   expect(subGain && 'gain' in subGain ? subGain.gain.value : null).toBe(0.5)
 
@@ -242,7 +401,6 @@ test('noise loops one shared buffer, from its own point in it for each note', ()
   createSynth(null, () => ctx).noteOn(67)
   const added = nodes.slice(before)
   expect(added.filter((n) => n.kind === 'noise')).toStrictEqual([])
-  expect(added.filter((n) => n.kind === 'osc')).toHaveLength(4)
 })
 
 // What a signal `x` from the oscillators comes out of the drive stage as: the
@@ -255,15 +413,18 @@ function driven(nodes: FakeNode[], x: number): number {
   const push = feeding(bent)
   const level = feeding(straight)
   const [wet, dry] = [bent?.outputs[0], straight?.outputs[0]]
-  if (!bent?.curve || !straight?.curve || !push || !level || !wet || !dry) {
+  if (!straight?.curve || !level || !dry || !('gain' in dry)) {
     throw new Error('drive stage is not connected')
   }
-  if (!('gain' in wet) || !('gain' in dry)) throw new Error('drive stage has no output gains')
-  const x1 = x * level.gain.value
-  return (
-    wet.gain.value * shape(bent.curve, x1 * push.gain.value) +
-    dry.gain.value * shape(straight.curve, x1)
-  )
+  // The settled signal after any smoothly applied parameter changes.
+  const gain = (p: FakeParam) => p.setTargetAtTime.mock.calls.at(-1)?.[0] ?? p.value
+  const x1 = x * gain(level.gain)
+  const clean = gain(dry.gain) * shape(straight.curve, x1)
+  if (!bent) return clean
+  if (!bent.curve || !push || !wet || !('gain' in wet)) {
+    throw new Error('distortion branch is not connected')
+  }
+  return clean + gain(wet.gain) * shape(bent.curve, x1 * gain(push.gain))
 }
 
 function driveNodes(params: Partial<SynthParams>): FakeNode[] {
@@ -300,6 +461,20 @@ test('full drive squashes the wave flat, and mix 0 brings back the clean sound',
 
   const clean = driveNodes({ drive: 1, drive_mix: 0, drive_type: 'soft' })
   for (const x of LEVELS) expect(driven(clean, x)).toBeCloseTo(x, 5)
+})
+
+test('a held clean note can enable drive, change character, and return to clean', () => {
+  const { ctx, nodes } = fakeAudio()
+  const synth = createSynth({ drive: 1, drive_mix: 0 }, () => ctx)
+  synth.noteOn(60)
+  for (const x of LEVELS) expect(driven(nodes, x)).toBeCloseTo(x, 5)
+
+  synth.setParams({ drive_mix: 1 })
+  expect(driven(nodes, 0.25) / driven(nodes, 1)).toBeGreaterThan(0.95)
+  synth.setParams({ drive: 0.5, drive_type: 'tube' })
+  expect(driven(nodes, 1)).toBeGreaterThan(-driven(nodes, -1) * 1.1)
+  synth.setParams({ drive: 0 })
+  for (const x of LEVELS) expect(driven(nodes, x)).toBeCloseTo(x, 5)
 })
 
 test('tube bends the bottom of the wave harder than the top', () => {
@@ -482,9 +657,8 @@ test('sounding notes switch to a new filter type', () => {
   expect(filter?.Q.setTargetAtTime).toHaveBeenLastCalledWith(4, 0, 0.01)
 })
 
-// Voice `n`'s first oscillator (each voice makes osc1, osc2 and two LFOs).
-const osc1Of = (nodes: FakeNode[], n: number): FakeNode | undefined =>
-  nodes.filter((node) => node.kind === 'osc')[n * 4]
+// Voice `n`'s first tone oscillator (glide sounds have two, with no sub).
+const osc1Of = (nodes: FakeNode[], n: number): FakeNode | undefined => toneOscs(nodes)[n * 2]
 
 // Where voice `n` glides [from Hz, to Hz, over seconds], or null if it doesn't.
 function glideOf(nodes: FakeNode[], n: number): null | number[] {
@@ -614,6 +788,62 @@ test("a sound's chorus is only built once its mix is up, then follows the sound"
   expect(nodes.filter((n) => n.kind === 'merger')).toHaveLength(1) // built once
 })
 
+test.each([false, true])(
+  'unchanged %s own notes leave shared FX alone; edits and tempo still change the sound',
+  (own) => {
+    const { clock, ctx, nodes } = fakeAudio()
+    const settings = {
+      fx_chorus_mix: 0.3,
+      fx_delay_feedback: 0.2,
+      fx_delay_mix: 0.4,
+      fx_delay_time: '1/4',
+      fx_reverb_mix: 0.2
+    } as const
+    const synth = createSynth(settings, () => ctx)
+    synth.setTempo(120)
+    const play = (midi: number, p: Partial<SynthParams> = settings) =>
+      synth.noteOn(midi, undefined, own ? `pad0:${midi}` : midi, own ? { ...p } : null)
+    play(60)
+    const existing = [...nodes]
+    const params = existing.flatMap((node) =>
+      [node.gain, node.frequency, node.detune, node.delayTime].filter(
+        (param): param is FakeParam => param !== undefined
+      )
+    )
+    const before = params.map((param) => param.setTargetAtTime.mock.calls.length)
+    play(64)
+    play(67)
+    synth.setTempo(120)
+    expect(params.map((param) => param.setTargetAtTime.mock.calls.length)).toStrictEqual(before)
+
+    const delay = existing.find(
+      (node) =>
+        node.kind === 'delay' &&
+        node.outputs.some((output) => 'kind' in output && output.kind === 'filter')
+    )
+    const send = existing.find((node) => delay && node.outputs.includes(delay))
+    const chorus = existing.find((node) => node.kind === 'merger')?.outputs[0]
+    if (!delay?.delayTime || !send || !chorus || !('gain' in chorus))
+      throw new Error('missing effects')
+    expect(targetAt(send.gain, 0)).toBe(0.4)
+    expect(targetAt(delay.delayTime, 0)).toBe(0.5)
+    clock.currentTime = 1
+    const edited = { ...settings, fx_chorus_mix: 0, fx_delay_mix: 0.8 }
+    if (own) synth.setOwnParams('pad0:', edited)
+    else synth.setParams(edited)
+    expect(targetAt(send.gain, 1.2)).toBeCloseTo(0.8, 4)
+    expect(targetAt(chorus.gain, 1.2)).toBeCloseTo(0, 4)
+    play(69, edited)
+    clock.currentTime = 2
+    synth.setTempo(60)
+    expect(targetAt(delay.delayTime, 2.2)).toBeCloseTo(1, 4)
+    // A loop's replacement sound also reaches its shared effects through noteOn.
+    if (own) play(72, { ...edited, fx_delay_time: '1/8' })
+    else synth.setParams({ fx_delay_time: '1/8' })
+    expect(targetAt(delay.delayTime, 2.2)).toBeCloseTo(0.5, 4)
+  }
+)
+
 test('note bends add to pitch envelopes, detune, glide and vibrato, including the sub', () => {
   const { clock, ctx, nodes } = fakeAudio()
   const synth = createSynth(null, () => ctx)
@@ -630,8 +860,7 @@ test('note bends add to pitch envelopes, detune, glide and vibrato, including th
     2
   )
   const [envelope, bend] = nodes.filter((n) => n.kind === 'const')
-  const oscs = nodes.filter((n) => n.kind === 'osc').slice(4)
-  const [osc1, osc2, , , sub] = oscs
+  const [osc1, osc2, sub] = toneOscs(nodes).slice(2)
   expect(bend?.outputs).toStrictEqual([osc1?.detune, osc2?.detune, sub?.detune])
   expect(envelope?.offset.setValueAtTime).toHaveBeenCalledWith(300, 1)
   expect(osc1?.frequency.exponentialRampToValueAtTime).toHaveBeenCalledWith(440, 1.1)
@@ -647,7 +876,10 @@ test('note bends add to pitch envelopes, detune, glide and vibrato, including th
   expect(bend?.start).toHaveBeenCalledWith(1)
   synth.setOwnParams('pad0:', { ...own, lfo2_depth: 30, osc1_detune: 10 })
   expect(osc1?.detune.setTargetAtTime).toHaveBeenCalledWith(10, 1, 0.01)
-  const depth = oscs[3]?.outputs[0]
+  const depth = modulationOscs(nodes).find((osc) => {
+    const gain = osc.outputs[0]
+    return gain && 'outputs' in gain && gain.outputs.includes(sub?.detune ?? osc.detune)
+  })?.outputs[0]
   expect(depth && 'gain' in depth ? depth.gain.setTargetAtTime : undefined).toHaveBeenCalledWith(
     30,
     1,

@@ -6,13 +6,15 @@ import { createTransport } from '../transport.js'
 import { createSynth } from './engine.js'
 import { createPlayer, createRecorder } from './looper.js'
 
-const OSCS_PER_VOICE = 4 // osc1, osc2, two LFOs; osc1 of voice n is oscs[n * 4]
-
 interface FakeNode {
   disconnected?: boolean
+  onended?: () => void
   startAt?: number
   stopAt?: number
 }
+
+// The first tone oscillator owns each voice's end-of-note cleanup.
+const noteOscs = (oscs: FakeNode[]): FakeNode[] => oscs.filter((osc) => osc.onended)
 
 interface FakeParam {
   cancelScheduledValues: Mock<AudioParam['cancelScheduledValues']>
@@ -539,7 +541,7 @@ test('stop silences loop notes already scheduled inside the lookahead, but not l
   const player = createPlayer(synth, 'pad1:', loop, transport)
   player.start() // note-on at 0.06 and note-off at 0.08 both scheduled now
 
-  const [liveOsc, loopOsc] = [defined(oscs[0]), defined(oscs[OSCS_PER_VOICE])]
+  const [liveOsc, loopOsc] = [defined(noteOscs(oscs)[0]), defined(noteOscs(oscs)[1])]
   expect(+defined(loopOsc.startAt).toFixed(3)).toBe(0.06)
 
   clock.now = 0.02
@@ -565,7 +567,7 @@ test('stopping one pad leaves another pad on the same pitch playing', () => {
   const pad1 = createPlayer(synth, 'pad1:', loop, transport)
   pad0.start()
   pad1.start() // both note-ons scheduled at 0.06, not yet started
-  const [osc0, osc1] = [defined(oscs[0]), defined(oscs[OSCS_PER_VOICE])]
+  const [osc0, osc1] = [defined(noteOscs(oscs)[0]), defined(noteOscs(oscs)[1])]
 
   clock.now = 0.02
   pad0.stop()
@@ -577,10 +579,11 @@ test('stopping one pad leaves another pad on the same pitch playing', () => {
   expect(osc1.stopAt).toBe(undefined)
   expect(transport.running).toBe(true)
 
+  const scheduled = [...oscs]
   clock.now = 0.3
   pad1.tick()
   pad0.tick()
-  expect(oscs.length).toBe(2 * OSCS_PER_VOICE)
+  expect(oscs).toStrictEqual(scheduled)
 })
 
 test('recorder counts in, rounds the take to whole bars and closes held notes', () => {
@@ -782,6 +785,6 @@ test('repeated bent notes pair with the next on, and an unclosed bend ends at th
   ])
   clock.now = 2
   player.tick()
-  expect(defined(oscs[OSCS_PER_VOICE]).stopAt).toBe(2.05 + 0.5 + 0.05)
+  expect(defined(noteOscs(oscs)[1]).stopAt).toBe(2.05 + 0.5 + 0.05)
   player.stop()
 })

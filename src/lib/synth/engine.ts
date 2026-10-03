@@ -154,6 +154,7 @@ interface SoundFx {
   crush: Crusher
   delay: DelayNode
   delaySend: GainNode
+  delayTime: number
   feedback: GainNode
   input: GainNode
   // The params it was last set to (for the delay time when the tempo changes).
@@ -257,17 +258,38 @@ function driveGains(
 // they stay lined up with each other.
 const DC_BLOCK = 5 // Hz
 
-// A voice's drive stage: level -> push -> shaper -> wet, and level -> straight ->
-// dry alongside it, both through dc into the filter.
+// The clean copy stays oversampled to keep its timing and tone unchanged.
+// A clean note needs no distortion branch; a held note adds it when Drive is enabled.
+interface DriveShape {
+  push: GainNode
+  shaper: WaveShaperNode
+  type: DriveType
+  wet: GainNode
+}
+
 interface DriveStage {
   dc: BiquadFilterNode
   dry: GainNode
   level: GainNode
-  push: GainNode
-  shaper: WaveShaperNode
+  shape: DriveShape | null
   straight: WaveShaperNode
-  type: DriveType
-  wet: GainNode
+}
+
+function addDriveShape(ctx: BaseAudioContext, stage: DriveStage, p: SynthParams): DriveShape {
+  const shape: DriveShape = {
+    push: ctx.createGain(),
+    shaper: ctx.createWaveShaper(),
+    type: p.drive_type,
+    wet: ctx.createGain()
+  }
+  shape.shaper.curve = curve(p.drive_type)
+  // Keeps the added harmonics from folding back as hiss.
+  shape.shaper.oversample = '4x'
+  shape.push.gain.value = DRIVE_MAX ** p.drive / DRIVE_MAX
+  shape.wet.gain.value = 0
+  stage.level.connect(shape.push).connect(shape.shaper).connect(shape.wet).connect(stage.dc)
+  stage.shape = shape
+  return shape
 }
 
 function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): DriveStage {
@@ -275,42 +297,48 @@ function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): Dr
     dc: ctx.createBiquadFilter(),
     dry: ctx.createGain(),
     level: ctx.createGain(),
-    push: ctx.createGain(),
-    shaper: ctx.createWaveShaper(),
-    straight: ctx.createWaveShaper(),
-    type: p.drive_type,
-    wet: ctx.createGain()
+    shape: null,
+    straight: ctx.createWaveShaper()
   }
-  stage.shaper.curve = curve(p.drive_type)
   stage.straight.curve = STRAIGHT
-  // Keeps the added harmonics from folding back as hiss.
-  stage.shaper.oversample = stage.straight.oversample = '4x'
+  stage.straight.oversample = '4x'
   stage.dc.type = 'highpass'
   stage.dc.frequency.value = DC_BLOCK
   stage.dc.Q.value = 0 // no bump at the corner
-  stage.level.connect(stage.push).connect(stage.shaper).connect(stage.wet).connect(stage.dc)
   stage.level.connect(stage.straight).connect(stage.dry).connect(stage.dc)
   stage.dc.connect(into)
   const g = driveGains(p, p.sound_mode)
-  for (const k of ['dry', 'level', 'push', 'wet'] as const) stage[k].gain.value = g[k]
+  stage.level.gain.value = g.level
+  stage.dry.gain.value = 1 / g.level
+  if (p.drive > 0 && p.drive_mix > 0) {
+    const shape = addDriveShape(ctx, stage, p)
+    shape.push.gain.value = g.push
+    shape.wet.gain.value = g.wet
+    stage.dry.gain.value = g.dry
+  }
   return stage
 }
 
 // Follows changed params on a sounding voice, gliding the gains so it doesn't click.
 function updateDrive(
+  ctx: BaseAudioContext,
   stage: DriveStage,
   p: SynthParams,
   t: number,
   soundMode: SynthParams['sound_mode']
 ): void {
-  if (stage.type !== p.drive_type) {
-    stage.type = p.drive_type
-    stage.shaper.curve = curve(p.drive_type)
-  }
+  const shape =
+    stage.shape ?? (p.drive > 0 && p.drive_mix > 0 ? addDriveShape(ctx, stage, p) : null)
   const g = driveGains(p, soundMode)
-  for (const k of ['dry', 'level', 'push', 'wet'] as const) {
-    stage[k].gain.setTargetAtTime(g[k], t, 0.01)
+  stage.level.gain.setTargetAtTime(g.level, t, 0.01)
+  stage.dry.gain.setTargetAtTime(shape ? g.dry : 1 / g.level, t, 0.01)
+  if (!shape) return
+  if (shape.type !== p.drive_type) {
+    shape.type = p.drive_type
+    shape.shaper.curve = curve(p.drive_type)
   }
+  shape.push.gain.setTargetAtTime(g.push, t, 0.01)
+  shape.wet.gain.setTargetAtTime(g.wet, t, 0.01)
 }
 
 // Notes glide only from the same source's last note: the keyboard (numeric
@@ -466,6 +494,7 @@ export function createSynth(
       crush,
       delay,
       delaySend,
+      delayTime: 0,
       feedback,
       input,
       p,
@@ -486,8 +515,8 @@ export function createSynth(
       if (now) param.value = value
       else param.setTargetAtTime(value, t, 0.02)
     }
-    fx.p = p
-    fx.crush.set(p.fx_crush)
+    const previous = fx.p
+    if (now || previous.fx_crush !== p.fx_crush) fx.crush.set(p.fx_crush)
     if (p.fx_chorus_mix > 0 && !fx.chorus) {
       const unit = createChorus(ctx, chorusOf(p))
       const mix = ctx.createGain()
@@ -496,17 +525,27 @@ export function createSynth(
       fx.chorus = { mix, unit }
       mix.gain.value = p.fx_chorus_mix
     } else if (fx.chorus) {
-      fx.chorus.unit.set(chorusOf(p), now)
-      to(fx.chorus.mix.gain, p.fx_chorus_mix)
+      if (
+        now ||
+        previous.fx_chorus_depth !== p.fx_chorus_depth ||
+        previous.fx_chorus_flanger !== p.fx_chorus_flanger ||
+        previous.fx_chorus_rate !== p.fx_chorus_rate
+      )
+        fx.chorus.unit.set(chorusOf(p), now)
+      if (now || previous.fx_chorus_mix !== p.fx_chorus_mix) to(fx.chorus.mix.gain, p.fx_chorus_mix)
     }
-    to(fx.delaySend.gain, p.fx_delay_mix)
-    to(fx.feedback.gain, p.fx_delay_feedback)
-    to(fx.delay.delayTime, Math.min(MAX_DELAY, (DELAY_BEATS[p.fx_delay_time] * 60) / bpm))
-    to(fx.reverbSend.gain, p.fx_reverb_mix)
+    if (now || previous.fx_delay_mix !== p.fx_delay_mix) to(fx.delaySend.gain, p.fx_delay_mix)
+    if (now || previous.fx_delay_feedback !== p.fx_delay_feedback)
+      to(fx.feedback.gain, p.fx_delay_feedback)
+    const delayTime = Math.min(MAX_DELAY, (DELAY_BEATS[p.fx_delay_time] * 60) / bpm)
+    if (now || fx.delayTime !== delayTime) to(fx.delay.delayTime, delayTime)
+    fx.delayTime = delayTime
+    if (now || previous.fx_reverb_mix !== p.fx_reverb_mix) to(fx.reverbSend.gain, p.fx_reverb_mix)
     if (p.fx_reverb_mix > 0 && fx.size !== p.fx_reverb_size) {
       fx.size = p.fx_reverb_size
       fx.reverb.buffer = impulse(ctx, fx.size)
     }
+    fx.p = p
   }
 
   // `from` (a MIDI note) slides the pitch from there over `glide` seconds.
@@ -592,6 +631,25 @@ export function createSynth(
     }
   }
 
+  // Each note starts enabled LFOs at phase zero; a held note adds one only when needed.
+  function addLfo(ctx: BaseAudioContext, v: Voice, p: SynthParams, n: 1 | 2, smooth: boolean) {
+    const osc = ctx.createOscillator()
+    const depth = ctx.createGain()
+    const { beats, rate, target } = lfoParams(p, n)
+    const lfo: VoiceLfo = { beats, depth, n, osc, target }
+    osc.frequency.value = lfoHz(rate, beats, bpm)
+    depth.gain.value = smooth ? 0 : lfoSwing(p, n)
+    osc.connect(depth)
+    routeLfo(v, lfo, target)
+    v.lfos.push(lfo)
+    v.srcs.push(osc)
+    if (smooth) {
+      const t = Math.max(ctx.currentTime, v.t0)
+      depth.gain.setTargetAtTime(lfoSwing(p, n), t, 0.01)
+      osc.start(t)
+    }
+  }
+
   // `time` defaults to the voice's own release (its params may differ from the live ones).
   function release(key: VoiceKey, time: number | undefined, at: number) {
     const v = voices.get(key)
@@ -640,16 +698,6 @@ export function createSynth(
     const g2 = pluck ? null : ctx.createGain()
     const filter = ctx.createBiquadFilter()
     const amp = ctx.createGain()
-    // Per-voice LFOs so each note's wobble starts from the same phase.
-    const lfos = LFOS.map((n): VoiceLfo => {
-      const osc = ctx.createOscillator()
-      const depth = ctx.createGain()
-      const { beats, rate, target } = lfoParams(p, n)
-      osc.frequency.value = lfoHz(rate, beats, bpm)
-      depth.gain.value = lfoSwing(p, n)
-      osc.connect(depth)
-      return { beats, depth, n, osc, target }
-    })
     const trem = ctx.createGain()
     const drive = createDrive(ctx, p, filter)
 
@@ -725,10 +773,7 @@ export function createSynth(
     // The pitch envelope: an offset on the oscillators' detune, falling in a
     // straight line of cents (a curve in pitch) from the amount to nothing.
     // Pitch LFOs and glide work on top of it.
-    const srcs: AudioScheduledSourceNode[] = [
-      ...(osc1 && osc2 ? [osc1, osc2] : []),
-      ...lfos.map((l) => l.osc)
-    ]
+    const srcs: AudioScheduledSourceNode[] = osc1 && osc2 ? [osc1, osc2] : []
     if (sub) srcs.push(sub.osc)
     if (p.pitch_env_amount) {
       const penv = ctx.createConstantSource()
@@ -769,7 +814,7 @@ export function createSynth(
       g1,
       g2,
       key,
-      lfos,
+      lfos: [],
       midi,
       noise,
       osc1,
@@ -784,7 +829,7 @@ export function createSynth(
       t0: t,
       trem
     }
-    for (const lfo of lfos) routeLfo(v, lfo, lfo.target)
+    for (const n of LFOS) if (lfoParams(p, n).depth !== 0) addLfo(ctx, v, p, n, false)
     let cleaned = false
     function cleanup() {
       if (cleaned) return
@@ -803,16 +848,14 @@ export function createSynth(
         ...(sub ? [sub.gain] : []),
         ...(noise ? [noise] : []),
         drive.level,
-        drive.push,
-        drive.shaper,
-        drive.wet,
+        ...(drive.shape ? [drive.shape.push, drive.shape.shaper, drive.shape.wet] : []),
         drive.dc,
         drive.straight,
         drive.dry,
         filter,
         amp,
         trem,
-        ...lfos.map((l) => l.depth)
+        ...v.lfos.map((l) => l.depth)
       ].forEach((n) => n.disconnect())
       shift?.disconnect(filter.detune)
     }
@@ -857,19 +900,30 @@ export function createSynth(
   }
 
   // Sounding voices take on changed settings, gliding so nothing clicks.
-  function follow(v: Voice, p: SynthParams, t: number): void {
+  function follow(ctx: BaseAudioContext, v: Voice, p: SynthParams, t: number): void {
     v.filter.frequency.setTargetAtTime(p.filter_cutoff, t, 0.01)
     v.filter.type = p.filter_type
     v.filter.Q.setTargetAtTime(filterQ(p), t, 0.01)
-    for (const lfo of v.lfos) {
-      const { beats, rate, target } = lfoParams(p, lfo.n)
-      if (lfo.target !== target) routeLfo(v, lfo, target)
+    for (const n of LFOS) {
+      const { beats, depth, rate, target } = lfoParams(p, n)
+      const lfo = v.lfos.find((l) => l.n === n)
+      if (!lfo) {
+        if (depth !== 0) addLfo(ctx, v, p, n, true)
+        continue
+      }
+      if (lfo.target !== target) {
+        // Targets use different units: cents must not become an amplitude gain.
+        const at = Math.max(t, v.t0)
+        lfo.depth.gain.cancelScheduledValues(at)
+        lfo.depth.gain.setValueAtTime(0, at)
+        routeLfo(v, lfo, target)
+      }
       lfo.beats = beats
       lfo.osc.frequency.setTargetAtTime(lfoHz(rate, beats, bpm), t, 0.01)
-      lfo.depth.gain.setTargetAtTime(lfoSwing(p, lfo.n), t, 0.01)
+      lfo.depth.gain.setTargetAtTime(lfoSwing(p, n), Math.max(t, v.t0), 0.01)
     }
     v.trem.gain.setTargetAtTime(tremLevel(p), t, 0.01)
-    updateDrive(v.drive, p, t, v.pluck ? 'pluck' : 'synth')
+    updateDrive(ctx, v.drive, p, t, v.pluck ? 'pluck' : 'synth')
     if (v.osc1 && v.g1) applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
     if (v.osc2 && v.g2) applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
     if (v.pluck) {
@@ -887,7 +941,7 @@ export function createSynth(
     master.gain.setTargetAtTime(params.volume, t, 0.01)
     const live = fxs.get('live')
     if (live) applyFx(live, params)
-    for (const v of voices.values()) if (!v.own) follow(v, params, t)
+    for (const v of voices.values()) if (!v.own) follow(ctx, v, params, t)
   }
 
   // A loop's new sound (`own`, as given to noteOn) for its voices already sounding:
@@ -900,7 +954,7 @@ export function createSynth(
     for (const v of voices.values()) {
       if (!v.own || typeof v.key !== 'string' || !v.key.startsWith(prefix)) continue
       v.release = p.release
-      follow(v, p, ctx.currentTime)
+      follow(ctx, v, p, ctx.currentTime)
     }
   }
 
