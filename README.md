@@ -557,6 +557,14 @@ dropping the first notes. Audio initialization stays browser-only.
 Clean synth notes (Drive amount or mix at zero) omit the distortion branch to
 reduce audio-node creation and processing. The clean path keeps its 4× oversampling
 and DC filter; enabling Drive on a held note adds the branch and fades it in.
+Disabled voice LFOs likewise allocate no nodes. Enabling one on a held note starts
+it at phase zero and fades its depth in; once enabled, it keeps its phase until
+the voice ends, including while its depth is zero. Shared sound effects update
+only changed settings (and delay time when tempo changes), not every note.
+
+Audio scheduling still runs every 25 ms with a 100 ms lookahead. Pad and piano-roll
+progress updates are limited to 20 Hz while visible and stop while the synth
+editor or Pads tab is hidden; playing/stop state continues to follow the audio.
 
 How the pieces talk:
 

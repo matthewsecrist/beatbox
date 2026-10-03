@@ -135,11 +135,11 @@
     return `${n} bar${n === 1 ? '' : 's'}`
   }
 
-  function setPlayback(slot: number, playing: boolean, pos = 0) {
+  function setPlayback(slot: number, playing: boolean, pos = 0, updatePosition = true) {
     const state = playback[slot]
     if (!state) return
     state.playing = playing
-    state.pos = pos
+    if (updatePosition || !playing) state.pos = pos
   }
 
   // Brings the players in line with the store's loops: new loops get a player,
@@ -483,6 +483,7 @@
     // Live notes and loop pads share this synth, and its effects channel.
     const created = createSynth($state.snapshot(params), undefined, () => effects.channel('synth'))
     let disposed = false
+    let lastProgressUpdate = 0
     const createdArp = createArp(created, transport, (midi, on, at) => {
       if (recording >= 0) recorder.note(midi, on, at)
     })
@@ -500,12 +501,16 @@
         syncPlayers()
         onAudioReady(true)
         loopTimer = setInterval(() => {
+          // Audio stays at 40 Hz; only visible pad/piano-roll progress needs 20 Hz.
+          const now = globalThis.performance.now()
+          const updateProgress = selected && tab === 'pads' && now - lastProgressUpdate >= 50
+          if (updateProgress) lastProgressUpdate = now
           createdArp.tick()
           // The UI follows the players: a pad stopped by a section boundary plays on until it.
           players.forEach((p, slot) => {
             if (!p?.playing) return
             const pos = p.tick()
-            setPlayback(slot, p.playing, p.playing ? pos : 0)
+            setPlayback(slot, p.playing, p.playing ? pos : 0, updateProgress)
           })
           if (recording >= 0) countingIn = transport.beatAt(transport.now()) < recorder.startBeat
         }, 25)
