@@ -12,6 +12,7 @@ import {
 } from '../audio.js'
 import { DAMPING, DELAY_BEATS, impulse, MAX_DELAY } from '../effects.js'
 import { bendDurations } from './notes.js'
+import { createPluck, type PluckSource, preparePluck } from './pluck.js'
 
 export const DEFAULT_PARAMS: SynthParams = {
   attack: 0.01,
@@ -70,7 +71,10 @@ export const DEFAULT_PARAMS: SynthParams = {
   // to fall back to its pitch.
   pitch_env_amount: 0,
   pitch_env_decay: 0.1,
+  pluck_brightness: 0.5,
+  pluck_decay: 2,
   release: 0.5,
+  sound_mode: 'synth',
   sub_level: 0,
   sustain: 0.6,
   volume: 0.7
@@ -228,8 +232,14 @@ interface LastNote {
 // Pushed into soft, tube or hard, a note becomes a fuller, squarer wave, so it also
 // comes down a little more (push ** -0.1, about 3 dB at full drive) to stay about as
 // loud as the clean sound; fold doesn't fill out, so it doesn't.
-function driveGains(p: SynthParams): { dry: number; level: number; push: number; wet: number } {
-  const peak = Math.max(p.osc1_level + p.osc2_level + p.sub_level + p.noise_level, 0.01)
+function driveGains(
+  p: SynthParams,
+  soundMode: SynthParams['sound_mode']
+): { dry: number; level: number; push: number; wet: number } {
+  const peak =
+    soundMode === 'pluck'
+      ? 1
+      : Math.max(p.osc1_level + p.osc2_level + p.sub_level + p.noise_level, 0.01)
   const push = DRIVE_MAX ** p.drive
   const shape = DRIVE_SHAPES[p.drive_type]
   const top = Math.max(1, Math.abs(shape(push)), Math.abs(shape(-push)))
@@ -281,18 +291,23 @@ function createDrive(ctx: BaseAudioContext, p: SynthParams, into: AudioNode): Dr
   stage.level.connect(stage.push).connect(stage.shaper).connect(stage.wet).connect(stage.dc)
   stage.level.connect(stage.straight).connect(stage.dry).connect(stage.dc)
   stage.dc.connect(into)
-  const g = driveGains(p)
+  const g = driveGains(p, p.sound_mode)
   for (const k of ['dry', 'level', 'push', 'wet'] as const) stage[k].gain.value = g[k]
   return stage
 }
 
 // Follows changed params on a sounding voice, gliding the gains so it doesn't click.
-function updateDrive(stage: DriveStage, p: SynthParams, t: number): void {
+function updateDrive(
+  stage: DriveStage,
+  p: SynthParams,
+  t: number,
+  soundMode: SynthParams['sound_mode']
+): void {
   if (stage.type !== p.drive_type) {
     stage.type = p.drive_type
     stage.shaper.curve = curve(p.drive_type)
   }
-  const g = driveGains(p)
+  const g = driveGains(p, soundMode)
   for (const k of ['dry', 'level', 'push', 'wet'] as const) {
     stage[k].gain.setTargetAtTime(g[k], t, 0.01)
   }
@@ -328,6 +343,8 @@ export interface Synth {
     duration?: number
   ): void
   now(): number
+  // Load the plucked-string processor before enabling notes or starting a player.
+  ready(): Promise<void>
   // A loop's changed sound, for its voices already sounding (keys starting `prefix`).
   setOwnParams(prefix: string, own: Partial<SynthParams>): void
   setParams(p: Partial<SynthParams>): void
@@ -350,24 +367,26 @@ interface FilterEnv {
 interface Voice {
   amp: GainNode
   attack: number
+  cleanup(): void
   decay: number
   // Drive stage between the oscillators and the filter (see driveGains).
   drive: DriveStage
   // The filter envelope this note started with; amount in cents.
   fenv: FilterEnv
   filter: BiquadFilterNode
-  g1: GainNode
-  g2: GainNode
+  g1: GainNode | null
+  g2: GainNode | null
   key: VoiceKey
   lfos: VoiceLfo[]
   midi: number
   // The noise's level; null when the note started without noise.
   noise: GainNode | null
-  osc1: OscillatorNode
-  osc2: OscillatorNode
+  osc1: null | OscillatorNode
+  osc2: null | OscillatorNode
   own: boolean
   // The envelope's peak level: HEADROOM scaled by the note's velocity.
   peak: number
+  pluck: null | PluckSource
   release: number
   srcs: AudioScheduledSourceNode[]
   // The sub oscillator and its level; null when the note started without one.
@@ -566,8 +585,9 @@ export function createSynth(
     if (target === 'filter') lfo.depth.connect(v.filter.detune)
     else if (target === 'amp') lfo.depth.connect(v.trem.gain)
     else {
-      lfo.depth.connect(v.osc1.detune)
-      lfo.depth.connect(v.osc2.detune)
+      if (v.pluck) lfo.depth.connect(v.pluck.detune)
+      if (v.osc1) lfo.depth.connect(v.osc1.detune)
+      if (v.osc2) lfo.depth.connect(v.osc2.detune)
       if (v.sub) lfo.depth.connect(v.sub.osc.detune)
     }
   }
@@ -590,6 +610,7 @@ export function createSynth(
       d.linearRampToValueAtTime(0, t + v.fenv.release)
     }
     for (const s of v.srcs) s.stop(t + time + 0.05)
+    v.pluck?.stop(t + time + 0.05)
   }
 
   // `at` is an AudioContext time (defaults to now); `key` lets loop voices coexist
@@ -608,14 +629,15 @@ export function createSynth(
     const { ctx } = ensureContext()
     const p = own ? { ...DEFAULT_PARAMS, ...own } : params
     const t = Math.max(at ?? 0, ctx.currentTime)
+    const pluck = p.sound_mode === 'pluck' ? createPluck(ctx, t) : null
     if (voices.has(key)) release(key, undefined, t)
     const oldest = voices.keys().next()
     if (voices.size >= MAX_VOICES && !oldest.done) release(oldest.value, 0.01, ctx.currentTime)
 
-    const osc1 = ctx.createOscillator()
-    const osc2 = ctx.createOscillator()
-    const g1 = ctx.createGain()
-    const g2 = ctx.createGain()
+    const osc1 = pluck ? null : ctx.createOscillator()
+    const osc2 = pluck ? null : ctx.createOscillator()
+    const g1 = pluck ? null : ctx.createGain()
+    const g2 = pluck ? null : ctx.createGain()
     const filter = ctx.createBiquadFilter()
     const amp = ctx.createGain()
     // Per-voice LFOs so each note's wobble starts from the same phase.
@@ -632,25 +654,35 @@ export function createSynth(
     const drive = createDrive(ctx, p, filter)
 
     const from = glideFrom(key, midi, t, p)
-    applyOsc(t, osc1, g1, 1, midi, false, p, from)
-    applyOsc(t, osc2, g2, 2, midi, false, p, from)
+    if (osc1 && osc2 && g1 && g2) {
+      applyOsc(t, osc1, g1, 1, midi, false, p, from)
+      applyOsc(t, osc2, g2, 2, midi, false, p, from)
+      osc1.connect(g1).connect(drive.level)
+      osc2.connect(g2).connect(drive.level)
+    }
+    if (pluck) {
+      pluck.frequency.setValueAtTime(freq(from ?? midi, 0), t)
+      if (from !== undefined)
+        pluck.frequency.exponentialRampToValueAtTime(freq(midi, 0), t + p.glide)
+      pluck.brightness.value = p.pluck_brightness
+      pluck.decay.value = p.pluck_decay
+      pluck.node.connect(drive.level)
+    }
     filter.type = p.filter_type
     filter.frequency.value = p.filter_cutoff
     filter.Q.value = filterQ(p)
 
-    osc1.connect(g1).connect(drive.level)
-    osc2.connect(g2).connect(drive.level)
     // The sub and the noise join only notes that start with them turned up, so
     // a sound without them costs no extra nodes.
     let sub: Voice['sub'] = null
-    if (p.sub_level) {
+    if (!pluck && p.sub_level) {
       sub = { gain: ctx.createGain(), osc: ctx.createOscillator() }
       applyOsc(t, sub.osc, sub.gain, 'sub', midi, false, p, from)
       sub.osc.connect(sub.gain).connect(drive.level)
     }
     let noise: GainNode | null = null
     let hiss: AudioBufferSourceNode | null = null
-    if (p.noise_level) {
+    if (!pluck && p.noise_level) {
       noise = ctx.createGain()
       noise.gain.value = p.noise_level
       hiss = ctx.createBufferSource()
@@ -693,14 +725,18 @@ export function createSynth(
     // The pitch envelope: an offset on the oscillators' detune, falling in a
     // straight line of cents (a curve in pitch) from the amount to nothing.
     // Pitch LFOs and glide work on top of it.
-    const srcs: AudioScheduledSourceNode[] = [osc1, osc2, ...lfos.map((l) => l.osc)]
+    const srcs: AudioScheduledSourceNode[] = [
+      ...(osc1 && osc2 ? [osc1, osc2] : []),
+      ...lfos.map((l) => l.osc)
+    ]
     if (sub) srcs.push(sub.osc)
     if (p.pitch_env_amount) {
       const penv = ctx.createConstantSource()
       penv.offset.setValueAtTime(p.pitch_env_amount * 100, t)
       penv.offset.linearRampToValueAtTime(0, t + p.pitch_env_decay)
-      penv.connect(osc1.detune)
-      penv.connect(osc2.detune)
+      if (pluck) penv.connect(pluck.detune)
+      if (osc1) penv.connect(osc1.detune)
+      if (osc2) penv.connect(osc2.detune)
       if (sub) penv.connect(sub.osc.detune)
       srcs.push(penv)
     }
@@ -715,8 +751,9 @@ export function createSynth(
           if (duration - out > into) pitch.offset.setValueAtTime(0, t + duration - out)
           pitch.offset.linearRampToValueAtTime((bend.out?.semitones ?? 0) * 100, t + duration)
         }
-        pitch.connect(osc1.detune)
-        pitch.connect(osc2.detune)
+        if (pluck) pitch.connect(pluck.detune)
+        if (osc1) pitch.connect(osc1.detune)
+        if (osc2) pitch.connect(osc2.detune)
         if (sub) pitch.connect(sub.osc.detune)
         srcs.push(pitch)
       }
@@ -724,6 +761,7 @@ export function createSynth(
     const v: Voice = {
       amp,
       attack,
+      cleanup,
       decay,
       drive,
       fenv,
@@ -738,6 +776,7 @@ export function createSynth(
       osc2,
       own: !!own,
       peak,
+      pluck,
       release: p.release,
       srcs,
       sub,
@@ -746,12 +785,21 @@ export function createSynth(
       trem
     }
     for (const lfo of lfos) routeLfo(v, lfo, lfo.target)
-    osc1.onended = () => {
+    let cleaned = false
+    function cleanup() {
+      if (cleaned) return
+      cleaned = true
       alive.delete(v)
+      if (voices.get(v.key) === v) voices.delete(v.key)
+      for (const s of srcs) s.stop(ctx.currentTime)
+      if (pluck) {
+        pluck.stop(ctx.currentTime)
+        pluck.node.disconnect()
+        pluck.node.port.close()
+      }
       ;[
         ...srcs,
-        g1,
-        g2,
+        ...(g1 && g2 ? [g1, g2] : []),
         ...(sub ? [sub.gain] : []),
         ...(noise ? [noise] : []),
         drive.level,
@@ -768,6 +816,8 @@ export function createSynth(
       ].forEach((n) => n.disconnect())
       shift?.disconnect(filter.detune)
     }
+    if (osc1) osc1.onended = cleanup
+    if (pluck) pluck.onended = cleanup
     for (const s of srcs) s.start(t)
     if (hiss) {
       // From a random point in the shared second, so notes played together don't
@@ -798,9 +848,7 @@ export function createSynth(
     if (!ctx) return
     for (const v of alive) {
       if (v.t0 <= ctx.currentTime || !match(v.key)) continue
-      if (voices.get(v.key) === v) voices.delete(v.key)
-      v.amp.disconnect()
-      for (const s of v.srcs) s.stop(v.t0)
+      v.cleanup()
     }
   }
 
@@ -821,9 +869,13 @@ export function createSynth(
       lfo.depth.gain.setTargetAtTime(lfoSwing(p, lfo.n), t, 0.01)
     }
     v.trem.gain.setTargetAtTime(tremLevel(p), t, 0.01)
-    updateDrive(v.drive, p, t)
-    applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
-    applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
+    updateDrive(v.drive, p, t, v.pluck ? 'pluck' : 'synth')
+    if (v.osc1 && v.g1) applyOsc(t, v.osc1, v.g1, 1, v.midi, true, p)
+    if (v.osc2 && v.g2) applyOsc(t, v.osc2, v.g2, 2, v.midi, true, p)
+    if (v.pluck) {
+      v.pluck.brightness.setTargetAtTime(p.pluck_brightness, t, 0.01)
+      v.pluck.decay.setTargetAtTime(p.pluck_decay, t, 0.01)
+    }
     if (v.sub) applyOsc(t, v.sub.osc, v.sub.gain, 'sub', v.midi, true, p)
     v.noise?.gain.setTargetAtTime(p.noise_level, t, 0.01)
   }
@@ -868,6 +920,7 @@ export function createSynth(
 
   // Detach from the shared AudioContext (it outlives this component).
   function close(): void {
+    for (const v of alive) v.cleanup()
     master?.disconnect()
     master = null
     for (const fx of fxs.values()) {
@@ -917,6 +970,7 @@ export function createSynth(
     noteOff,
     noteOn,
     now,
+    ready: async () => preparePluck(ensureContext().ctx),
     setOwnParams,
     setParams,
     setTempo,

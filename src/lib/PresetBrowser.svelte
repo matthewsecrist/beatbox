@@ -91,12 +91,13 @@
         item.source === 'Factory' ? FACTORY_PRESETS[Number(item.id.slice(8))] : undefined
       const reply = factory ?? (await loadPreset(item.id))
       if (current !== request) return
-      pending = null
       if ('error' in reply) {
+        pending = null
         status = reply.error
         return
       }
       if (!preview) {
+        pending = null
         onload(item.id, reply.name, reply.params)
         dialog?.close()
         return
@@ -104,6 +105,9 @@
       // Base sound only: its own FX, no song sends, track mute, chord or arp settings.
       const created = createSynth({ ...DEFAULT_PARAMS, ...reply.params })
       synth = created
+      await created.ready()
+      if (current !== request) return
+      pending = null
       let bpm = transport.bpm
       created.setTempo(bpm)
       const loop = presetPreviewLoop(

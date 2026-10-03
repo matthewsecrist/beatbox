@@ -28,7 +28,7 @@
     {
       "bars": 8,
       "drums": true,
-      "name": "Flute theme + vibes",
+      "name": "Flute theme + guitar",
       "pads": [0, 1, 2, 5],
       "pattern": 1
     },
@@ -2282,7 +2282,7 @@
       "length": 11.707,
       "params": {
         "attack": 0.001,
-        "decay": 1.4,
+        "decay": 0.1,
         "filter_attack": 0.005,
         "filter_cutoff": 4000,
         "filter_decay": 0.3,
@@ -2292,7 +2292,7 @@
         "filter_sustain": 0,
         "glide": 0,
         "glide_mode": "legato",
-        "lfo1_depth": 0.4,
+        "lfo1_depth": 0,
         "lfo1_rate": 5.5,
         "lfo1_target": "amp",
         "lfo2_depth": 0,
@@ -2306,8 +2306,11 @@
         "osc2_level": 0.15,
         "osc2_octave": 2,
         "osc2_wave": "sine",
-        "release": 1.2,
-        "sustain": 0
+        "pluck_brightness": 0.58,
+        "pluck_decay": 2.4,
+        "release": 0.35,
+        "sound_mode": "pluck",
+        "sustain": 1
       },
       "slot": 5
     }

@@ -93,13 +93,14 @@
   let stopCurrent: () => void = () => undefined
   let previewSynth: null | Synth = null
   let previewDrums: Drums | null = null
+  let request = 0
 
   $effect(() => {
     const detail: StateDetail = { playing: previewing !== null, source: 'preview' }
     window.dispatchEvent(new CustomEvent('beatbox:state', { detail }))
   })
 
-  function startPreview(item: LibraryItem): () => void {
+  async function startPreview(item: LibraryItem, current: number): Promise<(() => void) | null> {
     if (item.type === 'Beat') {
       // Previews play through the song's effects, so they sound as they will in it.
       const drums = (previewDrums ??= createDrums({
@@ -122,6 +123,8 @@
       undefined,
       () => effects.channel('synth')
     ))
+    await synth.ready()
+    if (current !== request) return null
     // The loop plays at the tempo playing, and its synced LFOs keep up with it: a
     // song left playing behind the browser can reach a section with its own tempo,
     // and undo can change the song tempo.
@@ -140,17 +143,27 @@
   }
 
   function stopPreview() {
+    request++
     stopCurrent()
     stopCurrent = () => undefined
     previewing = null
   }
 
-  function togglePreview(item: LibraryItem) {
+  async function togglePreview(item: LibraryItem) {
     const same = previewing === item.name
     stopPreview()
     if (same) return
-    stopCurrent = startPreview(item)
+    const current = request
     previewing = item.name
+    status = ''
+    try {
+      const stop = await startPreview(item, current)
+      if (current === request && stop) stopCurrent = stop
+    } catch (error) {
+      if (current !== request) return
+      stopPreview()
+      status = error instanceof Error ? error.message : 'Could not preview loop'
+    }
   }
 
   onMount(() => {

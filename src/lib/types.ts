@@ -360,7 +360,11 @@ export interface SynthParams {
   // starts below; 0 = off) and falls back to its pitch over `pitch_env_decay` s.
   pitch_env_amount: number
   pitch_env_decay: number
+  // Plucked string: brightness 0-1; natural decay is the seconds to fall by 60 dB.
+  pluck_brightness: number
+  pluck_decay: number
   release: number
+  sound_mode: 'pluck' | 'synth'
   // A sine one octave below osc 1 (following its pitch and detune), 0-1; 0 = off.
   sub_level: number
   sustain: number

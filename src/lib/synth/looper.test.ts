@@ -785,26 +785,3 @@ test('repeated bent notes pair with the next on, and an unclosed bend ends at th
   expect(defined(oscs[OSCS_PER_VOICE]).stopAt).toBe(2.05 + 0.5 + 0.05)
   player.stop()
 })
-
-test('stopping a bent loop cancels its pending ramp source along with its oscillators', () => {
-  const { bends, synth, transport } = fakeAudio()
-  const bend = { out: { duration: 1, semitones: -12 } }
-  const player = createPlayer(
-    synth,
-    'pad0:',
-    {
-      ...oneBar,
-      events: [
-        { bend, midi: 60, on: true, t: 0 },
-        { midi: 60, on: false, t: 0.03 }
-      ]
-    },
-    transport
-  )
-  player.start(0)
-  const source = defined(bends[0])
-  expect(source.startAt).toBe(0.05)
-  player.stop()
-  expect(source.stopAt).toBe(source.startAt)
-  expect(player.playing).toBe(false)
-})

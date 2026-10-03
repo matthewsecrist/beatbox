@@ -175,6 +175,8 @@ export const HELP = {
     'An oscillator is the part that actually makes the sound: it vibrates really fast, like a guitar string. The synth has two, and you hear them mixed together.',
   panel_pitch_env:
     'The pitch envelope bends each note at its start: the note begins higher (or lower) and quickly slides onto its real pitch. A big, fast bend makes a laser "pew" or a zap; a small one on a low note gives the booming drop of an 808 kick or bass.',
+  panel_pluck:
+    'A short burst starts a vibrating string, then it rings and fades naturally. Brightness changes its tone and Ring time changes how long it lasts. The filter, envelope, pitch controls and effects still shape it. For a clear pluck, keep Attack short and Sustain high.',
   panel_reverb:
     'The reverb makes it sound like the music is playing in a room, a hall or a huge cave, with the sound bouncing off the walls and ringing on after each note.',
   panel_sends:
@@ -193,6 +195,10 @@ export const HELP = {
     'How far off each note starts, in semitones (12 is an octave). Above zero it starts high and swoops down; below zero it starts low and swoops up. Off keeps notes on pitch.',
   pitch_env_decay:
     'How long each note takes to slide from where the Amount starts it onto its real pitch. Short is a snappy zap or click; long is a slow, falling swoop.',
+  pluck_brightness:
+    'How bright the string sounds. Low is soft and rounded, like a gently plucked nylon string; high is crisp and twangy, with more bite.',
+  pluck_decay:
+    'How long the string rings while you hold a note, in seconds. Short is tight and muted; long lets it shimmer. Letting go still uses the Amp Release to damp the note, and Brightness also changes how quickly the high part fades.',
   release:
     'How long a note keeps ringing after you let go of the key. Short stops right away; long fades out like an echo in a big hall.',
   reverb_mix:
@@ -213,6 +219,8 @@ export const HELP = {
     "Plays this section's drum pattern with its fill on the last bar: a drum fill that leads into the next section, like a drummer's roll before the chorus. Off keeps the pattern all the way through. Write the fill on the drums' Steps tab: pick the pattern, then Fill.",
   section_pad_start:
     "Which bar of this pad's loop to start from when it begins in this section. 1 plays from the beginning; 5 skips straight to the second half of an eight-bar loop. It wraps back to bar 1 at the end, or stops there if the pad plays once. A pad carried over from the previous section keeps its place instead: this setting doesn't restart it.",
+  sound_mode:
+    'Synth uses the two oscillators, sub and noise. Plucked string starts a vibrating string that rings and fades on its own, without guitar-body or strumming effects. Each preset and loop pad keeps its own choice; switching back keeps your oscillator settings.',
   step_accent:
     'Click a lit square to make that hit extra loud and punchy (it gets a red dot). Accents on the big beats help the rhythm stand out.',
   step_hits:

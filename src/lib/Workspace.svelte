@@ -83,6 +83,7 @@
   )
   // The track open in the editor (UI only).
   let track: Instrument = $state('synth')
+  let audioReady = $state(false)
 
   // The song's tempo (saved as drums.bpm) drives the shared transport, so drums,
   // pads and arp follow it (sections with their own tempo change it through the
@@ -221,6 +222,7 @@
   let anyPlaying = $state(false)
 
   function toggleTransport() {
+    if (!anyPlaying && !audioReady) return
     if (anyPlaying) {
       window.dispatchEvent(new CustomEvent('beatbox:transport', { detail: { play: false } }))
     } else if (store.arrangement.length) {
@@ -272,6 +274,7 @@
     id="transport"
     type="button"
     aria-pressed={anyPlaying}
+    disabled={!anyPlaying && !audioReady}
     title={anyPlaying
       ? 'Stop everything'
       : store.arrangement.length
@@ -490,7 +493,7 @@
   </details>
 </div>
 
-<Arranger {store} bind:track />
+<Arranger {store} {audioReady} bind:track />
 <div class="flex flex-col gap-4">
   <Synth
     bpm={sectionBpm ?? store.drums.bpm}
@@ -499,6 +502,9 @@
     {savePreset}
     {loadPreset}
     canSave={signedIn}
+    onAudioReady={(ready: boolean) => {
+      audioReady = ready
+    }}
     selected={track === 'synth'}
   />
   <DrumMachine {store} {kits} {saveKit} {loadKit} canSave={signedIn} selected={track === 'drums'} />

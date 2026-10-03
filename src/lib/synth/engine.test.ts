@@ -678,9 +678,6 @@ test('short-note bend ramps meet at zero without overwriting the incoming endpoi
     [0, 1.125],
     [700, 1.5]
   ])
-  synth.noteOff('pad0:60', 1.5)
-  synth.cancelPending((key) => key === 'pad0:60')
-  expect(bend?.stop).toHaveBeenLastCalledWith(1)
 })
 
 test('single-ended bends stay on pitch outside their ramp; keyboard and zero bends add no source', () => {

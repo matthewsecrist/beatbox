@@ -53,7 +53,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.75
     }
@@ -110,7 +113,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.3
     }
@@ -166,7 +172,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -223,7 +232,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.25,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.85
     }
@@ -278,7 +290,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 1.8,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -334,7 +349,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.75
     }
@@ -390,7 +408,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.25,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.85
     }
@@ -448,7 +469,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.85
     }
@@ -503,9 +527,71 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.05,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
+    }
+  },
+  {
+    // The string supplies the decay; the amp only damps it when the key is released.
+    name: 'Clean Guitar',
+    params: {
+      attack: 0.001,
+      decay: 0.1,
+      drive: 0,
+      drive_mix: 1,
+      drive_type: 'soft',
+      filter_attack: 0.005,
+      filter_cutoff: 9000,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      filter_type: 'lowpass',
+      filter_velocity: 0,
+      fx_chorus_depth: 0.3,
+      fx_chorus_flanger: false,
+      fx_chorus_mix: 0.12,
+      fx_chorus_rate: 0.5,
+      fx_crush: 0,
+      fx_delay_feedback: 0.25,
+      fx_delay_mix: 0,
+      fx_delay_time: '1/8d',
+      fx_reverb_mix: 0.12,
+      fx_reverb_size: 0.8,
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_note: '1/4',
+      lfo1_rate: 4,
+      lfo1_sync: false,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_note: '1/4',
+      lfo2_rate: 5,
+      lfo2_sync: false,
+      lfo2_target: 'pitch',
+      noise_level: 0,
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'triangle',
+      osc2_detune: 0,
+      osc2_level: 0,
+      osc2_octave: 0,
+      osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
+      pluck_brightness: 0.7,
+      pluck_decay: 3.2,
+      release: 0.3,
+      sound_mode: 'pluck',
+      sub_level: 0,
+      sustain: 1
     }
   },
   {
@@ -559,7 +645,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.15,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.9
     }
@@ -616,9 +705,70 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 7,
       pitch_env_decay: 0.08,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.3,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.6
+    }
+  },
+  {
+    name: 'Driven Guitar',
+    params: {
+      attack: 0.001,
+      decay: 0.1,
+      drive: 0.45,
+      drive_mix: 0.85,
+      drive_type: 'tube',
+      filter_attack: 0.005,
+      filter_cutoff: 4500,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.3,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      filter_type: 'lowpass',
+      filter_velocity: 0,
+      fx_chorus_depth: 0.5,
+      fx_chorus_flanger: false,
+      fx_chorus_mix: 0,
+      fx_chorus_rate: 0.8,
+      fx_crush: 0,
+      fx_delay_feedback: 0.25,
+      fx_delay_mix: 0.1,
+      fx_delay_time: '1/8',
+      fx_reverb_mix: 0.08,
+      fx_reverb_size: 0.7,
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_note: '1/4',
+      lfo1_rate: 4,
+      lfo1_sync: false,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_note: '1/4',
+      lfo2_rate: 5,
+      lfo2_sync: false,
+      lfo2_target: 'pitch',
+      noise_level: 0,
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'triangle',
+      osc2_detune: 0,
+      osc2_level: 0,
+      osc2_octave: 0,
+      osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
+      pluck_brightness: 0.78,
+      pluck_decay: 2.6,
+      release: 0.15,
+      sound_mode: 'pluck',
+      sub_level: 0,
+      sustain: 1
     }
   },
   {
@@ -672,7 +822,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.15,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -727,7 +880,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.15,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 1
     }
@@ -783,7 +939,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.2
     }
@@ -838,7 +997,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.15,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.9
     }
@@ -894,7 +1056,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.1,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -950,7 +1115,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -1007,7 +1175,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.1,
+      sound_mode: 'synth',
       sub_level: 0.7,
       sustain: 0.5
     }
@@ -1063,7 +1234,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -1120,7 +1294,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.15,
+      sound_mode: 'synth',
       sub_level: 0.4, // weight under the scooped middle
       sustain: 0.8
     }
@@ -1177,7 +1354,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.9
     }
@@ -1233,7 +1413,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.4,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -1289,7 +1472,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 36,
       pitch_env_decay: 0.3,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.1,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -1345,7 +1531,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.6,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.3
     }
@@ -1401,9 +1590,70 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.12,
+      sound_mode: 'synth',
       sub_level: 0.5,
       sustain: 0.4
+    }
+  },
+  {
+    name: 'Muted Guitar',
+    params: {
+      attack: 0.001,
+      decay: 0.1,
+      drive: 0.08,
+      drive_mix: 0.5,
+      drive_type: 'tube',
+      filter_attack: 0.005,
+      filter_cutoff: 6500,
+      filter_decay: 0.3,
+      filter_env_amount: 0,
+      filter_release: 0.08,
+      filter_resonance: 0,
+      filter_sustain: 0,
+      filter_type: 'lowpass',
+      filter_velocity: 0,
+      fx_chorus_depth: 0.5,
+      fx_chorus_flanger: false,
+      fx_chorus_mix: 0,
+      fx_chorus_rate: 0.8,
+      fx_crush: 0,
+      fx_delay_feedback: 0.25,
+      fx_delay_mix: 0,
+      fx_delay_time: '1/8d',
+      fx_reverb_mix: 0.06,
+      fx_reverb_size: 0.5,
+      glide: 0,
+      glide_mode: 'legato',
+      lfo1_depth: 0,
+      lfo1_note: '1/4',
+      lfo1_rate: 4,
+      lfo1_sync: false,
+      lfo1_target: 'filter',
+      lfo2_depth: 0,
+      lfo2_note: '1/4',
+      lfo2_rate: 5,
+      lfo2_sync: false,
+      lfo2_target: 'pitch',
+      noise_level: 0,
+      osc1_detune: 0,
+      osc1_level: 0.7,
+      osc1_octave: 0,
+      osc1_wave: 'triangle',
+      osc2_detune: 0,
+      osc2_level: 0,
+      osc2_octave: 0,
+      osc2_wave: 'triangle',
+      pitch_env_amount: 0,
+      pitch_env_decay: 0.1,
+      pluck_brightness: 0.32,
+      pluck_decay: 0.35,
+      release: 0.05,
+      sound_mode: 'pluck',
+      sub_level: 0,
+      sustain: 1
     }
   },
   {
@@ -1458,7 +1708,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.15
     }
@@ -1514,7 +1767,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 2.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -1569,7 +1825,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 1
     }
@@ -1625,7 +1884,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sine',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 1
     }
@@ -1681,7 +1943,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -1737,7 +2002,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.3,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -1792,7 +2060,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 1.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -1848,7 +2119,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.4,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.4
     }
@@ -1904,7 +2178,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.3,
+      sound_mode: 'synth',
       sub_level: 0.5, // a clean sine under the detuned saws
       sustain: 0.9
     }
@@ -1961,7 +2238,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 1,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 1
     }
@@ -2016,7 +2296,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -2072,7 +2355,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 1.2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.85
     }
@@ -2128,7 +2414,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.12,
+      sound_mode: 'synth',
       sub_level: 0.8,
       sustain: 0.3
     }
@@ -2184,7 +2473,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.4,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -2241,7 +2533,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 24,
       pitch_env_decay: 0.05,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.1,
+      sound_mode: 'synth',
       sub_level: 0.5,
       sustain: 0
     }
@@ -2297,7 +2592,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 12,
       pitch_env_decay: 0.04,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.08,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }
@@ -2353,7 +2651,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.3,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.8
     }
@@ -2409,7 +2710,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'triangle',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.3
     }
@@ -2466,7 +2770,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.1,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.45
     }
@@ -2522,7 +2829,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'sawtooth',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 2,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0.7
     }
@@ -2578,7 +2888,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 0,
       pitch_env_decay: 0.1,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 2.5,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 1
     }
@@ -2634,7 +2947,10 @@ export const FACTORY_PRESETS: { name: string; params: Omit<SynthParams, 'volume'
       osc2_wave: 'square',
       pitch_env_amount: 48,
       pitch_env_decay: 0.05,
+      pluck_brightness: 0.5,
+      pluck_decay: 2,
       release: 0.05,
+      sound_mode: 'synth',
       sub_level: 0,
       sustain: 0
     }

@@ -27,7 +27,11 @@
   // drums), a column per section. Picking a track (`track`)
   // opens it in the editor below. Sections live in the song store (and its undo
   // history); track mute and solo are for listening only, so they stay here.
-  let { store, track = $bindable() }: { store: SongStore; track: Instrument } = $props()
+  let {
+    audioReady,
+    store,
+    track = $bindable()
+  }: { audioReady: boolean; store: SongStore; track: Instrument } = $props()
 
   // Pad rows: pads with a loop, plus any a section still plays after its loop was cleared.
   const padSlots = $derived(
@@ -89,6 +93,7 @@
   // Plays the whole arrangement, or just the section with id `only` (through to
   // its end, then everything stops).
   function play(only: null | string = null) {
+    if (!audioReady) return
     say('beatbox:transport', { play: false }) // start from a clean slate
     const list = only ? sections.filter((s) => s.id === only) : sections
     if (!list.length) return
@@ -307,6 +312,7 @@
               id={'section-play-' + i}
               type="button"
               aria-pressed={alone}
+              disabled={!alone && !audioReady}
               aria-label={alone ? `Stop section ${i + 1}` : `Play section ${i + 1} on its own`}
               title={alone ? 'Stop' : 'Play just this section'}
               onclick={() => (alone ? say('beatbox:transport', { play: false }) : play(section.id))}

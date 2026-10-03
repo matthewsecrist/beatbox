@@ -60,7 +60,10 @@ const params = z.object({
   osc2_wave: wave.exactOptional(),
   pitch_env_amount: z.number().min(-48).max(48).exactOptional(),
   pitch_env_decay: z.number().min(0.001).max(2).exactOptional(),
+  pluck_brightness: z.number().min(0).max(1).exactOptional(),
+  pluck_decay: z.number().min(0.1).max(10).exactOptional(),
   release: z.number().exactOptional(),
+  sound_mode: z.enum(['synth', 'pluck']).exactOptional(),
   sub_level: z.number().min(0).max(1).exactOptional(),
   sustain: z.number().exactOptional(),
   volume: z.number().exactOptional()
