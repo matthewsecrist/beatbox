@@ -66,6 +66,10 @@ a track's name to open it in the editor below it: the synth's **Pads, Osc, Filte
 Amp, Mod, Drive & Glide**, **FX** and **Mix** tabs, the drums' **Steps**, **Kit** and **Mix** tabs. The keyboard bar (octave, Chord/Arp
 and the keys) stays at the bottom whichever track is open.
 
+On a phone the song bar folds into two rows (Loops, Song settings, New and Open become
+icons), and the arrangement, drum steps and Kit tab scroll sideways with their track
+names kept in view.
+
 - Each instrument track has a **level** (the synth's covers its loop pads), and **M**
   mutes it and **S** solos it, like the drum tracks' own (solo wins over mute). Track
   mute and solo silence the instrument's echo and reverb sends too, and, like the

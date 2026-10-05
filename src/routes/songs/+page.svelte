@@ -39,7 +39,7 @@
 
 <section
   id="my-songs"
-  class="mx-auto max-w-4xl space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  class="mx-auto max-w-4xl space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
 >
   <div class="flex flex-wrap items-center gap-3">
     <h1 class="mr-auto text-xs font-bold uppercase tracking-[0.2em] text-amber-400">My songs</h1>
