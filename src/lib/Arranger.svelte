@@ -203,7 +203,8 @@
   about = ''
 )}
   {@const heard = isAudible(id, muted, soloed)}
-  <div class={[cell, 'flex items-center gap-1.5 border-t border-zinc-800 py-1.5']}>
+  <!-- On a phone the level wraps under the name, keeping the column narrow. -->
+  <div class={[cell, 'flex flex-wrap items-center gap-1.5 border-t border-zinc-800 py-1.5']}>
     <button
       id={'track-' + id}
       type="button"
@@ -244,39 +245,42 @@
           : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
       ]}>S</button
     >
-    <input
-      id={'track-level-' + id}
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      value={level}
-      disabled={store.readOnly}
-      oninput={(e) => onlevel(Number(e.currentTarget.value))}
-      aria-label={`${label} level`}
-      title={`Level ${Math.round(level * 100)}%`}
-      class={[
-        'min-w-0 flex-1 cursor-pointer accent-amber-400 transition-opacity disabled:cursor-default',
-        !heard && 'opacity-40'
-      ]}
-    />
-    {#if about}<Info label={`${label} level`} text={about} />{/if}
+    <div class="flex min-w-0 items-center gap-1.5 max-sm:w-full sm:flex-1">
+      <input
+        id={'track-level-' + id}
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        value={level}
+        disabled={store.readOnly}
+        oninput={(e) => onlevel(Number(e.currentTarget.value))}
+        aria-label={`${label} level`}
+        title={`Level ${Math.round(level * 100)}%`}
+        class={[
+          'min-w-0 flex-1 cursor-pointer accent-amber-400 transition-opacity disabled:cursor-default',
+          !heard && 'opacity-40'
+        ]}
+      />
+      {#if about}<Info label={`${label} level`} text={about} />{/if}
+    </div>
   </div>
 {/snippet}
 
 <section
   id="arrangement"
   aria-label="Tracks and arrangement"
-  class="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  class="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
 >
   <div class="overflow-x-auto">
+    <!-- Narrower track and section columns on a phone, so a section fits beside the names. -->
     <div
       id="sections"
-      class="grid w-max min-w-full items-stretch gap-x-2"
-      style:grid-template-columns={`min(18rem, 60vw) ${sections.map(() => '10rem ').join('')}1fr`}
+      class="grid w-max min-w-full items-stretch gap-x-2 [--section:8.5rem] [--tracks:9.5rem] sm:[--section:10rem] sm:[--tracks:min(18rem,60vw)]"
+      style:grid-template-columns={`var(--tracks) ${sections.map(() => 'var(--section) ').join('')}1fr`}
     >
       <!-- Header row: the arrangement's length, then one card per section. -->
-      <div class={[cell, 'flex items-end gap-2 pb-2']}>
+      <div class={[cell, 'flex flex-wrap items-end gap-2 pb-2']}>
         <h2 class="mr-auto text-xs font-bold uppercase tracking-[0.2em] text-amber-400">
           Tracks
           <span class="ml-1 font-mono normal-case tracking-normal text-zinc-500"

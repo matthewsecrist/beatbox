@@ -417,6 +417,8 @@
     statusTimer = setTimeout(() => (status = ''), 3000)
   }
 
+  // A drum's name in the Kit tab's voice list, kept in view while it scrolls sideways.
+  const voiceName = 'sticky left-0 z-10 self-stretch flex items-center bg-zinc-950 pr-1'
   const btn =
     'rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-200 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95'
 </script>
@@ -425,7 +427,7 @@
   id="drums"
   aria-label="Drums"
   hidden={!selected}
-  class="@container space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+  class="@container space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
 >
   <div class="flex items-center justify-between gap-3">
     <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Drums</h2>
@@ -494,7 +496,7 @@
       <div class="flex flex-wrap items-center gap-2">
         <div
           id="drum-patterns"
-          class="flex gap-1 rounded-lg bg-zinc-900 p-1"
+          class="flex gap-1 rounded-lg bg-zinc-900 p-1 max-sm:w-full"
           role="group"
           aria-label="Pattern"
         >
@@ -506,7 +508,7 @@
               aria-label={`Pattern ${letter}${playingPattern === i || playingPattern === fillOf(i) ? ' (playing)' : ''}`}
               onclick={() => selectPattern(i)}
               class={[
-                'relative h-8 w-10 rounded-md text-sm font-bold transition active:scale-95',
+                'relative h-8 min-w-0 flex-1 rounded-md text-sm font-bold transition active:scale-95 sm:w-10 sm:flex-none',
                 picked === i
                   ? 'bg-amber-400 text-zinc-900 shadow shadow-amber-400/20'
                   : isEmpty(patterns[i])
@@ -866,41 +868,44 @@
           {@const heard = isAudible(track.id, muted, soloed)}
           {@const len = lengthOf(track.id)}
           <div class="flex min-w-[40rem] items-center gap-2">
-            <button
-              type="button"
-              onclick={() => drums?.trigger(track.id)}
-              class="w-24 shrink-0 truncate rounded-md px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
-            >
-              {track.label}
-            </button>
-            <button
-              id={'drums-mute-' + track.id}
-              type="button"
-              aria-label={`Mute ${track.label}`}
-              aria-pressed={muted.has(track.id)}
-              title={soloed.size && muted.has(track.id) ? 'Muted (a solo overrides it)' : 'Mute'}
-              onclick={() => flip(muted, track.id)}
-              class={[
-                'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
-                muted.has(track.id)
-                  ? 'border-rose-500 bg-rose-500/20 text-rose-300'
-                  : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
-              ]}>M</button
-            >
-            <button
-              id={'drums-solo-' + track.id}
-              type="button"
-              aria-label={`Solo ${track.label}`}
-              aria-pressed={soloed.has(track.id)}
-              title="Solo"
-              onclick={() => flip(soloed, track.id)}
-              class={[
-                'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
-                soloed.has(track.id)
-                  ? 'border-amber-400 bg-amber-400 text-zinc-900'
-                  : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
-              ]}>S</button
-            >
+            <!-- The track's name, mute and solo stay in view while the steps scroll. -->
+            <div class="sticky left-0 z-10 flex shrink-0 items-center gap-2 bg-zinc-950 pr-1">
+              <button
+                type="button"
+                onclick={() => drums?.trigger(track.id)}
+                class="w-20 shrink-0 sm:w-24 truncate rounded-md px-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 active:scale-95"
+              >
+                {track.label}
+              </button>
+              <button
+                id={'drums-mute-' + track.id}
+                type="button"
+                aria-label={`Mute ${track.label}`}
+                aria-pressed={muted.has(track.id)}
+                title={soloed.size && muted.has(track.id) ? 'Muted (a solo overrides it)' : 'Mute'}
+                onclick={() => flip(muted, track.id)}
+                class={[
+                  'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
+                  muted.has(track.id)
+                    ? 'border-rose-500 bg-rose-500/20 text-rose-300'
+                    : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+                ]}>M</button
+              >
+              <button
+                id={'drums-solo-' + track.id}
+                type="button"
+                aria-label={`Solo ${track.label}`}
+                aria-pressed={soloed.has(track.id)}
+                title="Solo"
+                onclick={() => flip(soloed, track.id)}
+                class={[
+                  'size-7 shrink-0 rounded-md border text-xs font-bold transition active:scale-95',
+                  soloed.has(track.id)
+                    ? 'border-amber-400 bg-amber-400 text-zinc-900'
+                    : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-100'
+                ]}>S</button
+              >
+            </div>
             <div
               class={['grid flex-1 gap-1 transition-opacity', !heard && 'opacity-40']}
               style:grid-template-columns={`repeat(${grid}, minmax(0, 1fr))`}
@@ -1014,7 +1019,7 @@
     {:else if tab === 'kit'}
       <div id="kit-bar" class="flex flex-wrap items-center gap-2">
         <label
-          class="flex min-w-60 items-center gap-2 text-xs uppercase tracking-wider text-zinc-400"
+          class="flex min-w-60 items-center gap-2 text-xs uppercase max-sm:min-w-0 max-sm:basis-full tracking-wider text-zinc-400"
           for="drums-kit"
         >
           <span class="flex items-center gap-1"
@@ -1049,7 +1054,7 @@
             placeholder={canSave ? 'Kit name' : 'Sign in to save kits'}
             disabled={!canSave}
             bind:value={kitName}
-            class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
+            class="min-w-0 flex-1 basis-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
           />
           <button
             id="save-kit"
@@ -1085,95 +1090,98 @@
           >{crush ? `${crushBits(crush)}-bit` : 'off'}</span
         >
       </label>
-      <div
-        id="drum-voices"
-        class="grid max-w-4xl grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr_1fr] items-center gap-x-4 gap-y-2"
-      >
-        <span></span>
-        <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
-          >Sound<Info label="Sound" text={help('drums_sound') ?? ''} /></span
+      <!-- Too narrow on a phone for the sliders: it scrolls sideways, names staying put. -->
+      <div class="overflow-x-auto">
+        <div
+          id="drum-voices"
+          class="grid max-w-4xl min-w-[34rem] grid-cols-[auto_minmax(0,1.5fr)_auto_1fr_1fr_1fr] items-center gap-x-3 gap-y-2 sm:min-w-0 sm:gap-x-4"
         >
-        <span></span>
-        <span class="text-[10px] uppercase tracking-wider text-zinc-500">Tune</span>
-        <span class="text-[10px] uppercase tracking-wider text-zinc-500">Decay</span>
-        <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
-          >Pan<Info label="Pan" text={help('drums_voice_pan') ?? ''} /></span
-        >
-        {#each TRACKS as track (track.id)}
-          {@const voice = store.drums.voices[track.id]}
-          <span class="text-xs font-semibold uppercase tracking-wide text-zinc-400"
-            >{track.label}</span
+          <span class={voiceName}></span>
+          <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
+            >Sound<Info label="Sound" text={help('drums_sound') ?? ''} /></span
           >
-          <select
-            id={'drums-sound-' + track.id}
-            value={voice.sound ?? KIT_SOUNDS[store.drums.kit][track.id]}
-            disabled={store.readOnly}
-            onchange={(e) => pickSound(track.id, e.currentTarget.value)}
-            aria-label={`${track.label} sound`}
-            class={[
-              'min-w-0 rounded-md border bg-zinc-800 px-2 py-1 text-sm text-zinc-200',
-              voice.sound ? 'border-amber-400/60' : 'border-zinc-700'
-            ]}
+          <span></span>
+          <span class="text-[10px] uppercase tracking-wider text-zinc-500">Tune</span>
+          <span class="text-[10px] uppercase tracking-wider text-zinc-500">Decay</span>
+          <span class="flex items-center gap-1 text-[10px] uppercase tracking-wider text-zinc-500"
+            >Pan<Info label="Pan" text={help('drums_voice_pan') ?? ''} /></span
           >
-            {#each LIBRARY as { ids, part } (part.id)}
-              <optgroup label={part.label}>
-                {#each ids as id (id)}
-                  <option value={id}>{INSTRUMENTS[id].label}</option>
-                {/each}
-              </optgroup>
-            {/each}
-          </select>
-          <button
-            id={'drums-preview-' + track.id}
-            type="button"
-            aria-label={`Play ${track.label}`}
-            title="Play"
-            onclick={() => drums?.trigger(track.id)}
-            class="grid size-7 place-items-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-300 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
-          >
-            <Play class="size-3.5" />
-          </button>
-          <input
-            id={'drums-tune-' + track.id}
-            type="range"
-            min="-12"
-            max="12"
-            step="1"
-            value={voice.tune}
-            disabled={store.readOnly}
-            oninput={(e) => store.setVoice(track.id, { tune: Number(e.currentTarget.value) })}
-            aria-label={`${track.label} tune`}
-            title={`Tune ${voice.tune} semitones`}
-            class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
-          />
-          <input
-            id={'drums-decay-' + track.id}
-            type="range"
-            min="0.25"
-            max="2"
-            step="0.05"
-            value={voice.decay}
-            disabled={store.readOnly}
-            oninput={(e) => store.setVoice(track.id, { decay: Number(e.currentTarget.value) })}
-            aria-label={`${track.label} decay`}
-            title={`Decay ${pct(voice.decay)}`}
-            class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
-          />
-          <input
-            id={'drums-pan-' + track.id}
-            type="range"
-            min="-1"
-            max="1"
-            step="0.05"
-            value={voice.pan ?? 0}
-            disabled={store.readOnly}
-            oninput={(e) => store.setVoice(track.id, { pan: Number(e.currentTarget.value) })}
-            ondblclick={() => store.setVoice(track.id, { pan: 0 })}
-            aria-label={`${track.label} pan`}
-            title={`Pan ${panLabel(voice.pan ?? 0)} (double-click to centre)`}
-            class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
-          />
-        {/each}
+          {#each TRACKS as track (track.id)}
+            {@const voice = store.drums.voices[track.id]}
+            <span class={[voiceName, 'text-xs font-semibold uppercase tracking-wide text-zinc-400']}
+              >{track.label}</span
+            >
+            <select
+              id={'drums-sound-' + track.id}
+              value={voice.sound ?? KIT_SOUNDS[store.drums.kit][track.id]}
+              disabled={store.readOnly}
+              onchange={(e) => pickSound(track.id, e.currentTarget.value)}
+              aria-label={`${track.label} sound`}
+              class={[
+                'min-w-0 rounded-md border bg-zinc-800 px-2 py-1 text-sm text-zinc-200',
+                voice.sound ? 'border-amber-400/60' : 'border-zinc-700'
+              ]}
+            >
+              {#each LIBRARY as { ids, part } (part.id)}
+                <optgroup label={part.label}>
+                  {#each ids as id (id)}
+                    <option value={id}>{INSTRUMENTS[id].label}</option>
+                  {/each}
+                </optgroup>
+              {/each}
+            </select>
+            <button
+              id={'drums-preview-' + track.id}
+              type="button"
+              aria-label={`Play ${track.label}`}
+              title="Play"
+              onclick={() => drums?.trigger(track.id)}
+              class="grid size-7 place-items-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-300 transition hover:border-amber-400/60 hover:bg-zinc-700 active:scale-95"
+            >
+              <Play class="size-3.5" />
+            </button>
+            <input
+              id={'drums-tune-' + track.id}
+              type="range"
+              min="-12"
+              max="12"
+              step="1"
+              value={voice.tune}
+              disabled={store.readOnly}
+              oninput={(e) => store.setVoice(track.id, { tune: Number(e.currentTarget.value) })}
+              aria-label={`${track.label} tune`}
+              title={`Tune ${voice.tune} semitones`}
+              class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
+            />
+            <input
+              id={'drums-decay-' + track.id}
+              type="range"
+              min="0.25"
+              max="2"
+              step="0.05"
+              value={voice.decay}
+              disabled={store.readOnly}
+              oninput={(e) => store.setVoice(track.id, { decay: Number(e.currentTarget.value) })}
+              aria-label={`${track.label} decay`}
+              title={`Decay ${pct(voice.decay)}`}
+              class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
+            />
+            <input
+              id={'drums-pan-' + track.id}
+              type="range"
+              min="-1"
+              max="1"
+              step="0.05"
+              value={voice.pan ?? 0}
+              disabled={store.readOnly}
+              oninput={(e) => store.setVoice(track.id, { pan: Number(e.currentTarget.value) })}
+              ondblclick={() => store.setVoice(track.id, { pan: 0 })}
+              aria-label={`${track.label} pan`}
+              title={`Pan ${panLabel(voice.pan ?? 0)} (double-click to centre)`}
+              class="w-full cursor-pointer accent-amber-400 disabled:cursor-default"
+            />
+          {/each}
+        </div>
       </div>
     {:else}
       <Channel instrument="drums" {store} />

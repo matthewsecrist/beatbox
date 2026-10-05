@@ -182,7 +182,7 @@
   onclick={(event) => event.target === dialog && dialog.close()}
   aria-labelledby="preset-browser-title"
   aria-describedby="preset-browser-description"
-  class="m-auto h-[min(40rem,90dvh)] w-[min(60rem,95vw)] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl shadow-black/60 [scrollbar-color:var(--color-zinc-700)_transparent] backdrop:bg-black/70 **:[scrollbar-width:thin]"
+  class="m-auto h-[min(40rem,90dvh)] w-[min(60rem,95vw)] max-sm:h-[90dvh] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-0 text-zinc-100 shadow-2xl shadow-black/60 [scrollbar-color:var(--color-zinc-700)_transparent] backdrop:bg-black/70 **:[scrollbar-width:thin]"
 >
   <div class="flex h-full flex-col">
     <header class="flex items-center gap-3 border-b border-zinc-800 px-4 py-3">
@@ -208,7 +208,7 @@
       >
     </header>
     <div
-      class="grid min-h-0 flex-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] md:grid-cols-[15rem_1fr] md:grid-rows-1"
+      class="grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,2fr)_minmax(0,3fr)] md:grid-cols-[15rem_1fr] md:grid-rows-1"
     >
       <aside
         class="space-y-5 overflow-y-auto border-b border-zinc-800 p-4 md:border-r md:border-b-0"

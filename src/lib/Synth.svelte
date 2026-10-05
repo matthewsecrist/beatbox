@@ -1034,7 +1034,7 @@
     id="synth"
     aria-label="Synth"
     hidden={!selected}
-    class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+    class="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
   >
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
       <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-amber-400">Synth</h2>
@@ -1076,7 +1076,7 @@
           placeholder={canSave ? 'Preset name' : 'Sign in to save presets'}
           disabled={!canSave}
           bind:value={presetName}
-          class="min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
+          class="min-w-0 flex-1 basis-40 rounded-md border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 transition focus:border-amber-400 focus:outline-none disabled:opacity-60"
         />
         <button
           id="save-preset"
@@ -1286,7 +1286,7 @@
   <section
     id="keyboard-bar"
     aria-label="Keyboard"
-    class="order-last space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
+    class="order-last space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 text-zinc-100 shadow-2xl shadow-black/50 sm:p-6"
   >
     {#if audioStatus}
       <p id="synth-audio-status" role="status" class="text-sm text-amber-300">{audioStatus}</p>
