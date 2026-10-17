@@ -3,7 +3,7 @@
 
   import { resolve } from '$app/paths'
   import { env } from '$env/dynamic/public'
-  import { LogOut, Music, User } from '@lucide/svelte'
+  import { GraduationCap, LogOut, Music, User } from '@lucide/svelte'
   import posthog from 'posthog-js'
 
   import type { LayoutData } from './$types'
@@ -32,6 +32,14 @@
 
 <header class="flex items-center gap-2 px-3 py-2 sm:gap-4 sm:px-6 lg:px-8">
   <a href={resolve('/')} class="text-lg font-bold tracking-tight">Beatbox</a>
+  <a
+    id="learn-link"
+    href={resolve('/learn')}
+    class="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-sm text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100"
+  >
+    <GraduationCap class="size-4" />
+    Learn
+  </a>
   {#if data.user}
     <a
       id="my-songs-link"
