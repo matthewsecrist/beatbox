@@ -38,16 +38,21 @@ and drum kits) belongs to your account, and nobody else can see or change it unl
 share a song (below). Song, preset and kit names only need to be unique among your own. **My songs** and
 **Sign out** are in the header.
 
-**Learn** (`/learn`, **Learn** in the header, open to everyone): six short interactive
-music lessons written for teenagers with little or no music knowledge: **Beats and
-rhythm**, **Notes and the keyboard**, **Steps and intervals**, **Scales and keys**,
-**Chords** and **Sound and timbre**. Each mixes short explanations with things to play
-(a labelled keyboard, interval, scale and chord explorers, a drum grid that checks the
-beat you build, a synth lab with wave, cutoff, attack and release), ends with a quiz
-(ear-training questions are generated fresh each time) and says where to try it in the
-workstation. The best quiz score per lesson is kept in the browser only. Lessons live
-in `src/lib/learn/lessons.ts`, the theory and question generators in
-`src/lib/learn/theory.ts`.
+**Learn** (`/learn`, **Learn** in the header, open to everyone): ten short interactive
+music lessons written for teenagers with little or no music knowledge. **The basics**:
+**Beats and rhythm**, **Notes and the keyboard**, **Steps and intervals**, **Scales and
+keys**, **Chords** and **Sound and timbre**. **Making music**: **Chord and Arp** (the
+keyboard bar's tools, with a live arp to steer), **Effects** (reverb, echo, chorus,
+drive and bitcrusher on a looping riff, and how not to overdo them), **Melodies and bass
+lines** (a "no wrong notes" pentatonic grid over drums, bass and chords) and **Making a
+song** (sections and energy, with a song sketch that plays and gives tips on its shape).
+Each mixes short explanations with things to play (a labelled keyboard, explorers, a
+drum grid that checks the beat you build, a synth lab), ends with a quiz (ear-training
+questions are generated fresh each time) and says where to try it in the workstation.
+The best quiz score per lesson is kept in the browser only. Lessons live in
+`src/lib/learn/lessons.ts`, the theory and question generators in
+`src/lib/learn/theory.ts` and `src/lib/learn/arrange.ts`, and the lessons' loops play
+on the sequencer in `src/lib/learn/sound.ts`.
 
 **My songs and sharing** (**My songs** in the header, or **All my songs and sharing…**
 in **Open ▾**): every song you've saved, newest change first, with its views and likes.

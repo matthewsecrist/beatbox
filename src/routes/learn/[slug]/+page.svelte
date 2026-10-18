@@ -1,12 +1,16 @@
 <script lang="ts">
   import { resolve } from '$app/paths'
+  import ArpLab from '$lib/learn/ArpLab.svelte'
   import ChordExplorer from '$lib/learn/ChordExplorer.svelte'
+  import FxLab from '$lib/learn/FxLab.svelte'
   import IntervalExplorer from '$lib/learn/IntervalExplorer.svelte'
   import Keyboard from '$lib/learn/Keyboard.svelte'
+  import MelodyGrid from '$lib/learn/MelodyGrid.svelte'
   import { saveResult } from '$lib/learn/progress.js'
   import Quiz from '$lib/learn/Quiz.svelte'
   import RhythmGrid from '$lib/learn/RhythmGrid.svelte'
   import ScaleExplorer from '$lib/learn/ScaleExplorer.svelte'
+  import SongSketch from '$lib/learn/SongSketch.svelte'
   import { stopAll } from '$lib/learn/sound.js'
   import SoundLab from '$lib/learn/SoundLab.svelte'
   import { ArrowLeft, ArrowRight, Sparkles } from '@lucide/svelte'
@@ -60,6 +64,14 @@
       <ChordExplorer />
     {:else if block.kind === 'sound'}
       <SoundLab />
+    {:else if block.kind === 'arp'}
+      <ArpLab />
+    {:else if block.kind === 'fx'}
+      <FxLab />
+    {:else if block.kind === 'melody'}
+      <MelodyGrid />
+    {:else if block.kind === 'sketch'}
+      <SongSketch />
     {:else if block.kind === 'rhythm'}
       <RhythmGrid id={`rhythm-${i}`} goal={block.goal} target={block.target} />
     {:else if block.kind === 'quiz'}
