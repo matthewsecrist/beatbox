@@ -88,6 +88,8 @@ export interface Question {
   answer: string
   choices: string[]
   explain: string
+  // Seconds between the groups it plays (0.7 when left out).
+  gap?: number
   play?: number[][]
   prompt: string
   // Each group's sound, in place of the piano.

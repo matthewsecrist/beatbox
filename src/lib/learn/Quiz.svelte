@@ -33,7 +33,12 @@
   }
 
   function listen(q: Question | undefined) {
-    if (q?.play) playGroups(q.play, { gap: 0.7, length: 0.6, sounds: q.sounds ?? [] })
+    if (q?.play)
+      playGroups(q.play, {
+        gap: q.gap ?? 0.7,
+        length: Math.min(0.6, (q.gap ?? 0.7) * 0.9),
+        sounds: q.sounds ?? []
+      })
   }
 
   function next() {

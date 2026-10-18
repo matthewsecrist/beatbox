@@ -10,6 +10,12 @@ describe('lessons', () => {
     expect(getLesson('nope')).toBeUndefined()
   })
 
+  it('come in two parts, the basics first', () => {
+    const parts = LESSONS.map((l) => l.part)
+    expect(parts.indexOf('making')).toBeGreaterThan(0)
+    expect(parts.slice(parts.indexOf('making'))).not.toContain('basics')
+  })
+
   it('each end with a quiz whose answers are among its choices', () => {
     for (const lesson of LESSONS) {
       const quiz = lesson.blocks.at(-1)

@@ -1,5 +1,6 @@
 import type { SynthParams } from '../types.js'
 
+import { arpQuestion, effectQuestion, endingQuestion } from './arrange.js'
 import {
   type Beat,
   chordQuestion,
@@ -17,11 +18,24 @@ import {
 export type Block =
   | { body: string[]; heading?: string; kind: 'text' }
   | { goal: string; kind: 'rhythm'; target: Beat }
-  | { kind: 'chords' | 'intervals' | 'keyboard' | 'scales' | 'sound' }
   | { kind: 'quiz'; questions: () => Question[] }
+  | {
+      kind:
+        | 'arp'
+        | 'chords'
+        | 'fx'
+        | 'intervals'
+        | 'keyboard'
+        | 'melody'
+        | 'scales'
+        | 'sketch'
+        | 'sound'
+    }
 
 export interface Lesson {
   blocks: Block[]
+  // The music basics, or making music with Beatbox's tools.
+  part: 'basics' | 'making'
   slug: string
   summary: string
   title: string
@@ -31,6 +45,16 @@ export interface Lesson {
 
 // A bare sawtooth with the filter wide open.
 const BRIGHT: Partial<SynthParams> = { filter_cutoff: 9000, filter_resonance: 1, osc2_level: 0 }
+
+// A short, plain note, so an effect's tail is easy to hear after it.
+const PLAIN: Partial<SynthParams> = {
+  decay: 0.25,
+  filter_cutoff: 3000,
+  osc1_wave: 'triangle',
+  osc2_level: 0,
+  release: 0.15,
+  sustain: 0
+}
 
 const times = (n: number, make: () => Question): Question[] => Array.from({ length: n }, make)
 
@@ -134,6 +158,7 @@ export const LESSONS: Lesson[] = [
         ]
       }
     ],
+    part: 'basics',
     slug: 'rhythm',
     summary: 'What a beat is, what BPM means, and how to build your first drum patterns.',
     title: 'Beats and rhythm',
@@ -191,6 +216,7 @@ export const LESSONS: Lesson[] = [
         ]
       }
     ],
+    part: 'basics',
     slug: 'notes',
     summary: 'Pitch, the 12 notes, how to find them on a keyboard, and octaves.',
     title: 'Notes and the keyboard',
@@ -230,11 +256,12 @@ export const LESSONS: Lesson[] = [
         questions: () => [...times(3, stepAboveQuestion), ...times(4, () => intervalQuestion())]
       }
     ],
+    part: 'basics',
     slug: 'intervals',
     summary: 'Half steps, whole steps, and what different gaps between notes sound like.',
     title: 'Steps and intervals',
     tryIt:
-      'In the keyboard bar at the bottom of the workstation, set Chord to Power. Now every key plays a note plus its 5th: instant rock riffs.'
+      'In the keyboard bar at the bottom of the workstation, set Chord to Power (5th). Now every key plays a note plus its 5th: instant rock riffs.'
   },
   {
     blocks: [
@@ -268,6 +295,7 @@ export const LESSONS: Lesson[] = [
         questions: () => [...times(4, scaleQuestion), ...times(3, inKeyQuestion)]
       }
     ],
+    part: 'basics',
     slug: 'scales',
     summary:
       'How scales are built, why major sounds happy and minor sounds dark, and what a key is.',
@@ -300,11 +328,12 @@ export const LESSONS: Lesson[] = [
         questions: () => [...times(4, chordQuestion), ...times(3, spellChordQuestion)]
       }
     ],
+    part: 'basics',
     slug: 'chords',
     summary: 'How chords are built, major vs minor, and the four chords behind tons of hit songs.',
     title: 'Chords',
     tryIt:
-      'In the keyboard bar, set Chord to Maj or Min so each key plays a whole chord. Record a loop of C, G, Am and F, and you’ve got the start of a song.'
+      'In the keyboard bar, set Chord to Major or Minor so each key plays a whole chord. Record a loop of C, G, Am and F, and you’ve got the start of a song.'
   },
   {
     blocks: [
@@ -359,11 +388,299 @@ export const LESSONS: Lesson[] = [
         ]
       }
     ],
+    part: 'basics',
     slug: 'sound',
     summary: 'Waveforms, filters and envelopes: why some sounds are bright, dark, short or long.',
     title: 'Sound and timbre',
     tryIt:
       'Open the synth’s Osc, Filter and Amp tabs and try the same controls. Or press Browse presets… to hear what a fully designed sound can do.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'Beatbox’s keyboard bar (at the bottom of the workstation) has two buttons that make you sound way more skilled than you are: Chord and Arp.',
+          'Chord turns every key into a whole chord. Press one key and Beatbox adds the other notes for you. Major sounds happy, Minor sounds moody, 7th sounds bluesy and jazzy, Sus2 and Sus4 sound open and floaty (like they’re waiting for something), and Power is the chunky rock-guitar sound.'
+        ],
+        heading: 'One finger, whole chords',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Arp is short for arpeggiator. Instead of playing a chord’s notes all at once, it plays them one at a time, in a pattern, locked to the tempo. Up climbs the notes, Down falls, Up-Down bounces, and Random keeps surprising you.',
+          'Rate sets how fast it goes: 1/4 plays one note per beat, 1/8 two, 1/16 four. The “T” rates (like 1/8T) are triplets: three notes per beat, for a rolling, galloping feel.',
+          'Try it below: pick a chord and an arp, press Play, then change things while it runs. Press the C – G – Am – F button to let it move through a chord progression by itself.'
+        ],
+        heading: 'Arpeggios',
+        kind: 'text'
+      },
+      { kind: 'arp' },
+      {
+        body: [
+          'Chord + Arp together turns one finger into a full synth part. That’s the sound of a lot of trance, synthwave and video game music.',
+          'Fast rates sound great at slow tempos, but at a fast tempo 1/16 can turn into a blur. Try 1/8 there instead.',
+          'Arps love a little echo. In the next lesson you’ll find out how to add it.',
+          'When you record a loop with Chord or Arp on, Beatbox keeps the notes that played, so you can edit them in the piano roll afterwards.'
+        ],
+        heading: 'Getting the most out of it',
+        kind: 'text'
+      },
+      {
+        kind: 'quiz',
+        questions: () => [
+          ...times(3, arpQuestion),
+          {
+            answer: 'Plays the notes one at a time',
+            choices: ['Plays the notes one at a time', 'Makes every note louder', 'Adds an echo'],
+            explain:
+              'An arpeggiator takes the notes you hold and plays them one after another, in time.',
+            prompt: 'What does the Arp do?'
+          },
+          {
+            answer: '1/16',
+            choices: ['1/4', '1/8', '1/16'],
+            explain: '1/16 plays four notes every beat, 1/8 two and 1/4 just one.',
+            prompt: 'Which Arp rate is the fastest?'
+          },
+          {
+            answer: 'Power',
+            choices: ['Major', 'Sus4', 'Power'],
+            explain:
+              'Power (5th) plays a note with the 5th and octave above it: the classic rock guitar chord.',
+            prompt: 'Which Chord setting gives you a chunky rock-guitar sound?'
+          }
+        ]
+      }
+    ],
+    part: 'making',
+    slug: 'chord-and-arp',
+    summary:
+      'Play whole chords with one finger and turn them into arpeggios that move with the beat.',
+    title: 'Chord and Arp',
+    tryIt:
+      'In the keyboard bar, set Chord to Minor and Arp to Up at 1/16, then hold a key. Record it into a loop pad and change the synth sound to Pluck or Glass Pluck.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'Effects change a sound after it’s made, a bit like filters on a photo. A plain synth can sound like it’s in a cathedral, an echoing canyon or an old game console, just by adding effects.',
+          'Each synth sound has its own effects on the FX tab, and the whole song shares some more in Song settings.'
+        ],
+        heading: 'What are effects?',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Reverb makes a sound feel like it’s in a room. A little sounds natural, and a lot sounds huge and far away. Room size sets how big the space is.',
+          'Echo (also called delay) repeats the sound, in time with the beat. Echo repeats sets how many times it comes back.',
+          'Chorus plays slightly wobbly copies of the sound to make it wider and shimmery.',
+          'Drive pushes the sound until it distorts, for grit and attitude, like a guitar amp turned up.',
+          'Bitcrusher makes the sound crunchy and lo-fi, like an old video game.',
+          'Press Play, then try the starting points and move the sliders while it loops. The drums stay dry so you can compare.'
+        ],
+        heading: 'The main effects',
+        kind: 'text'
+      },
+      { kind: 'fx' },
+      {
+        body: [
+          'Less is more. Turn an effect up until you can clearly hear it, then back it off a little. If everything has lots of reverb, the whole song turns to mush.',
+          'Keep the bass and kick dry, with little or no reverb, so they stay punchy. Reverb and echo sound best on leads, pads, snares and vocals.',
+          'Leave space for echoes. A melody with gaps lets the repeats fill them in, which sounds amazing. A busy melody plus echo gets messy.',
+          'Use effects to make things different. A dry, close verse makes a big reverb-y chorus feel even bigger.',
+          'For one shared reverb that makes everything sound like it’s in the same room, use the sends in Song settings.'
+        ],
+        heading: 'How to use them well',
+        kind: 'text'
+      },
+      {
+        kind: 'quiz',
+        questions: () => [
+          effectQuestion('reverb', { fx_reverb_mix: 0.7, fx_reverb_size: 4 }, PLAIN),
+          effectQuestion(
+            'echo',
+            { fx_delay_feedback: 0.5, fx_delay_mix: 0.6, fx_delay_time: '1/8' },
+            PLAIN
+          ),
+          {
+            answer: 'The bass',
+            choices: ['The bass', 'A pad', 'A lead melody'],
+            explain: 'Reverb on the bass makes the low end muddy. Keep it dry and punchy.',
+            prompt: 'Which part should usually get the least reverb?'
+          },
+          {
+            answer: 'Repeats the sound in time',
+            choices: ['Repeats the sound in time', 'Makes it crunchy', 'Makes it quieter'],
+            explain: 'Echo (delay) plays the sound again, and again, locked to the beat.',
+            prompt: 'What does echo (delay) do?'
+          },
+          {
+            answer: 'Bitcrusher',
+            choices: ['Chorus', 'Reverb', 'Bitcrusher'],
+            explain:
+              'The bitcrusher squashes the sound down to fewer levels, like old game consoles did.',
+            prompt: 'Which effect makes a sound like an old video game?'
+          }
+        ]
+      }
+    ],
+    part: 'making',
+    slug: 'effects',
+    summary:
+      'Reverb, echo, chorus, drive and bitcrusher: what each one does, and how not to overdo it.',
+    title: 'Effects',
+    tryIt:
+      'Open the synth’s FX tab and add a little echo and reverb to your lead. Then open Song settings and turn up the reverb send on the drums just a touch.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'The melody is the part you hum after the song ends. The good news: you don’t need years of lessons to write one. A few simple tricks go a long way.',
+          'Use the notes of one scale. The grid below only has notes from the C major pentatonic scale, the “no wrong notes” scale from the Scales lesson, so anything you draw will fit.'
+        ],
+        heading: 'Writing a melody',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Repeat yourself. A hook is a short idea (just a few notes) that comes back again and again. Repeat it, then change the ending the second time.',
+          'Leave gaps. Rests (silence) give a melody room to breathe, and they make the notes you do play hit harder.',
+          'Mostly take small steps. Moving to the next note up or down sounds smooth and singable. Save the big jumps for special moments.',
+          'Rhythm matters as much as the notes. Try the same notes with a different rhythm and it becomes a whole new tune.',
+          'End on home. Finishing on C (the amber rows) makes a melody sound complete. Ending anywhere else makes it sound like a question.',
+          'Draw a melody below and press Play. Stuck? Try Example, or Surprise me for a random idea you can tweak.'
+        ],
+        heading: 'Tricks that always work',
+        kind: 'text'
+      },
+      { kind: 'melody' },
+      {
+        body: [
+          'The bass connects the drums to the chords. The simplest bass line that works is just the root note of each chord (the note the chord is named after), played low.',
+          'Play bass notes at the same moment as the kick drum and they lock together into one big, punchy groove. That’s what the backing bass here does. Switch it off and on to hear the difference.',
+          'Keep it simple and low. The bass is felt as much as heard, and a busy bass line fights with the melody.'
+        ],
+        heading: 'Bass lines',
+        kind: 'text'
+      },
+      {
+        kind: 'quiz',
+        questions: () => [
+          ...times(3, endingQuestion),
+          {
+            answer: 'A short idea that keeps coming back',
+            choices: [
+              'A short idea that keeps coming back',
+              'The loudest drum',
+              'The last note of a song'
+            ],
+            explain: 'A hook is a short, catchy idea repeated so it sticks in your head.',
+            prompt: 'What is a hook?'
+          },
+          {
+            answer: 'The root of each chord, with the kick',
+            choices: [
+              'The root of each chord, with the kick',
+              'Random high notes',
+              'The same notes as the melody'
+            ],
+            explain: 'Root notes locked to the kick make a solid, simple bass line.',
+            prompt: 'What’s an easy bass line that always works?'
+          },
+          {
+            answer: 'Rests (silence)',
+            choices: ['Rests (silence)', 'More notes', 'Bigger jumps'],
+            explain: 'Gaps give a melody room to breathe and make the notes you play stand out.',
+            prompt: 'What makes a melody easier to remember?'
+          }
+        ]
+      }
+    ],
+    part: 'making',
+    slug: 'melody',
+    summary: 'Simple tricks for catchy melodies, and bass lines that lock in with the drums.',
+    title: 'Melodies and bass lines',
+    tryIt:
+      'Open an empty loop pad’s piano roll and draw a 2-bar hook using only the notes of one scale. Then put a bass line on a second pad using the root of each chord.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'A loop that sounds good is a great start, but a song needs to go somewhere. Most songs are built from a few sections, each with its own job:',
+          'Intro: eases you in, usually with just a few parts. Verse: tells the story and builds up. Chorus (called the drop in EDM): the big, catchy moment everyone waits for. Breakdown or bridge: strips things back for a breather or a twist. Outro: winds it down.',
+          'A really common shape is: intro, verse, chorus, verse, chorus, breakdown, chorus, outro.'
+        ],
+        heading: 'The parts of a song',
+        kind: 'text'
+      },
+      {
+        body: [
+          'The secret to a song that keeps people listening is energy that rises and falls. If everything plays all the time, nothing feels big, because there’s nothing to compare it to.',
+          'The easiest way to control energy is layering: adding and removing parts. Start with a few, add more as you build to the chorus, pull them out in the breakdown, then bring everything back for the final chorus.',
+          'Try it: switch parts on and off in each section, watch the energy bars, and press Play my song. Then press Check my song for tips.'
+        ],
+        heading: 'Energy: build it up, drop it down',
+        kind: 'text'
+      },
+      { kind: 'sketch' },
+      {
+        body: [
+          'Think in blocks of 8 bars. Most sections are 4, 8 or 16 bars long, which is why songs feel so predictable (in a good way).',
+          'Change something every 8 bars, even a small thing: a new drum pattern, a part dropping out, a filter opening up. Ears get bored of exact repeats.',
+          'Hook them fast. Get to something catchy within the first 20 seconds or so.',
+          'Steal like an artist. Pick a song you love, listen to how it’s built, which parts come in when, and copy the shape (not the notes) in your own song.',
+          'Finish songs! A finished song that’s just okay teaches you more than ten perfect loops. You can always make the next one better.'
+        ],
+        heading: 'Tips from producers',
+        kind: 'text'
+      },
+      {
+        kind: 'quiz',
+        questions: () => [
+          {
+            answer: 'The chorus',
+            choices: ['The intro', 'The verse', 'The chorus'],
+            explain: 'The chorus (or drop) is the big, catchy peak of the song.',
+            prompt: 'Which section usually has the most energy?'
+          },
+          {
+            answer: 'Fewer parts',
+            choices: ['Fewer parts', 'More parts', 'Exactly the same parts'],
+            explain: 'A breakdown pulls parts out, so the music has somewhere to build back up to.',
+            prompt: 'Compared with the chorus, a breakdown usually has…'
+          },
+          {
+            answer: 'Nothing feels big',
+            choices: ['Nothing feels big', 'It sounds more exciting', 'It gets quieter'],
+            explain: 'Big moments only feel big next to quieter ones. Contrast is everything.',
+            prompt: 'What happens if every part plays all the way through?'
+          },
+          {
+            answer: '8 bars',
+            choices: ['3 bars', '8 bars', '13 bars'],
+            explain: 'Sections are usually 4, 8 or 16 bars long. 8 is the most common.',
+            prompt: 'What’s a very common length for a song section?'
+          },
+          {
+            answer: 'Add or remove parts',
+            choices: ['Add or remove parts', 'Change the key every bar', 'Turn the tempo up'],
+            explain:
+              'Layering (adding and removing parts) is the simplest way to build energy and drop it.',
+            prompt: 'What’s the easiest way to change a song’s energy?'
+          }
+        ]
+      }
+    ],
+    part: 'making',
+    slug: 'song',
+    summary:
+      'Intro, verse, chorus and more: how to build energy and turn a loop into a whole song.',
+    title: 'Making a song',
+    tryIt:
+      'Press + Section next to Tracks to add sections, name them (Intro, Verse, Chorus…), and switch on which loop pads and drum pattern play in each: start small, add more for the chorus, take some out for a breakdown. Then press Play song.'
   }
 ]
 
