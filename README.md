@@ -267,3 +267,7 @@ the user's own copy. To add one, export it from the app to that folder as JSON
 `arrangement`) and add it to `SOURCES` in `index.ts` under its slug. They're checked
 with the same schema as a saved song, so a bad one fails the tests, and so does a
 section that plays a pad with no loop or a pattern the song doesn't have.
+
+## License
+
+[MIT](LICENSE)
