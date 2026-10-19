@@ -2,6 +2,12 @@ import type { SynthParams } from '../types.js'
 
 import { arpQuestion, effectQuestion, endingQuestion } from './arrange.js'
 import {
+  keySigQuestion,
+  missingBeatsQuestion,
+  noteValueQuestion,
+  staffNoteQuestion
+} from './notation.js'
+import {
   type Beat,
   chordQuestion,
   higherQuestion,
@@ -27,15 +33,19 @@ export type Block =
         | 'intervals'
         | 'keyboard'
         | 'melody'
+        | 'notegame'
+        | 'rhythmbuilder'
         | 'scales'
+        | 'sightreader'
         | 'sketch'
         | 'sound'
+        | 'staff'
     }
 
 export interface Lesson {
   blocks: Block[]
-  // The music basics, or making music with Beatbox's tools.
-  part: 'basics' | 'making'
+  // The music basics, reading sheet music, or making music with Beatbox's tools.
+  part: 'basics' | 'making' | 'reading'
   slug: string
   summary: string
   title: string
@@ -394,6 +404,179 @@ export const LESSONS: Lesson[] = [
     title: 'Sound and timbre',
     tryIt:
       'Open the synth’s Osc, Filter and Amp tabs and try the same controls. Or press Browse presets… to hear what a fully designed sound can do.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'Sheet music is how musicians write songs down so anyone can play them, even hundreds of years later. It looks like a secret code at first, but it’s really just a picture of the music: higher notes sit higher up, and time goes from left to right.',
+          'Notes are written on a staff: five lines with four spaces between them. Every line and every space is a different note. Move up one line or space and you go up one letter (C, D, E, F, G, A, B, then C again).'
+        ],
+        heading: 'The staff',
+        kind: 'text'
+      },
+      {
+        body: [
+          'The symbol at the start of the staff is the clef. It tells you which notes the lines mean.',
+          'The treble clef (the curly one) is for higher notes: melodies, a pianist’s right hand, guitar, flute and singers. Its curl wraps around the second line, which is G, so it’s also called the G clef. The lines from the bottom are E, G, B, D, F (“Every Good Burger Deserves Fries”) and the spaces spell F, A, C, E (FACE).',
+          'The bass clef (the one like a backwards C with two dots) is for lower notes: bass, a pianist’s left hand, cello. Its dots sit around the fourth line, which is F. Its lines are G, B, D, F, A (“Good Burgers Don’t Fall Apart”) and its spaces are A, C, E, G (“All Cows Eat Grass”).',
+          'Pick a clef and press some keys to see where the notes land.'
+        ],
+        heading: 'Clefs',
+        kind: 'text'
+      },
+      { kind: 'staff' },
+      {
+        body: [
+          'Notes too high or low for the staff get little extra lines of their own, called ledger lines. Middle C sits on one ledger line just below the treble staff (and just above the bass staff).',
+          'A sharp (♯) before a note means play the key just to its right, usually a black key. A flat (♭) means the key just to its left. A natural (♮) cancels a sharp or flat.',
+          'Now test yourself. Name each note as it appears. Don’t worry about speed: everyone counts lines at first, and it gets faster quickly.'
+        ],
+        heading: 'Ledger lines, sharps and flats',
+        kind: 'text'
+      },
+      { kind: 'notegame' },
+      {
+        kind: 'quiz',
+        questions: () => [
+          ...times(4, () => staffNoteQuestion('treble')),
+          ...times(2, () => staffNoteQuestion('bass')),
+          {
+            answer: 'E G B D F',
+            choices: ['E G B D F', 'F A C E', 'G B D F A'],
+            explain: 'Every Good Burger Deserves Fries: E, G, B, D, F, from the bottom line up.',
+            prompt: 'From the bottom, what are the lines of the treble staff?'
+          },
+          {
+            answer: 'A ledger line below the treble staff',
+            choices: [
+              'A ledger line below the treble staff',
+              'The middle line of the treble staff',
+              'The top line of the bass staff'
+            ],
+            explain: 'Middle C has a little ledger line of its own, between the two staffs.',
+            prompt: 'Where is middle C written?'
+          }
+        ]
+      }
+    ],
+    part: 'reading',
+    slug: 'staff',
+    summary: 'The staff, treble and bass clef, ledger lines, and naming notes at a glance.',
+    title: 'Notes on the staff',
+    tryIt:
+      'Open a loop pad’s piano roll: it’s a staff turned sideways, with pitch going up and time going right. Draw a few notes and say their names out loud.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'Where a note sits tells you which note to play. Its shape tells you how long to hold it, counted in beats.',
+          'A whole note (an empty oval) lasts 4 beats. A half note (an empty oval with a stem) lasts 2. A quarter note (filled in, with a stem) lasts 1 beat. An eighth note adds a flag and lasts half a beat; a sixteenth has two flags and lasts a quarter of a beat. In real sheet music, eighths and sixteenths next to each other are often joined by a thick bar called a beam, instead of flags.',
+          'A dot after a note makes it half as long again: a dotted half note is 2 + 1 = 3 beats.'
+        ],
+        heading: 'How long is a note?',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Silence is part of music too. Rests show when not to play, and each note length has a rest that lasts just as long: a whole rest hangs below a line, a half rest sits on top of one, and a quarter rest looks like a squiggle.',
+          'The two numbers at the start are the time signature. 4/4 means 4 beats in every bar, each one a quarter note long. Bar lines split the music into those bars.',
+          'Musicians count the beats out loud: “1, 2, 3, 4”, adding “&” for the half-beats in between (“1 & 2 &”), and “e” and “a” for the sixteenths (“1 e & a”). The builder below writes the count under every note.'
+        ],
+        heading: 'Rests, bars and counting',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Try an example and press Play to hear it with a click on every beat, counting along. Then press Clear and build your own two bars: the buttons only let you add a length that still fits in the bar.'
+        ],
+        heading: 'Build a rhythm',
+        kind: 'text'
+      },
+      { kind: 'rhythmbuilder' },
+      {
+        kind: 'quiz',
+        questions: () => [
+          ...times(4, noteValueQuestion),
+          ...times(2, missingBeatsQuestion),
+          {
+            answer: '4 beats in every bar',
+            choices: ['4 beats in every bar', '4 bars in the song', '4 notes in every bar'],
+            explain:
+              '4/4 means four quarter-note beats in every bar: the most common time signature.',
+            prompt: 'What does a 4/4 time signature mean?'
+          },
+          {
+            answer: '3 beats',
+            choices: ['2 beats', '2½ beats', '3 beats'],
+            explain: 'A dot adds half the note’s length again: 2 + 1 = 3 beats.',
+            prompt: 'How long is a dotted half note?'
+          }
+        ]
+      }
+    ],
+    part: 'reading',
+    slug: 'note-lengths',
+    summary:
+      'Whole, half, quarter and eighth notes, rests, time signatures, and counting “1 e & a”.',
+    title: 'Note lengths and rests',
+    tryIt:
+      'In a piano roll, set the grid to 1/4 and draw four quarter notes, then try 1/8 and 1/16. Each grid line is one of the note lengths from this lesson.'
+  },
+  {
+    blocks: [
+      {
+        body: [
+          'Sight-reading means playing music you’ve never seen before, straight from the page. Here’s what to check before you play a single note:',
+          'The clef: treble or bass? That tells you what the lines mean. The key signature: any sharps or flats right after the clef apply to every one of those notes in the whole piece. A sharp on the top line of the treble staff means every F is played as F♯. The time signature: how many beats are in each bar?'
+        ],
+        heading: 'Before you play',
+        kind: 'text'
+      },
+      {
+        body: [
+          'Read ahead. Your eyes should always be a note or two ahead of your fingers.',
+          'Look at the shape. Is the melody stepping up, jumping down or repeating? You don’t have to name every note from scratch.',
+          'Keep going. Missing a note is fine; stopping is what breaks the music.',
+          'Pick a tune below. The highlighted note is the one to play: press its key on the keyboard to move on. Press Listen to hear how it should sound, and switch on note names if you get stuck. Ode to Joy is in D major, so watch for the two sharps.'
+        ],
+        heading: 'Tips for sight-reading',
+        kind: 'text'
+      },
+      { kind: 'sightreader' },
+      {
+        kind: 'quiz',
+        questions: () => [
+          ...times(3, keySigQuestion),
+          ...times(2, () => staffNoteQuestion(Math.random() < 0.5 ? 'treble' : 'bass')),
+          {
+            answer: 'Every F in the piece',
+            choices: ['Every F in the piece', 'Only the first F', 'Only Fs on the top line'],
+            explain:
+              'A key signature’s sharps and flats count for every one of those notes, all the way through.',
+            prompt: 'A key signature has a sharp on the F line. Which Fs are sharp?'
+          },
+          {
+            answer: 'The clef, key and time signature',
+            choices: [
+              'The clef, key and time signature',
+              'The last note',
+              'How many pages there are'
+            ],
+            explain:
+              'Those three tell you what the lines mean, which notes are sharp or flat, and how to count.',
+            prompt: 'What should you check before you start sight-reading?'
+          }
+        ]
+      }
+    ],
+    part: 'reading',
+    slug: 'sight-reading',
+    summary: 'Key signatures, reading ahead, and playing real tunes straight from the sheet music.',
+    title: 'Sight-reading a tune',
+    tryIt:
+      'Find the sheet music for a song you like (search for its name and “easy piano”), and play the melody on the workstation’s keyboard, one note at a time.'
   },
   {
     blocks: [

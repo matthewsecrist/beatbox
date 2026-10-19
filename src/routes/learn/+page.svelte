@@ -14,6 +14,11 @@
       title: 'The basics'
     },
     {
+      id: 'reading',
+      intro: 'Crack the code of sheet music: notes on the staff, rhythms, and playing real tunes.',
+      title: 'Reading music'
+    },
+    {
       id: 'making',
       intro: 'Put it to work with Beatbox’s tools, from your first arp to a finished song.',
       title: 'Making music'

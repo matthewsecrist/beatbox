@@ -10,10 +10,11 @@ describe('lessons', () => {
     expect(getLesson('nope')).toBeUndefined()
   })
 
-  it('come in two parts, the basics first', () => {
-    const parts = LESSONS.map((l) => l.part)
-    expect(parts.indexOf('making')).toBeGreaterThan(0)
-    expect(parts.slice(parts.indexOf('making'))).not.toContain('basics')
+  it('come in parts, in order: the basics, reading, then making music', () => {
+    const order = ['basics', 'reading', 'making']
+    const parts = LESSONS.map((l) => order.indexOf(l.part))
+    expect(parts).toStrictEqual([...parts].sort((a, b) => a - b))
+    expect(new Set(parts).size).toBe(order.length)
   })
 
   it('each end with a quiz whose answers are among its choices', () => {

@@ -6,13 +6,17 @@
   import IntervalExplorer from '$lib/learn/IntervalExplorer.svelte'
   import Keyboard from '$lib/learn/Keyboard.svelte'
   import MelodyGrid from '$lib/learn/MelodyGrid.svelte'
+  import NoteGame from '$lib/learn/NoteGame.svelte'
   import { saveResult } from '$lib/learn/progress.js'
   import Quiz from '$lib/learn/Quiz.svelte'
+  import RhythmBuilder from '$lib/learn/RhythmBuilder.svelte'
   import RhythmGrid from '$lib/learn/RhythmGrid.svelte'
   import ScaleExplorer from '$lib/learn/ScaleExplorer.svelte'
+  import SightReader from '$lib/learn/SightReader.svelte'
   import SongSketch from '$lib/learn/SongSketch.svelte'
   import { stopAll } from '$lib/learn/sound.js'
   import SoundLab from '$lib/learn/SoundLab.svelte'
+  import StaffExplorer from '$lib/learn/StaffExplorer.svelte'
   import { ArrowLeft, ArrowRight, Sparkles } from '@lucide/svelte'
   import { onMount } from 'svelte'
 
@@ -72,6 +76,14 @@
       <MelodyGrid />
     {:else if block.kind === 'sketch'}
       <SongSketch />
+    {:else if block.kind === 'staff'}
+      <StaffExplorer />
+    {:else if block.kind === 'notegame'}
+      <NoteGame />
+    {:else if block.kind === 'rhythmbuilder'}
+      <RhythmBuilder />
+    {:else if block.kind === 'sightreader'}
+      <SightReader />
     {:else if block.kind === 'rhythm'}
       <RhythmGrid id={`rhythm-${i}`} goal={block.goal} target={block.target} />
     {:else if block.kind === 'quiz'}

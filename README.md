@@ -28,7 +28,8 @@ deployed) and [Better Auth](https://better-auth.com) for magic-link sign-in.
   per-instrument pan and EQ, sidechain, and a master compressor, DJ filter,
   bitcrusher and limiter.
 - **Loop Browser**: about 150 premade loops and 70 beats across 24 genres.
-- **Learn**: ten interactive music lessons for beginners, with quizzes.
+- **Learn**: thirteen interactive music lessons for beginners, from beats and chords to
+  reading sheet music and finishing a song, with quizzes.
 - **Undo/redo** for every edit, and a plain-English ⓘ on every control.
 
 [docs/features.md](docs/features.md) covers every control in detail.
