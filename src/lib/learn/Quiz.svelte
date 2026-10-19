@@ -2,12 +2,13 @@
   import { ArrowRight, RotateCcw, Trophy, Volume2 } from '@lucide/svelte'
 
   import { playGroups } from './sound.js'
+  import Staff from './Staff.svelte'
   import { type Question } from './theory.js'
   import { button, panel } from './ui.js'
 
   // A short quiz, made fresh from `questions` each time it starts. Questions with
   // sounds play them when they come up (and on Listen again). `oncomplete` gets
-  // the score at the end.
+  // the score at the end. Questions about reading music show their staff.
   let {
     id,
     oncomplete,
@@ -93,6 +94,11 @@
       <span>Score: {score}</span>
     </div>
     <p class="font-medium text-zinc-100">{question.prompt}</p>
+    {#if question.staff}
+      <div class="max-w-xs">
+        <Staff {...question.staff} />
+      </div>
+    {/if}
     {#if question.play}
       <button
         type="button"

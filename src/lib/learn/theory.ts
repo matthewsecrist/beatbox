@@ -1,4 +1,5 @@
 import type { SynthParams } from '../types.js'
+import type { Notation } from './notation.js'
 
 // Music theory for the lessons: note names, intervals, scales and chords, all as
 // MIDI note numbers (60 is middle C), plus the quiz questions built from them.
@@ -94,6 +95,8 @@ export interface Question {
   prompt: string
   // Each group's sound, in place of the piano.
   sounds?: Partial<SynthParams>[]
+  // Music to read, shown with the question.
+  staff?: Notation
 }
 
 type Random = () => number
